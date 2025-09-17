@@ -20,6 +20,16 @@ const routes: RouteRecordRaw[] = [
   // Agent flow
   { path: '/agent/welcome', name: 'agent-welcome', component: () => import('../views/agent/AgentWelcome.vue') },
   { path: '/agent/services', name: 'agent-services', component: () => import('../views/agent/AgentServices.vue') },
+  { path: '/agent/explore-gigs', name: 'agent-explore-gigs', component: () => import('../views/agent/AgentExploreGigs.vue') },
+  { path: '/agent/gigs-listing', name: 'agent-gigs-listing', component: () => import('../views/agent/AgentGigsListing.vue') },
+  { path: '/agent/congrats', name: 'agent-congrats', component: () => import('../views/agent/AgentCongrats.vue') },
+  { path: '/agent/welcome-back', name: 'agent-welcome-back', component: () => import('../views/agent/AgentWelcomeBack.vue') },
+  // Utility pages
+  { path: '/notifications', name: 'notifications', component: () => import('../views/Notifications.vue') },
+  { path: '/messages', name: 'messages', component: () => import('../views/Messages.vue') },
+  { path: '/settings', name: 'settings', component: () => import('../views/Settings.vue') },
+  { path: '/profile-settings', name: 'profile-settings', component: () => import('../views/ProfileSettings.vue') },
+  { path: '/terms-and-conditions', name: 'terms-and-conditions', component: () => import('../views/TermsAndConditions.vue') },
 ]
 
 const router = createRouter({

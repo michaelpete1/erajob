@@ -12,7 +12,7 @@
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
-  <div class="relative content-front w-full max-w-xs mx-auto flex flex-col items-center justify-center text-center py-16">
+  <div class="relative content-front w-full max-w-xs sm:max-w-sm md:max-w-2xl mx-auto flex flex-col items-center justify-center text-center py-16 pb-8 md:pb-12">
       <BrandLogo size="lg" class="mb-8 [filter:brightness(0)_invert(1)] animate-bounce-in" />
       <h1 class="text-4xl md:text-5xl mb-2 text-white font-bold animate-fade-up-delay-1">Welcome</h1>
       <p class="text-base md:text-lg text-white font-semibold mb-1 animate-fade-up-delay-2">to</p>

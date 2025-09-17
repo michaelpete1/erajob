@@ -24,17 +24,18 @@
         <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-brand-teal mb-2 animate-fade-up-delay-1">Explore Gigs</h2>
         <p class="text-sm sm:text-base md:text-lg font-semibold text-brand-teal mb-4 animate-fade-up-delay-2">Discover exciting opportunities</p>
         <div class="mx-auto mt-2 max-w-xs sm:max-w-sm text-left space-y-3 text-gray-700 animate-fade-up-delay-3">
-          <p class="text-sm sm:text-base">Browse through available gigs and find the perfect match for your skills and interests.</p>
+          <p class="text-sm sm:text-base">Browse through available gigs and find the perfect match for your skills and expertise.</p>
           <ul class="list-disc pl-5 space-y-1 text-sm sm:text-base">
             <li>Various gig categories to choose from</li>
-            <li>Competitive pricing starting at $13-14</li>
+            <li>Competitive earnings starting at $13-14 per hour</li>
             <li>Flexible work arrangements</li>
             <li>Quick and easy application process</li>
+            <li>Build your portfolio and gain experience</li>
           </ul>
-          <p class="text-sm sm:text-base">Start your journey with ERA today!</p>
+          <p class="text-sm sm:text-base">Start your journey as an ERA agent today!</p>
         </div>
 
-        <router-link to="/client/gigs-listing" class="btn-pressable mt-8 sm:mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-6 sm:px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 w-full sm:w-auto">
+        <router-link to="/agent/gigs-listing" class="btn-pressable mt-8 sm:mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-6 sm:px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 w-full sm:w-auto">
           Explore Gigs
         </router-link>
       </div>
