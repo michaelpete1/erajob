@@ -12,9 +12,7 @@
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
     
     <header class="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 md:rounded-t-2xl md:border-x animate-fade-up">
-      <router-link to="/" class="absolute top-4 left-4 z-30">
-        <BrandLogo size="sm" class="filter invert brightness-200" />
-      </router-link>
+      <button class="text-sm text-brand-teal md:text-brand-teal hover:text-brand-teal/80 md:hover:text-brand-teal/90 transition-colors animate-bounce-in" @click="$router.back()">←</button>
       <h1 class="text-sm font-semibold text-white animate-fade-up-delay-1">Client Information</h1>
       <div class="w-6" />
     </header>
@@ -49,26 +47,48 @@
           <input v-model="form.urlLink" type="url" placeholder="URL Link" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
         
+        <!-- Certificates upload -->
         <div class="space-y-2 animate-slide-in-right">
-          <label class="text-sm font-medium text-brand-teal">Company Documents</label>
+          <label class="text-sm font-medium text-brand-teal">Certificates</label>
           <div class="relative">
             <input 
               type="file" 
-              ref="documentsInput"
-              @change="handleDocumentsUpload"
+              ref="certificatesInput"
+              @change="handleCertificatesUpload"
               multiple
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
               class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-teal file:text-white hover:file:bg-brand-teal/90 focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all"
             />
           </div>
-          <div v-if="documentsFiles.length > 0" class="mt-2 p-3 bg-brand-teal/5 rounded-lg border border-brand-teal/20">
-            <p class="text-sm font-medium text-brand-teal mb-1">Selected Files:</p>
+          <div v-if="certificatesFiles.length > 0" class="mt-2 p-3 bg-brand-teal/5 rounded-lg border border-brand-teal/20">
+            <p class="text-sm font-medium text-brand-teal mb-1">Selected Certificates:</p>
             <ul class="space-y-1">
-              <li v-for="(file, index) in documentsFiles" :key="index" class="text-xs text-gray-700 flex items-center justify-between">
+              <li v-for="(file, index) in certificatesFiles" :key="index" class="text-xs text-gray-700 flex items-center justify-between">
                 <span>{{ file.name }} ({{ formatFileSize(file.size) }})</span>
-                <button @click="removeDocument(index)" class="text-red-500 hover:text-red-700 text-xs">Remove</button>
+                <button @click="removeCertificate(index)" class="text-red-500 hover:text-red-700 text-xs">Remove</button>
               </li>
             </ul>
+          </div>
+        </div>
+
+        <!-- Personality test screenshot upload -->
+        <div class="space-y-2 animate-slide-in-left">
+          <label class="text-sm font-medium text-brand-teal">Personality Test Screenshot</label>
+          <div class="relative">
+            <input 
+              type="file" 
+              ref="personalityTestInput"
+              @change="handlePersonalityTestUpload"
+              accept=".jpg,.jpeg,.png,.webp"
+              class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-teal file:text-white hover:file:bg-brand-teal/90 focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all"
+            />
+          </div>
+          <div v-if="personalityTestFile" class="mt-2 p-3 bg-brand-teal/5 rounded-lg border border-brand-teal/20">
+            <p class="text-sm font-medium text-brand-teal mb-1">Selected Screenshot:</p>
+            <div class="text-xs text-gray-700 flex items-center justify-between">
+              <span>{{ personalityTestFile.name }} ({{ formatFileSize(personalityTestFile.size) }})</span>
+              <button @click="removePersonalityTest" class="text-red-500 hover:text-red-700 text-xs">Remove</button>
+            </div>
           </div>
         </div>
 
@@ -93,7 +113,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import PageContainer from '../components/PageContainer.vue'
+import PageContainer from '../../components/PageContainer.vue'
 
 // Form reactive data
 const form = reactive({
@@ -109,11 +129,13 @@ const form = reactive({
 })
 
 // File upload reactive data
-const documentsFiles = ref<File[]>([])
-const documentsInput = ref<HTMLInputElement | null>(null)
+const certificatesFiles = ref<File[]>([])
+const personalityTestFile = ref<File | null>(null)
+const certificatesInput = ref<HTMLInputElement | null>(null)
+const personalityTestInput = ref<HTMLInputElement | null>(null)
 
-// Handle documents upload
-const handleDocumentsUpload = (event: Event) => {
+// Handle certificates upload
+const handleCertificatesUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
     const newFiles = Array.from(target.files)
@@ -126,16 +148,44 @@ const handleDocumentsUpload = (event: Event) => {
       alert(`Some files are too large. Maximum size is 10MB per file.`)
       // Only add files that are not oversized
       const validFiles = newFiles.filter(file => file.size <= maxSize)
-      documentsFiles.value = [...documentsFiles.value, ...validFiles]
+      certificatesFiles.value = [...certificatesFiles.value, ...validFiles]
     } else {
-      documentsFiles.value = [...documentsFiles.value, ...newFiles]
+      certificatesFiles.value = [...certificatesFiles.value, ...newFiles]
     }
   }
 }
 
-// Remove a specific document
-const removeDocument = (index: number) => {
-  documentsFiles.value.splice(index, 1)
+// Remove a specific certificate
+const removeCertificate = (index: number) => {
+  certificatesFiles.value.splice(index, 1)
+}
+
+// Handle personality test upload
+const handlePersonalityTestUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      alert('File is too large. Maximum size is 5MB.')
+      if (personalityTestInput.value) {
+        personalityTestInput.value.value = ''
+      }
+      return
+    }
+    
+    personalityTestFile.value = file
+  }
+}
+
+// Remove personality test file
+const removePersonalityTest = () => {
+  personalityTestFile.value = null
+  if (personalityTestInput.value) {
+    personalityTestInput.value.value = ''
+  }
 }
 
 // Format file size for display

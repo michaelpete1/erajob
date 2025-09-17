@@ -11,13 +11,8 @@
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
-    <div class="relative content-front w-full max-w-md mx-auto flex flex-col items-center text-center pt-8 pb-12">
-      <!-- Home Logo (link to home) -->
-      <router-link to="/" class="absolute top-2 left-2 z-10">
-        <BrandLogo size="sm" class="filter invert brightness-200" />
-      </router-link>
-      
-      <h2 class="mb-6 text-3xl font-extrabold text-white drop-shadow-md content-front animate-fade-up-delay-1">Service Category</h2>
+    <div class="relative z-10 w-full max-w-md mx-auto flex flex-col items-center justify-center text-center py-12">
+      <h2 class="mb-8 text-3xl font-extrabold text-white animate-fade-up-delay-1">Service Category</h2>
       <ul class="divide-y divide-gray-200 w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-up-delay-2">
         <ServiceRow :icon="PencilSquareIcon" title="Graphic Design" subtitle="Logo & brand identity" class="animate-slide-in-left" />
         <ServiceRow :icon="MegaphoneIcon" title="Digital Marketing" subtitle="Social media marketing, SEO" class="animate-slide-in-right" />
@@ -44,8 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import ServiceRow from '../widgets/ServiceRow.vue'
-import BrandLogo from '../components/BrandLogo.vue'
+import ServiceRow from '../../widgets/ServiceRow.vue'
 // Removed unused PageContainer import
 import { PencilSquareIcon, MegaphoneIcon, FilmIcon, CodeBracketSquareIcon, CameraIcon, CpuChipIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import { MusicalNoteIcon } from '@heroicons/vue/24/solid'

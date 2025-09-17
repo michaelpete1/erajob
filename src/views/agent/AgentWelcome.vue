@@ -113,9 +113,7 @@
         >
           Next
         </router-link>
-          <router-link to="/" class="absolute top-4 left-4 z-30">
-            <BrandLogo size="sm" class="filter invert brightness-200" />
-          </router-link>
+        <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">Back</button>
       </div>
     </div>
   </div>

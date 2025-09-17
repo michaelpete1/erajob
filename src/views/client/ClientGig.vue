@@ -12,10 +12,13 @@
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
     <div class="relative z-10 w-full max-w-md mx-auto px-4 py-6">
-      <header class="sticky top-0 content-front flex items-center justify-between border-b border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 md:rounded-t-2xl md:border-x animate-fade-up-delay-1">
-        <router-link to="/" class="text-sm z-30">
-          <BrandLogo size="sm" class="filter invert brightness-200" />
-        </router-link>
+      <header class="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 md:rounded-t-2xl md:border-x animate-fade-up-delay-1">
+        <div class="flex items-center gap-2">
+          <router-link to="/" class="text-brand-teal hover:text-brand-teal/80 transition-colors">
+            <BrandLogo size="sm" class="filter invert brightness-200" />
+          </router-link>
+          <button class="text-sm text-brand-teal hover:text-brand-teal/80 transition-colors" @click="$router.back()">←</button>
+        </div>
         <h1 class="text-sm font-semibold text-white">Gig/job Type</h1>
         <div class="w-6" />
       </header>

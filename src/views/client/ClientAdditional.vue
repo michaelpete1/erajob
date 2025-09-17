@@ -1,9 +1,9 @@
 <template>
   <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 overflow-hidden">
-  <!-- Animated decorative circles -->
-  <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow decor-bg" />
-  <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse decor-bg" />
-  <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float decor-bg" />
+    <!-- Animated decorative circles -->
+    <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
+    <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
+    <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
     
     <!-- Floating particles -->
     <div class="absolute top-20 left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1" />
@@ -11,19 +11,9 @@
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
-  <div class="relative content-front w-full max-w-md mx-auto px-4 py-6">
-      <!-- Home Logo (link to home) -->
-      <router-link to="/" class="absolute top-2 left-2 z-10">
-        <BrandLogo size="sm" class="filter invert brightness-200" />
-      </router-link>
-      
-  <header class="sticky top-0 content-front flex items-center justify-between border-b border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 md:rounded-t-2xl md:border-x animate-fade-up">
-        <div class="flex items-center gap-2">
-          <router-link to="/" class="text-brand-teal hover:text-brand-teal/80 transition-colors">
-            <BrandLogo size="sm" class="filter invert brightness-200" />
-          </router-link>
-          <button class="text-sm text-brand-teal hover:text-brand-teal/80 transition-colors animate-bounce-in" @click="$router.back()">←</button>
-        </div>
+    <div class="relative z-10 w-full max-w-md mx-auto px-4 py-6">
+      <header class="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 md:rounded-t-2xl md:border-x animate-fade-up">
+        <button class="text-sm text-brand-teal hover:text-brand-teal/80 transition-colors animate-bounce-in" @click="$router.back()">←</button>
         <h1 class="text-sm font-semibold text-white animate-fade-up-delay-1">Additional Details</h1>
         <div class="w-6" />
       </header>
@@ -67,5 +57,4 @@
 </template>
 
 <script setup lang="ts">
-import BrandLogo from '../components/BrandLogo.vue'
 </script>

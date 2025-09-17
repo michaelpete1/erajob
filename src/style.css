@@ -278,3 +278,11 @@
 .btn-pressable:active {
   transform: scale(0.95);
 }
+
+/* Utility classes to keep decorative elements behind content */
+.decor-bg {
+  z-index: 0;
+}
+.content-front {
+  z-index: 20;
+}

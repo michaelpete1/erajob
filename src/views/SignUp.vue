@@ -11,13 +11,18 @@
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
-    <div class="relative z-10 w-full max-w-sm mx-auto px-4 py-6">
+  <div class="relative content-front w-full max-w-sm mx-auto px-4 py-6">
+      <!-- Home Logo (link to home) -->
+      <router-link to="/" class="absolute top-2 left-2 z-20">
+        <BrandLogo size="sm" class="filter invert brightness-200" />
+      </router-link>
+      
       <!-- Back button -->
-      <button @click="$router.back()" class="absolute top-4 left-4 z-20 text-brand-teal hover:text-brand-teal/80 transition-colors animate-fade-up">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
+      <div class="absolute top-2 left-12 z-20">
+          <router-link to="/" class="text-brand-teal hover:text-brand-teal/80 transition-colors">
+            <BrandLogo size="md" class="filter invert brightness-200" />
+          </router-link>
+      </div>
       
       <div class="flex flex-col items-center justify-center text-center py-12">
         <BrandLogo size="lg" class="mb-8 [filter:brightness(0)_invert(1)] animate-bounce-in" />

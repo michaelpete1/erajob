@@ -11,7 +11,13 @@
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
-    <div class="relative z-10 w-full max-w-md rounded-2xl bg-white/95 backdrop-blur-sm px-6 py-12 text-center shadow-xl animate-fade-up-delay-2">
+    <div class="relative z-10 w-full max-w-md mx-auto px-4 py-6">
+      <!-- Home Logo (link to home) -->
+      <router-link to="/" class="absolute top-2 left-2 z-20">
+        <BrandLogo size="sm" class="filter invert brightness-200" />
+      </router-link>
+      
+      <div class="rounded-2xl bg-white/95 backdrop-blur-sm px-6 py-12 text-center shadow-xl animate-fade-up-delay-2">
       <div class="flex justify-center mb-4 animate-bounce">
         <span class="text-4xl">🎉</span>
       </div>
@@ -28,12 +34,14 @@
         <p>We look forward to working with you!</p>
       </div>
 
-      <router-link to="/" class="btn-pressable mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4">
-        Okay
+      <router-link to="/client/explore-gigs" class="btn-pressable mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4">
+        Next
       </router-link>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import BrandLogo from '../../components/BrandLogo.vue'
 </script>
