@@ -103,12 +103,12 @@
 
       </form>
       <div class="space-y-3 pt-4 animate-fade-up-delay-4">
-        <router-link
-          to="/agent/services"
+        <button
+          @click="goToNextPage"
           class="btn-pressable block w-full rounded-full bg-brand-teal px-6 py-3 text-center text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
         >
           Next
-        </router-link>
+        </button>
         <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">Back</button>
       </div>
     </div>
@@ -117,6 +117,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const certificationsFiles = ref<File[]>([])
 const personalityTestFile = ref<File | null>(null)
@@ -153,6 +156,20 @@ const handlePersonalityTestUpload = (event: Event) => {
     }
     
     personalityTestFile.value = file
+  }
+}
+
+const goToNextPage = () => {
+  // Check if this is a sign-up flow
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  const isSignUpFlow = userInfo.signUpTime
+  
+  if (isSignUpFlow) {
+    // For sign-up flow: go to agent services
+    router.push('/agent/services')
+  } else {
+    // For sign-in flow: go to explore gigs
+    router.push('/agent/explore-gigs')
   }
 }
 

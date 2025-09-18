@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 // No job data needed anymore
 </script>
@@ -40,4 +41,3 @@
     </div>
   </div>
 </template>
-

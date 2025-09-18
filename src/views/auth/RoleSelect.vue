@@ -18,18 +18,18 @@
     <div class="relative z-10 w-full max-w-sm mx-auto flex flex-col items-center justify-center text-center py-12">
       <h2 class="mb-8 text-3xl font-extrabold text-white animate-fade-up-delay-1">Select a role</h2>
       <div class="space-y-4 w-full animate-fade-up-delay-2">
-        <router-link
-          to="/client/welcome"
+        <button
+          @click="selectRole('client')"
           class="btn-pressable block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-brand-teal shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-slide-in-left"
         >
           I am a Client
-        </router-link>
-        <router-link
-          to="/agent/welcome"
+        </button>
+        <button
+          @click="selectRole('agent')"
           class="btn-pressable block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-brand-teal shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-slide-in-right"
         >
           I am an Agent
-        </router-link>
+        </button>
       </div>
       <div class="mt-8 animate-fade-up-delay-3">
         <router-link to="/sign-in" class="text-xs text-white/80 hover:text-white underline transition-colors">Back to Sign in</router-link>
@@ -39,4 +39,35 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const selectRole = (role: 'client' | 'agent') => {
+  // Set the user role in localStorage
+  localStorage.setItem('userRole', role)
+  
+  // Check if this is a sign-up flow (has signUpTime in userInfo)
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  const isSignUpFlow = userInfo.signUpTime
+  
+  // Navigate to the appropriate page
+  if (role === 'agent') {
+    if (isSignUpFlow) {
+      // For sign-up flow: go to agent welcome first
+      router.push('/agent/welcome')
+    } else {
+      // For sign-in flow: go directly to explore gigs
+      router.push('/agent/explore-gigs')
+    }
+  } else {
+    if (isSignUpFlow) {
+      // For sign-up flow: go to client welcome first
+      router.push('/client/welcome')
+    } else {
+      // For sign-in flow: go to client explore page
+      router.push('/client/explore-gigs')
+    }
+  }
+}
 </script>

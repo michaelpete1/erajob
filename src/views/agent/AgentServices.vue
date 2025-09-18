@@ -91,7 +91,18 @@ const goNext = () => {
   if (selectedCategories.value.length >= 3) {
     // Store selected categories in localStorage or state management
     localStorage.setItem('selectedAgentServices', JSON.stringify(selectedCategories.value))
-    router.push('/agent/congrats')
+    
+    // Check if this is a sign-up flow
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    const isSignUpFlow = userInfo.signUpTime
+    
+    if (isSignUpFlow) {
+      // For sign-up flow: go directly to congrats
+      router.push('/agent/congrats')
+    } else {
+      // For sign-in flow: go to congrats
+      router.push('/agent/congrats')
+    }
   }
 }
 </script>

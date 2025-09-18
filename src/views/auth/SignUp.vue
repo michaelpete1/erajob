@@ -108,7 +108,14 @@ const showConfirmPassword = ref(false)
 const router = useRouter()
 
 function onSubmit() {
+  // Set user info in localStorage for sign-up flow
+  localStorage.setItem('userInfo', JSON.stringify({
+    email: email.value,
+    fullName: fullName.value,
+    signUpTime: new Date().toISOString()
+  }))
   
+  // For sign-up flow, go to role selection first
   router.push('/role-select')
 }
 </script>

@@ -1,13 +1,13 @@
 <template>
   <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 overflow-hidden">
-    <div class="absolute top-0 right-0 h-24 w-24 sm:h-32 sm:w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
-    <div class="absolute bottom-0 left-0 h-20 w-20 sm:h-24 sm:w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
-    <div class="absolute top-1/2 left-1/2 h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
+  <div class="absolute top-0 right-0 h-24 w-24 sm:h-32 sm:w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow"></div>
+  <div class="absolute bottom-0 left-0 h-20 w-20 sm:h-24 sm:w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse"></div>
+  <div class="absolute top-1/2 left-1/2 h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float"></div>
     
-    <div class="absolute top-16 left-16 sm:top-20 sm:left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1" />
-    <div class="absolute top-32 right-24 sm:top-40 sm:right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2" />
-    <div class="absolute bottom-24 left-32 sm:bottom-32 sm:left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
-    <div class="absolute bottom-16 right-16 sm:bottom-20 sm:right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
+  <div class="absolute top-16 left-16 sm:top-20 sm:left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1"></div>
+  <div class="absolute top-32 right-24 sm:top-40 sm:right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2"></div>
+  <div class="absolute bottom-24 left-32 sm:bottom-32 sm:left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3"></div>
+  <div class="absolute bottom-16 right-16 sm:bottom-20 sm:right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4"></div>
 
   <div class="relative z-10 container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-24">
       <header class="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[90%] sm:w-[92%] max-w-3xl bg-brand-teal text-white rounded-xl px-3 sm:px-4 py-2 sm:py-3 z-50 shadow-md flex items-center justify-between">
@@ -112,67 +112,91 @@
         </div>
       </div>
 
-  
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
-    
-    <div 
-      v-for="gig in filteredGigs" 
-      :key="gig.id"
-      class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 block cursor-pointer"
-    >
-      <router-link :to="gig.link" class="block" @click.stop>
-        <div class="flex items-center mb-3 sm:mb-4 gap-3">
-          <span class="text-2xl sm:text-3xl">{{ gig.icon }}</span>
-          <h3 class="text-lg sm:text-xl font-bold text-brand-teal">{{ gig.title }}</h3>
+      <div class="mt-6 sm:mt-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+          
+          <div 
+            v-for="gig in filteredGigs" 
+            :key="gig.id"
+            class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 block cursor-pointer"
+          >
+            <div class="block">
+              <div class="flex items-center mb-3 sm:mb-4 gap-3">
+                <span class="text-2xl sm:text-3xl">{{ gig.icon }}</span>
+                <h3 class="text-lg sm:text-xl font-bold text-brand-teal">{{ gig.title }}</h3>
+              </div>
+              <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{{ gig.description }}</p>
+              <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <span class="text-xl sm:text-2xl font-bold text-brand-teal">${{ gig.price }}</span>
+                <span class="text-xs sm:text-sm text-gray-500">per hour</span>
+              </div>
+
+              <div>
+                <button @click.stop="goToGig(gig)" class="w-full bg-brand-teal text-white py-2 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base">
+                  {{ activeTab === 'browse' ? 'View Details' : 'Open Summary' }}
+                </button>
+              </div>
+            </div>
+          </div>
+      
+      <!-- No results message -->
+      <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-12">
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-8">
+          <span class="text-4xl mb-4 block">🔍</span>
+          <h3 class="text-xl font-bold text-brand-teal mb-2">No gigs found</h3>
+          <p class="text-gray-600">Try adjusting your search terms or browse all gigs in the Active tab.</p>
         </div>
-        <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ gig.description }}</p>
-        <div class="flex justify-between items-center mb-3 sm:mb-4">
-          <span class="text-xl sm:text-2xl font-bold text-brand-teal">${{ gig.price }}</span>
-          <span class="text-xs sm:text-sm text-gray-500">per hour</span>
-        </div>
-        <router-link v-if="activeTab === 'browse'" :to="gig.applyLink" class="w-full bg-brand-teal text-white py-2 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base" @click.stop>
-          Apply Now
-        </router-link>
-        <router-link v-else :to="gig.link" class="w-full bg-brand-teal text-white py-2 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base" @click.stop>
-          View Details
-        </router-link>
-      </router-link>
-    </div>
-    
-    <!-- No results message -->
-    <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-12">
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-8">
-        <span class="text-4xl mb-4 block">🔍</span>
-        <h3 class="text-xl font-bold text-brand-teal mb-2">No gigs found</h3>
-        <p class="text-gray-600">Try adjusting your search terms or browse all gigs in the Active tab.</p>
       </div>
-    </div>
+        </div>
       </div>
 
-  <!-- Back Button -->
-  <div class="text-center mt-8">
+      <!-- Back Button -->
+      <div class="text-center mt-8">
         <router-link to="/agent/explore-gigs" class="inline-flex items-center text-white hover:text-white/80 transition-colors duration-300">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Explore Gigs
+          Back to Explore
         </router-link>
       </div>
-    </div>
+
     <BottomNav />
+  </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import BottomNav from '../../components/BottomNav.vue'
 import BrandLogo from '../../components/BrandLogo.vue'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
 
 const openMobileNav = ref(false)
-const activeTab = ref<'active' | 'browse'>('active')
+const activeTab = ref<'active' | 'browse'>('browse')
 const searchQuery = ref('')
+
+// Determine gig links based on flow type (navigate directly to agent summary)
+const router = useRouter()
+
+
+const goToGig = (gig: any) => {
+  // Persist selected gig so destination pages can read it
+  try {
+    localStorage.setItem('selectedGig', JSON.stringify(gig))
+  } catch (e) {
+    // ignore storage errors
+  }
+
+  if (activeTab.value === 'active') {
+    // Open the professional Job Overview for active jobs
+    router.push({ path: `/agent/job/${gig.id}` })
+  } else {
+    // browse -> go to detail page
+    router.push({ path: `/agent/gig/${gig.id}` })
+  }
+}
 
 const activeJobs = [
   {
@@ -181,8 +205,6 @@ const activeJobs = [
     description: 'Currently working on blog posts for TechCorp',
     price: '14.00',
     icon: '📝',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     status: 'in_progress',
     client: 'TechCorp',
     deadline: '2024-01-15'
@@ -193,78 +215,64 @@ const activeJobs = [
     description: 'Managing social media accounts for FashionBrand',
     price: '18.00',
     icon: '📱',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     status: 'in_progress',
     client: 'FashionBrand',
     deadline: '2024-01-20'
   }
 ]
 
-const availableGigs = [
+const browseGigs = [
   {
-    id: 1,
+    id: 3,
     title: 'Content Writing',
     description: 'Create engaging blog posts, articles, and web content for various clients.',
     price: '14.00',
     icon: '📝',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     category: 'writing',
     keywords: ['writing', 'content', 'blog', 'articles', 'web content']
   },
   {
-    id: 2,
+    id: 4,
     title: 'Graphic Design',
     description: 'Design logos, social media graphics, and marketing materials for businesses.',
     price: '13.50',
     icon: '🎨',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     category: 'design',
     keywords: ['design', 'logo', 'graphics', 'social media', 'marketing']
   },
   {
-    id: 3,
+    id: 5,
     title: 'Web Development',
     description: 'Build and maintain websites using modern frameworks and technologies.',
     price: '17.50',
     icon: '💻',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     category: 'development',
     keywords: ['web', 'development', 'websites', 'programming', 'coding']
   },
   {
-    id: 4,
+    id: 6,
     title: 'Data Entry',
     description: 'Input and manage data accurately for various business operations.',
     price: '13.00',
     icon: '📊',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     category: 'data',
     keywords: ['data', 'entry', 'input', 'management', 'business']
   },
   {
-    id: 5,
+    id: 7,
     title: 'Virtual Assistant',
     description: 'Provide administrative support and manage tasks for busy professionals.',
     price: '13.75',
     icon: '🎯',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     category: 'admin',
     keywords: ['virtual', 'assistant', 'administrative', 'support', 'tasks']
   },
   {
-    id: 6,
+    id: 8,
     title: 'Social Media Management',
     description: 'Manage social media accounts and create engaging content for brands.',
     price: '15.50',
     icon: '📱',
-    link: '/agent/congrats',
-    applyLink: '/agent/congrats',
     category: 'marketing',
     keywords: ['social', 'media', 'management', 'content', 'brands']
   }
@@ -285,7 +293,7 @@ const filteredGigs = computed(() => {
     return activeJobs
   } else {
     
-    let result = availableGigs
+    let result = browseGigs
     
     
     if (selectedServices.value.length > 0) {

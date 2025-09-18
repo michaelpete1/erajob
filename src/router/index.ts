@@ -10,18 +10,19 @@ const routes: RouteRecordRaw[] = [
   // Client flow
   { path: '/client/welcome', name: 'client-welcome', component: () => import('../views/client/ClientWelcome.vue') },
   { path: '/client/services', name: 'client-services', component: () => import('../views/client/ClientServices.vue') },
+  { path: '/client/explore-gigs', name: 'client-explore-gigs', component: () => import('../views/client/ClientExploreGigs.vue') },
   { path: '/client/additional', name: 'client-additional', component: () => import('../views/client/ClientAdditional.vue') },
   { path: '/client/gig', name: 'client-gig', component: () => import('../views/client/ClientGig.vue') },
   { path: '/client/add-post', name: 'add-post', component: () => import('../views/client/ClientSummary.vue') },
   { path: '/client/congrats', name: 'client-congrats', component: () => import('../views/client/ClientCongrats.vue') },
-  { path: '/client/explore-gigs', name: 'client-explore-gigs', component: () => import('../views/client/ClientExploreGigs.vue') },
-  { path: '/client/gigs-listing', name: 'client-gigs-listing', component: () => import('../views/client/ClientGigsListing.vue') },
   { path: '/client/job-application', name: 'client-job-application', component: () => import('../views/client/ClientJobApplication.vue') },
   // Agent flow
   { path: '/agent/welcome', name: 'agent-welcome', component: () => import('../views/agent/AgentWelcome.vue') },
   { path: '/agent/services', name: 'agent-services', component: () => import('../views/agent/AgentServices.vue') },
   { path: '/agent/explore-gigs', name: 'agent-explore-gigs', component: () => import('../views/agent/AgentExploreGigs.vue') },
   { path: '/agent/gigs-listing', name: 'agent-gigs-listing', component: () => import('../views/agent/AgentGigsListing.vue') },
+  { path: '/agent/gig/:id', name: 'agent-gig-detail', component: () => import('../views/agent/AgentGigDetail.vue') },
+  { path: '/agent/job/:id', name: 'agent-job-overview', component: () => import('../views/agent/AgentJobOverview.vue') },
   { path: '/agent/congrats', name: 'agent-congrats', component: () => import('../views/agent/AgentCongrats.vue') },
   { path: '/agent/welcome-back', name: 'agent-welcome-back', component: () => import('../views/agent/AgentWelcomeBack.vue') },
   // Utility pages
@@ -35,6 +36,26 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+// Navigation guard to check user role
+router.beforeEach((to, _from, next) => {
+  // Get user role from localStorage
+  const userRole = localStorage.getItem('userRole')
+  
+  // Pages that should only be accessible to agents
+  const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing']
+  
+  // Check if the current route is an agent-only page
+  if (agentOnlyPages.includes(to.path)) {
+    if (userRole !== 'agent') {
+      // If user is not an agent, redirect to sign in
+      next('/sign-in')
+      return
+    }
+  }
+  
+  next()
 })
 
 export default router

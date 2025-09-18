@@ -101,11 +101,8 @@ function onSubmit() {
     }))
     
     
-    if (userRole === 'agent') {
-      router.push('/agent/explore-gigs')
-    } else {
-      router.push('/client/explore-gigs')
-    }
+    // After login, redirect to role selection page
+    router.push('/role-select')
   }
   
   mockAuth()
