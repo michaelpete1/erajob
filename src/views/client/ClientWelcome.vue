@@ -1,11 +1,9 @@
 <template>
   <PageContainer bg="bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 min-h-svh">
-    <!-- Animated decorative circles -->
     <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
     <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
     <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
     
-    <!-- Floating particles -->
     <div class="absolute top-20 left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1" />
     <div class="absolute top-40 right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2" />
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
@@ -47,7 +45,6 @@
           <input v-model="form.urlLink" type="url" placeholder="URL Link" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
         
-        <!-- Certificates upload -->
         <div class="space-y-2 animate-slide-in-right">
           <label class="text-sm font-medium text-brand-teal">Certificates</label>
           <div class="relative">
@@ -71,7 +68,6 @@
           </div>
         </div>
 
-        <!-- Personality test screenshot upload -->
         <div class="space-y-2 animate-slide-in-left">
           <label class="text-sm font-medium text-brand-teal">Personality Test Screenshot</label>
           <div class="relative">
@@ -115,7 +111,6 @@
 import { reactive, ref } from 'vue'
 import PageContainer from '../../components/PageContainer.vue'
 
-// Form reactive data
 const form = reactive({
   email: '',
   phone: '',
@@ -128,26 +123,22 @@ const form = reactive({
   urlLink: '',
 })
 
-// File upload reactive data
 const certificatesFiles = ref<File[]>([])
 const personalityTestFile = ref<File | null>(null)
 const certificatesInput = ref<HTMLInputElement | null>(null)
 const personalityTestInput = ref<HTMLInputElement | null>(null)
 
-// Handle certificates upload
 const handleCertificatesUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
     const newFiles = Array.from(target.files)
     
-    // Validate file sizes
     const maxSize = 10 * 1024 * 1024 // 10MB
     const oversizedFiles = newFiles.filter(file => file.size > maxSize)
     
     if (oversizedFiles.length > 0) {
       alert(`Some files are too large. Maximum size is 10MB per file.`)
-      // Only add files that are not oversized
-      const validFiles = newFiles.filter(file => file.size <= maxSize)
+        const validFiles = newFiles.filter(file => file.size <= maxSize)
       certificatesFiles.value = [...certificatesFiles.value, ...validFiles]
     } else {
       certificatesFiles.value = [...certificatesFiles.value, ...newFiles]
@@ -155,18 +146,15 @@ const handleCertificatesUpload = (event: Event) => {
   }
 }
 
-// Remove a specific certificate
 const removeCertificate = (index: number) => {
   certificatesFiles.value.splice(index, 1)
 }
 
-// Handle personality test upload
 const handlePersonalityTestUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const file = target.files[0]
     
-    // Validate file size (5MB max)
     const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
       alert('File is too large. Maximum size is 5MB.')
@@ -180,7 +168,6 @@ const handlePersonalityTestUpload = (event: Event) => {
   }
 }
 
-// Remove personality test file
 const removePersonalityTest = () => {
   personalityTestFile.value = null
   if (personalityTestInput.value) {
@@ -188,7 +175,6 @@ const removePersonalityTest = () => {
   }
 }
 
-// Format file size for display
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes'
   const k = 1024

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import BrandLogo from '../../components/BrandLogo.vue'
-// Props or dummy data (replace with actual data later)
 const job = {
   budget: "$68/hr",
   title: "Complete Freelancer Application UI/UX Revamp",
@@ -31,12 +29,10 @@ The goal is to modernize the user experience by making the interface more modern
 
 <template>
   <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center p-4 overflow-hidden">
-    <!-- Animated decorative circles -->
     <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
     <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
     <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
     
-    <!-- Floating particles -->
     <div class="absolute top-20 left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1" />
     <div class="absolute top-40 right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2" />
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
@@ -44,31 +40,24 @@ The goal is to modernize the user experience by making the interface more modern
 
     <div class="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden animate-fade-up">
 
-      <!-- Header -->
       <div class="flex items-center justify-between p-4 border-b border-gray-200">
         <div class="flex items-center gap-2">
-          <router-link to="/" class="text-brand-teal hover:text-teal-600 transition-colors">
-            <BrandLogo size="sm" class="filter invert brightness-200" />
-          </router-link>
           <router-link to="/client/gigs-listing" class="text-lg text-brand-teal hover:text-teal-600 transition-colors">←</router-link>
         </div>
         <span class="font-medium text-brand-teal">Job Application</span>
         <button class="text-xl text-brand-teal">☰</button>
       </div>
 
-      <!-- Budget -->
       <div class="p-4 bg-gradient-to-r from-brand-teal/10 to-teal-600/10">
         <p class="font-semibold text-brand-teal">Budget: <span class="text-gray-700">{{ job.budget }}</span></p>
       </div>
 
-      <!-- Job Title & Description -->
       <div class="px-4 py-3">
         <h2 class="font-bold text-lg mb-2 text-brand-teal">{{ job.title }}</h2>
         <p class="text-gray-700 text-sm mb-3 whitespace-pre-line">
           {{ job.description }}
         </p>
 
-        <!-- Bullet Points -->
         <ul class="space-y-2 mb-4">
           <li v-for="(item, i) in job.details" :key="i" class="flex items-start space-x-2 text-sm text-gray-700">
             <span class="text-brand-teal mt-1">•</span>
@@ -77,7 +66,6 @@ The goal is to modernize the user experience by making the interface more modern
         </ul>
       </div>
 
-      <!-- About the Client -->
       <div class="bg-gradient-to-r from-brand-teal to-teal-600 text-white p-4 mx-4 mb-4 rounded-xl shadow-lg">
         <h3 class="font-semibold mb-2 text-lg">About the Client</h3>
         <div class="flex items-center space-x-2 mb-2">
@@ -94,7 +82,6 @@ The goal is to modernize the user experience by making the interface more modern
         </p>
       </div>
 
-      <!-- Client Engagement -->
       <div class="px-4 mb-4">
         <h3 class="font-semibold mb-3 text-brand-teal">Client Engagement</h3>
         <ul class="text-sm space-y-2">

@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Header similar to Projects header -->
-    <header class="bg-brand-teal text-white px-4 py-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
+        <header class="bg-brand-teal text-white px-4 py-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
       <div class="flex items-center gap-3">
         <button @click="$router.back()" aria-label="Back" class="p-1 text-white/95 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,11 +25,9 @@
       </div>
     </header>
 
-    <!-- Filter and Sort Controls -->
-    <div class="bg-white shadow-sm px-4 py-3 border-b">
+        <div class="bg-white shadow-sm px-4 py-3 border-b">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <!-- Filter Tabs -->
-        <div class="flex gap-2 overflow-x-auto">
+                <div class="flex gap-2 overflow-x-auto">
           <button 
             v-for="filter in filters" 
             :key="filter.id"
@@ -47,8 +44,7 @@
           </button>
         </div>
         
-        <!-- Sort Dropdown -->
-        <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2">
           <label class="text-sm text-gray-600">Sort by:</label>
           <select 
             v-model="sortBy" 
@@ -63,11 +59,9 @@
     </div>
 
   <main class="p-4 max-w-2xl mx-auto pb-24">
-      <!-- Today's Notifications -->
-      <div v-if="filteredNotifications.length > 0">
+            <div v-if="filteredNotifications.length > 0">
         <div v-for="notification in filteredNotifications" :key="notification.id" class="mb-4">
-          <!-- Priority Notification -->
-          <section 
+                    <section 
             v-if="notification.type === 'priority'" 
             class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 shadow-sm"
           >
@@ -103,8 +97,7 @@
             </div>
           </section>
 
-          <!-- Success Notification -->
-          <section 
+                    <section 
             v-else-if="notification.type === 'success'" 
             class="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 shadow-sm"
           >
@@ -137,8 +130,7 @@
             </div>
           </section>
 
-          <!-- Info Notification -->
-          <section 
+                    <section 
             v-else-if="notification.type === 'info'" 
             class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm"
           >
@@ -171,8 +163,7 @@
             </div>
           </section>
 
-          <!-- Warning Notification -->
-          <section 
+                    <section 
             v-else-if="notification.type === 'warning'" 
             class="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4 shadow-sm"
           >
@@ -205,8 +196,7 @@
             </div>
           </section>
 
-          <!-- Default Notification -->
-          <section 
+                    <section 
             v-else 
             class="bg-white rounded-lg p-4 shadow-sm border"
           >
@@ -242,8 +232,7 @@
         </div>
       </div>
 
-      <!-- Empty State -->
-      <div v-else class="text-center py-12">
+            <div v-else class="text-center py-12">
         <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
           <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -262,7 +251,6 @@
 import { ref, computed } from 'vue'
 import BottomNav from '../components/BottomNav.vue'
 
-// Notification type interface
 interface Notification {
   id: string
   type: 'priority' | 'success' | 'info' | 'warning' | 'default'
@@ -275,14 +263,12 @@ interface Notification {
   read: boolean
 }
 
-// Filter interface
 interface Filter {
   id: string
   name: string
   count?: number
 }
 
-// Reactive data
 const activeFilter = ref<string>('all')
 const sortBy = ref<string>('newest')
 const notifications = ref<Notification[]>([
@@ -354,7 +340,6 @@ const notifications = ref<Notification[]>([
   }
 ])
 
-// Filters
 const filters = ref<Filter[]>([
   { id: 'all', name: 'All', count: notifications.value.length },
   { id: 'unread', name: 'Unread', count: notifications.value.filter(n => !n.read).length },
@@ -364,23 +349,19 @@ const filters = ref<Filter[]>([
   { id: 'system', name: 'System', count: notifications.value.filter(n => n.category === 'system').length }
 ])
 
-// Computed property for filtered and sorted notifications
 const filteredNotifications = computed(() => {
   let filtered = notifications.value
   
-  // Apply filter
-  if (activeFilter.value === 'unread') {
+    if (activeFilter.value === 'unread') {
     filtered = filtered.filter(n => !n.read)
   } else if (activeFilter.value !== 'all') {
     filtered = filtered.filter(n => n.category === activeFilter.value)
   }
   
-  // Apply sorting
-  filtered = [...filtered]
+    filtered = [...filtered]
   if (sortBy.value === 'newest') {
     filtered.sort((a, b) => {
-      // Simple time-based sorting (in real app, use proper date parsing)
-      const timeA = a.time.toLowerCase().includes('today') ? 0 : 
+            const timeA = a.time.toLowerCase().includes('today') ? 0 : 
                    a.time.toLowerCase().includes('yesterday') ? 1 : 2
       const timeB = b.time.toLowerCase().includes('today') ? 0 : 
                    b.time.toLowerCase().includes('yesterday') ? 1 : 2
@@ -402,7 +383,6 @@ const filteredNotifications = computed(() => {
   return filtered
 })
 
-// Methods
 const markAllAsRead = () => {
   notifications.value.forEach(notification => {
     notification.read = true
@@ -421,58 +401,47 @@ const removeNotification = (id: string) => {
 const handleNotificationAction = (notificationId: string, action: string) => {
   const notification = notifications.value.find(n => n.id === notificationId)
   if (notification) {
-    // Mark as read when action is taken
-    notification.read = true
+        notification.read = true
     updateFilterCounts()
     
-    // Handle different actions
-    switch (action) {
+        switch (action) {
       case 'Accept':
         console.log('Accepting job:', notification.title)
-        // Show success message and navigate to projects
-        alert(`✅ Project accepted! You can now start working on: ${notification.title}`)
-        // Remove the notification after acceptance
-        setTimeout(() => {
+                alert(`✅ Project accepted! You can now start working on: ${notification.title}`)
+                setTimeout(() => {
           removeNotification(notificationId)
         }, 1000)
         break
       case 'Reject':
         console.log('Rejecting job:', notification.title)
-        // Show confirmation and remove notification
-        if (confirm(`Are you sure you want to reject: ${notification.title}?`)) {
+                if (confirm(`Are you sure you want to reject: ${notification.title}?`)) {
           removeNotification(notificationId)
           alert('❌ Project rejected successfully.')
         }
         break
       case 'View Details':
         console.log('Viewing details for:', notification.title)
-        // Navigate to payment details
-        alert(`💰 Payment details for: ${notification.title}\nAmount: $250\nStatus: Completed\nDate: ${notification.time}`)
+                alert(`💰 Payment details for: ${notification.title}\nAmount: $250\nStatus: Completed\nDate: ${notification.time}`)
         break
       case 'View Rating':
         console.log('Viewing rating for:', notification.title)
-        // Navigate to rating details
-        alert(`⭐ Rating Details for: ${notification.title}\nRating: 5 stars\nClient: Mike Turner\nFeedback: Excellent work!`)
+                alert(`⭐ Rating Details for: ${notification.title}\nRating: 5 stars\nClient: Mike Turner\nFeedback: Excellent work!`)
         break
       case 'Complete Profile':
         console.log('Completing profile')
-        // Navigate to profile settings
-        alert('📝 Redirecting to profile settings to complete your profile...')
+                alert('📝 Redirecting to profile settings to complete your profile...')
         break
       case 'Reply':
         console.log('Replying to message for:', notification.title)
-        // Navigate to messages
-        alert('💬 Opening message conversation with Sarah Johnson...')
+                alert('💬 Opening message conversation with Sarah Johnson...')
         break
       case 'View Project':
         console.log('Viewing project for:', notification.title)
-        // Navigate to project
-        alert('📱 Opening Mobile App project details...')
+                alert('📱 Opening Mobile App project details...')
         break
       case 'Leave Review':
         console.log('Leaving review for:', notification.title)
-        // Navigate to review page
-        alert('⭐ Opening review page for Logo Design project...')
+                alert('⭐ Opening review page for Logo Design project...')
         break
       default:
         console.log('Action:', action, 'for notification:', notification.title)
@@ -493,5 +462,4 @@ const updateFilterCounts = () => {
 </script>
 
 <style scoped>
-/* Page uses white background; keep header teal in theme */
 </style>

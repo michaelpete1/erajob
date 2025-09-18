@@ -1,11 +1,9 @@
 <template>
   <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center overflow-hidden">
-    <!-- Animated decorative circles -->
     <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
     <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
     <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
     
-    <!-- Floating particles -->
     <div class="absolute top-20 left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1" />
     <div class="absolute top-40 right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2" />
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
@@ -23,7 +21,6 @@
           <input type="text" placeholder="3 most used tools or platforms" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
 
-        <!-- Certifications upload -->
         <div class="space-y-2 animate-slide-in-right">
           <label class="text-sm font-medium text-brand-teal">Certifications</label>
           <div class="relative">
@@ -77,7 +74,6 @@
           <input type="url" placeholder="Submit your 1min video (URL)" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
 
-        <!-- Personality test screenshot upload -->
         <div class="space-y-2 animate-slide-in-left">
           <label class="text-sm font-medium text-brand-teal">Personality Test Screenshot</label>
           <div class="relative">
@@ -122,37 +118,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-// File upload reactive data
 const certificationsFiles = ref<File[]>([])
 const personalityTestFile = ref<File | null>(null)
 const certificationsInput = ref<HTMLInputElement | null>(null)
 const personalityTestInput = ref<HTMLInputElement | null>(null)
 
-// Handle certifications upload
 const handleCertificationsUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
     certificationsFiles.value = Array.from(target.files)
     
-    // Optional: Validate file sizes
     const maxSize = 10 * 1024 * 1024 // 10MB
     const oversizedFiles = certificationsFiles.value.filter(file => file.size > maxSize)
     
     if (oversizedFiles.length > 0) {
       alert(`Some files are too large. Maximum size is 10MB per file.`)
-      // Remove oversized files
       certificationsFiles.value = certificationsFiles.value.filter(file => file.size <= maxSize)
     }
   }
 }
 
-// Handle personality test upload
 const handlePersonalityTestUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const file = target.files[0]
     
-    // Validate file size (5MB max)
     const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
       alert('File is too large. Maximum size is 5MB.')

@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-white">
-    <!-- Header -->
     <header class="bg-brand-teal text-white px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <button @click="$router.back()" aria-label="Back" class="p-1 text-white/95 hover:text-white">
@@ -13,10 +12,8 @@
     </header>
 
   <main class="p-4 pb-24">
-      <!-- Profile Section -->
       <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex flex-col items-center text-center">
-          <!-- Profile Picture -->
           <div class="relative mb-4">
             <div class="w-24 h-24 rounded-full bg-brand-teal flex items-center justify-center text-white text-2xl font-bold">
               {{ userInitials }}
@@ -29,15 +26,12 @@
             </button>
           </div>
           
-          <!-- User Name and Info -->
           <h2 class="text-xl font-semibold text-gray-900 mb-1">{{ userName }}</h2>
           <p class="text-gray-500">{{ userEmail }}</p>
         </div>
       </div>
 
-      <!-- Settings Sections -->
       <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <!-- Profile Settings -->
         <div 
           class="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
           @click="handleSectionClick('profile')"
@@ -89,7 +83,6 @@
             </div>
           </div>
 
-          <!-- Language Dropdown -->
           <div 
             v-if="showLanguageDropdown"
             class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-10 max-h-60 overflow-y-auto"
@@ -117,7 +110,6 @@
           </div>
         </div>
 
-        <!-- Help & Support -->
         <div 
           class="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
           @click="handleSectionClick('help')"
@@ -138,7 +130,6 @@
           </svg>
         </div>
 
-        <!-- Terms & Conditions -->
         <div 
           class="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
           @click="handleSectionClick('terms')"
@@ -159,7 +150,6 @@
           </svg>
         </div>
 
-        <!-- Logout -->
         <div 
           class="flex items-center justify-between p-4 hover:bg-red-50 transition-colors cursor-pointer"
           @click="handleSectionClick('logout')"
@@ -191,7 +181,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomNav from '../components/BottomNav.vue'
 
-// User data
 const userName = ref<string>('John Doe')
 const userEmail = ref<string>('john.doe@example.com')
 const currentLanguage = ref<string>('English')
@@ -199,7 +188,6 @@ const showLanguageDropdown = ref<boolean>(false)
 const languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese', 'Korean', 'Portuguese', 'Italian', 'Russian']
 const router = useRouter()
 
-// Computed property for user initials
 const userInitials = computed(() => {
   return userName.value
     .split(' ')
@@ -208,20 +196,16 @@ const userInitials = computed(() => {
     .substring(0, 2)
 })
 
-// Toggle language dropdown
 const toggleLanguageDropdown = () => {
   showLanguageDropdown.value = !showLanguageDropdown.value
 }
 
-// Select language
 const selectLanguage = (language: string) => {
   currentLanguage.value = language
   showLanguageDropdown.value = false
-  // In a real app, this would update the app's language
   alert(`🌐 Language changed to: ${language}`)
 }
 
-// Close dropdown when clicking outside
 const closeDropdown = (event: MouseEvent) => {
   const target = event.target as HTMLElement
   if (!target.closest('.relative')) {
@@ -229,25 +213,20 @@ const closeDropdown = (event: MouseEvent) => {
   }
 }
 
-// Add click outside listener
 onMounted(() => {
   document.addEventListener('click', closeDropdown)
 })
 
-// Remove listener on unmount
 onUnmounted(() => {
   document.removeEventListener('click', closeDropdown)
 })
 
-// Method to handle section clicks
 const handleSectionClick = (section: string) => {
   switch (section) {
     case 'help':
-      // Navigate to help page or show help modal
       console.log('Help clicked')
       break
     case 'terms':
-      // Navigate to Terms and Conditions page
       router.push('/terms-and-conditions')
       break
     case 'profile':
@@ -265,9 +244,11 @@ const handleSectionClick = (section: string) => {
     case 'logout':
       const confirmed = confirm('🚪 Are you sure you want to logout?\n\nYou will need to sign in again to access your account.')
       if (confirmed) {
-        alert('✅ Logging out...\n\nThank you for using EraJob!\nYou will be redirected to the login page.')
-        // In a real app, this would clear auth state and redirect to login
-        // For demo purposes, we'll just show the message
+        localStorage.removeItem('userToken')
+        localStorage.removeItem('userInfo')
+        localStorage.removeItem('selectedClientServices')
+        localStorage.removeItem('selectedAgentServices')
+        router.push('/sign-in')
       }
       break
     default:

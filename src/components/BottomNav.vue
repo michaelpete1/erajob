@@ -40,6 +40,5 @@ function iconClass(path: string) {
 </script>
 
 <style scoped>
-/* ensure nav sits above other content on small screens */
 .bottom-nav-safe { padding-bottom: 72px; }
 </style>

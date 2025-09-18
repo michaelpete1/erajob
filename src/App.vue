@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { ref, onErrorCaptured } from 'vue'
-// App shell renders routed views
 
 const routeError = ref<string | null>(null)
 onErrorCaptured((err) => {
-  // capture runtime errors from routed components and show UI
-  // eslint-disable-next-line no-console
+  
+  
   console.error('Captured render error:', err)
   routeError.value = String((err as any)?.message ?? err)
-  // prevent further propagation
+  
   return false
 })
 
 function reloadApp() {
-  // quick retry path
+  
   window.location.reload()
 }
 </script>

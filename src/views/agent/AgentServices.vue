@@ -13,23 +13,43 @@
 
     <div class="relative z-10 w-full max-w-md mx-auto flex flex-col items-center justify-center text-center py-12">
       <h2 class="mb-8 text-3xl font-extrabold text-white animate-fade-up-delay-1">Service Category</h2>
-      <ul class="divide-y divide-gray-200 w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-up-delay-2">
-        <ServiceRow :icon="PencilSquareIcon" title="Graphic Design" subtitle="Logo & brand identity" class="animate-slide-in-left" />
-        <ServiceRow :icon="MegaphoneIcon" title="Digital Marketing" subtitle="Social media marketing, SEO" class="animate-slide-in-right" />
-        <ServiceRow :icon="FilmIcon" title="Video & Animation" subtitle="Video editing & Video Reels" class="animate-slide-in-left" />
-        <ServiceRow :icon="MusicalNoteIcon" title="Music & Audio" subtitle="Producers & Composers" class="animate-slide-in-right" />
-        <ServiceRow :icon="CodeBracketSquareIcon" title="Program & Tech" subtitle="Website & App development" class="animate-slide-in-left" />
-        <ServiceRow :icon="CameraIcon" title="Product Photography" subtitle="Product photographers" class="animate-slide-in-right" />
-        <ServiceRow :icon="CpuChipIcon" title="Build AI Service" subtitle="Build your AI app" class="animate-slide-in-left" />
-        <ServiceRow :icon="ChartBarIcon" title="Data" subtitle="Data science & AI" class="animate-slide-in-right" />
-      </ul>
+      <div class="w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-up-delay-2">
+        <div v-for="(category, index) in categories" :key="index" class="flex items-center p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+          <input
+            type="checkbox"
+            :id="`category-${index}`"
+            v-model="selectedCategories"
+            :value="category"
+            class="w-5 h-5 text-brand-teal border-gray-300 rounded focus:ring-brand-teal focus:ring-2"
+          />
+          <label :for="`category-${index}`" class="flex items-center flex-1 cursor-pointer ml-4">
+            <div class="p-3 bg-gray-100 rounded-lg mr-4 flex-shrink-0">
+              <component :is="category.icon" class="w-6 h-6 text-gray-600" />
+            </div>
+            <div class="flex-grow text-left">
+              <p class="text-lg font-medium text-gray-900">{{ category.title }}</p>
+              <p class="text-sm text-gray-500">{{ category.description }}</p>
+            </div>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Selection counter -->
+      <div class="mt-4 text-sm text-white/80 animate-fade-up-delay-3">
+        Selected: {{ selectedCategories.length }} (minimum 3 required)
+      </div>
+      
       <div class="px-2 py-6 space-y-3 w-full animate-fade-up-delay-4">
-        <router-link
-          to="/agent/congrats"
-          class="btn-pressable block w-full rounded-full bg-brand-teal px-6 py-3 text-center text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+        <button
+          @click="goNext"
+          :disabled="selectedCategories.length < 3"
+          class="btn-pressable block w-full rounded-full px-6 py-3 text-center text-sm font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          :class="selectedCategories.length >= 3 
+            ? 'bg-brand-teal text-white hover:bg-teal-600' 
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
         >
           Next
-        </router-link>
+        </button>
         <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">
           Back
         </button>
@@ -39,8 +59,39 @@
 </template>
 
 <script setup lang="ts">
-import ServiceRow from '../../widgets/ServiceRow.vue'
-// Removed unused PageContainer import
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { PencilSquareIcon, MegaphoneIcon, FilmIcon, CodeBracketSquareIcon, CameraIcon, CpuChipIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
+
+const router = useRouter()
+
+const categories = [
+  { title: 'Graphic Design', description: 'Logo & brand identity', icon: PencilSquareIcon },
+  { title: 'Digital Marketing', description: 'Social media marketing, SEO', icon: MegaphoneIcon },
+  { title: 'Video & Animation', description: 'Video editing & Video Reels', icon: FilmIcon },
+  { title: 'Music & Audio', description: 'Producers & Composers', icon: MusicalNoteIcon },
+  { title: 'Program & Tech', description: 'Website & App development', icon: CodeBracketSquareIcon },
+  { title: 'Product Photography', description: 'Product photographers', icon: CameraIcon },
+  { title: 'Build AI Service', description: 'Build your AI app', icon: CpuChipIcon },
+  { title: 'Data', description: 'Data science & AI', icon: ChartBarIcon },
+  { title: 'Sales Associate', description: 'Sales', icon: PencilSquareIcon },
+  { title: 'Customer Sales Associate', description: 'Sales', icon: PencilSquareIcon },
+  { title: 'Administrators', description: 'Administrative Support', icon: PencilSquareIcon },
+  { title: 'Customer Service Rep', description: 'Customer Support', icon: PencilSquareIcon },
+  { title: 'Bookkeeper', description: 'Accounting & Finance', icon: PencilSquareIcon },
+  { title: 'Editor', description: 'Media & Content', icon: PencilSquareIcon },
+  { title: 'Credit Repair Disputer', description: 'Finance/Credit Services', icon: PencilSquareIcon },
+  { title: 'Executive Assistant', description: 'Administrative Support', icon: PencilSquareIcon }
+]
+
+const selectedCategories = ref<any[]>([])
+
+const goNext = () => {
+  if (selectedCategories.value.length >= 3) {
+    // Store selected categories in localStorage or state management
+    localStorage.setItem('selectedAgentServices', JSON.stringify(selectedCategories.value))
+    router.push('/agent/congrats')
+  }
+}
 </script>
