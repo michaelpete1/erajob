@@ -121,10 +121,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import ClientBottomNav from '../../components/ClientBottomNav.vue'
-
-const router = useRouter()
 const project = ref<any>(null)
 
 const defaultRequirements = [

@@ -238,9 +238,6 @@ const handleSectionClick = (section: string) => {
     case 'support':
       alert(' Support clicked! This would open support page or contact options.')
       break
-    case 'terms':
-      alert('📋 Terms and Conditions\n\nLast updated: September 17, 2025\n\nPlease review our:\n• Terms of Service\n• Privacy Policy\n• Cookie Policy\n• Community Guidelines\n• Payment Terms\n\nBy using EraJob, you agree to these terms.')
-      break
     case 'logout':
       const confirmed = confirm('🚪 Are you sure you want to logout?\n\nYou will need to sign in again to access your account.')
       if (confirmed) {

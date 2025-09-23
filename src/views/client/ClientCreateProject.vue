@@ -188,7 +188,7 @@ const project = reactive({
   deadline: '',
   description: '',
   requirements: [{ text: '' }],
-  skills: []
+  skills: [] as string[]
 })
 
 const newSkill = ref('')

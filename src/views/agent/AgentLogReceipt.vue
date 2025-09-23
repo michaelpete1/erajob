@@ -182,7 +182,9 @@ const selectedImage = ref<any>(null)
 
 onMounted(() => {
   try {
-    const logId = router.currentRoute.value.params.id
+    const logId = Array.isArray(router.currentRoute.value.params.id) 
+      ? router.currentRoute.value.params.id[0] 
+      : router.currentRoute.value.params.id
     if (logId) {
       // Try to get from localStorage first (for demo purposes)
       const logs = localStorage.getItem('workLogs')
