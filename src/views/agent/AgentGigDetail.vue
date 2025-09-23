@@ -60,12 +60,16 @@
         </section>
       </main>
     </div>
+    
+    <!-- Agent Bottom Navigation -->
+    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AgentBottomNav from '../../components/AgentBottomNav.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -99,10 +103,36 @@ onMounted(() => {
 })
 
 const sendProposal = () => {
-  // basic feedback + navigate to congrats
-  alert('Proposal sent')
+  if (!proposal.value.trim()) {
+    alert('Please enter a proposition before sending.')
+    return
+  }
+  
+  // Simulate proposition review - randomly accept or reject
+  const isAccepted = Math.random() > 0.5 // 50% chance of acceptance
+  
+  // Store proposition details
+  const propositionData = {
+    gig: gig.value,
+    proposal: proposal.value,
+    timestamp: new Date().toISOString(),
+    status: isAccepted ? 'accepted' : 'rejected'
+  }
+  
+  try {
+    localStorage.setItem('lastProposition', JSON.stringify(propositionData))
+  } catch (e) {
+    // ignore storage errors
+  }
+  
   proposal.value = ''
-  router.push('/agent/congrats')
+  
+  // Navigate to appropriate page based on acceptance
+  if (isAccepted) {
+    router.push('/agent/proposition-accepted')
+  } else {
+    router.push('/agent/proposition-rejected')
+  }
 }
 </script>
 

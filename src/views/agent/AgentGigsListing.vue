@@ -119,6 +119,7 @@
             v-for="gig in filteredGigs" 
             :key="gig.id"
             class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 block cursor-pointer"
+            @click="activeTab === 'active' ? goToLogWorkHours(gig) : null"
           >
             <div class="block">
               <div class="flex items-center mb-3 sm:mb-4 gap-3">
@@ -133,7 +134,7 @@
 
               <div>
                 <button @click.stop="goToGig(gig)" class="w-full bg-brand-teal text-white py-2 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base">
-                  {{ activeTab === 'browse' ? 'View Details' : 'Open Summary' }}
+                  {{ activeTab === 'browse' ? 'View Details' : 'Log Work' }}
                 </button>
               </div>
             </div>
@@ -163,11 +164,15 @@
     <BottomNav />
   </div>
   </div>
+  
+  <!-- Agent Bottom Navigation -->
+  <AgentBottomNav />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import AgentBottomNav from '../../components/AgentBottomNav.vue'
 import BottomNav from '../../components/BottomNav.vue'
 import BrandLogo from '../../components/BrandLogo.vue'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
@@ -181,6 +186,18 @@ const searchQuery = ref('')
 const router = useRouter()
 
 
+const goToLogWorkHours = (gig: any) => {
+  // Persist selected gig so destination pages can read it
+  try {
+    localStorage.setItem('selectedGig', JSON.stringify(gig))
+  } catch (e) {
+    // ignore storage errors
+  }
+  
+  // Navigate to the logging dashboard
+  router.push({ path: '/agent/logs' })
+}
+
 const goToGig = (gig: any) => {
   // Persist selected gig so destination pages can read it
   try {
@@ -190,8 +207,8 @@ const goToGig = (gig: any) => {
   }
 
   if (activeTab.value === 'active') {
-    // Open the professional Job Overview for active jobs
-    router.push({ path: `/agent/job/${gig.id}` })
+    // Open the log work hours page for active jobs
+    router.push({ path: '/agent/logging-details' })
   } else {
     // browse -> go to detail page
     router.push({ path: `/agent/gig/${gig.id}` })

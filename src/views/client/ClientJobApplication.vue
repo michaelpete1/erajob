@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ClientBottomNav from '../../components/ClientBottomNav.vue'
+
 const job = {
   budget: "$68/hr",
   title: "Complete Freelancer Application UI/UX Revamp",
@@ -111,5 +113,8 @@ The goal is to modernize the user experience by making the interface more modern
       </div>
 
     </div>
+    
+    <!-- Client Bottom Navigation -->
+    <ClientBottomNav />
   </div>
 </template>

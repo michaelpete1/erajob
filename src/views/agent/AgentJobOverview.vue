@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AgentBottomNav from '../../components/AgentBottomNav.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,96 +55,113 @@ const sendUpdate = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-24">
-    <div class="max-w-4xl mx-auto p-4 sm:p-6">
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-          <button @click="$router.back()" class="p-2 rounded-md bg-white shadow-sm hover:shadow-md">
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+  <div class="min-h-screen bg-gray-50 pb-24 sm:pb-28">
+    <div class="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button @click="$router.back()" class="p-1.5 sm:p-2 rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </button>
           <div>
-            <h1 class="text-lg font-semibold text-gray-900">Job Overview</h1>
-            <p class="text-sm text-gray-500">A concise summary of the project and current status</p>
+            <h1 class="text-base sm:text-lg font-semibold text-gray-900">Job Overview</h1>
+            <p class="text-xs sm:text-sm text-gray-500">A concise summary of the project and current status</p>
           </div>
         </div>
-        <div class="flex items-center gap-3">
-          <button @click="openMessages" class="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-md shadow-sm hover:shadow-md text-sm">
-            Message Client
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+          <button @click="openMessages" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm transition-shadow">
+            <span>Message Client</span>
           </button>
-          <button @click="sendUpdate" class="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-md shadow-sm hover:shadow-md text-sm">
-            Send Update
+          <button @click="sendUpdate" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm transition-shadow">
+            <span>Send Update</span>
           </button>
         </div>
       </div>
 
-      <section class="bg-white rounded-lg shadow-sm p-5 mb-6">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1">
-            <h2 class="text-xl font-semibold text-gray-900">{{ job?.title ?? '—' }}</h2>
-            <p class="mt-1 text-sm text-gray-600">{{ job?.description }}</p>
-            <div class="mt-3 flex items-center gap-4 text-sm text-gray-600">
-              <div>Client: <span class="font-medium text-gray-800">{{ job?.client }}</span></div>
-              <div>Rate: <span class="font-medium text-gray-800">{{ job?.price ? '$' + job.price : '—' }}</span></div>
-              <div v-if="job?.deadline">Deadline: <span class="font-medium text-gray-800">{{ job.deadline }}</span></div>
+      <section class="bg-white rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 md:p-5 mb-4 sm:mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-6">
+          <div class="flex-1 min-w-0">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-900 leading-tight">{{ job?.title ?? '—' }}</h2>
+            <p class="mt-1 text-xs sm:text-sm text-gray-600 leading-relaxed">{{ job?.description }}</p>
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+              <div class="text-xs sm:text-sm text-gray-600">
+                Client: <span class="font-medium text-gray-800 block sm:inline">{{ job?.client }}</span>
+              </div>
+              <div class="text-xs sm:text-sm text-gray-600">
+                Rate: <span class="font-medium text-gray-800 block sm:inline">{{ job?.price ? '$' + job.price : '—' }}</span>
+              </div>
+              <div v-if="job?.deadline" class="text-xs sm:text-sm text-gray-600">
+                Deadline: <span class="font-medium text-gray-800 block sm:inline">{{ job.deadline }}</span>
+              </div>
             </div>
           </div>
-          <div class="w-40 text-right">
+          <div class="w-full sm:w-32 text-center sm:text-right">
             <div class="text-xs text-gray-500">Progress</div>
-            <div class="mt-2 text-2xl font-semibold text-gray-900">{{ progress }}%</div>
+            <div class="mt-1 sm:mt-2 text-xl sm:text-2xl font-semibold text-gray-900">{{ progress }}%</div>
           </div>
         </div>
 
         <div class="mt-4">
           <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-            <div :style="{ width: progress + '%' }" class="h-2 bg-teal-600"></div>
+            <div :style="{ width: progress + '%' }" class="h-2 bg-teal-600 transition-all duration-300"></div>
           </div>
           <div class="mt-2 text-xs text-gray-500">This progress value is for display; in a production app it would reflect real milestone data.</div>
         </div>
       </section>
 
-      <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2">
-          <div class="bg-white rounded-lg shadow-sm p-5">
-            <h3 class="text-sm font-semibold text-gray-800 mb-2">About this project</h3>
-            <p class="text-gray-600 text-sm">{{ job?.description }}</p>
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div class="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5">
+            <h3 class="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">About this project</h3>
+            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">{{ job?.description }}</p>
           </div>
 
-          <div class="bg-white rounded-lg shadow-sm p-5 mt-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-2">Recent activity</h3>
-            <ul class="text-sm text-gray-600 space-y-2">
-              <li>Proposal submitted by you — <span class="text-gray-500">3 days ago</span></li>
-              <li>Client requested clarification — <span class="text-gray-500">2 days ago</span></li>
-              <li>Proposal approved — <span class="text-gray-500">1 day ago</span></li>
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5">
+            <h3 class="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">Recent activity</h3>
+            <ul class="text-xs sm:text-sm text-gray-600 space-y-2 sm:space-y-3">
+              <li class="flex items-start gap-2">
+                <span class="text-gray-500">•</span>
+                <span>Proposal submitted by you — <span class="text-gray-500">3 days ago</span></span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-gray-500">•</span>
+                <span>Client requested clarification — <span class="text-gray-500">2 days ago</span></span>
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-gray-500">•</span>
+                <span>Proposal approved — <span class="text-gray-500">1 day ago</span></span>
+              </li>
             </ul>
           </div>
         </div>
 
-        <aside>
-          <div class="bg-white rounded-lg shadow-sm p-5 mb-4">
-            <h4 class="text-sm font-semibold text-gray-800">Client</h4>
-            <div class="mt-2 text-sm text-gray-600">{{ job?.client }}</div>
-            <div class="mt-3">
-              <button @click="openMessages" class="w-full inline-flex items-center justify-center px-3 py-2 rounded-md bg-teal-600 text-white text-sm">Message</button>
+        <aside class="space-y-4 sm:space-y-6">
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5">
+            <h4 class="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">Client</h4>
+            <div class="mt-2 text-xs sm:text-sm text-gray-600">{{ job?.client }}</div>
+            <div class="mt-3 sm:mt-4">
+              <button @click="openMessages" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-md bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-medium transition-colors">
+                Message
+              </button>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg shadow-sm p-5">
-            <h4 class="text-sm font-semibold text-gray-800">Actions</h4>
-            <div class="mt-2 space-y-2">
-              <button @click="markComplete" class="w-full inline-flex items-center justify-center px-3 py-2 rounded-md bg-green-600 text-white text-sm">Mark Complete</button>
-              <button @click="$router.push('/agent/gigs-listing')" class="w-full inline-flex items-center justify-center px-3 py-2 rounded-md bg-white border text-sm">Back to Projects</button>
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5">
+            <h4 class="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">Actions</h4>
+            <div class="mt-2 space-y-2 sm:space-y-3">
+              <button @click="markComplete" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium transition-colors">
+                Mark Complete
+              </button>
+              <button @click="$router.push('/agent/gigs-listing')" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-md bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium transition-colors">
+                Back to Projects
+              </button>
             </div>
           </div>
         </aside>
       </section>
     </div>
 
-    <BottomNav />
+    <!-- Agent Bottom Navigation -->
+    <AgentBottomNav />
   </div>
 </template>
 
-<script lang="ts">
-// Import BottomNav lazily to match project conventions
-import BottomNav from '../../components/BottomNav.vue'
-export default { components: { BottomNav } }
-</script>

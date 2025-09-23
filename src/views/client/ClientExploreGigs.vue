@@ -1,139 +1,128 @@
 <template>
-  <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 overflow-hidden">
-    <div class="absolute top-0 right-0 h-24 w-24 sm:h-32 sm:w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
-    <div class="absolute bottom-0 left-0 h-20 w-20 sm:h-24 sm:w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
-    <div class="absolute top-1/2 left-1/2 h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
-    
-    <div class="absolute top-16 left-16 sm:top-20 sm:left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1" />
-    <div class="absolute top-32 right-24 sm:top-40 sm:right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2" />
-    <div class="absolute bottom-24 left-32 sm:bottom-32 sm:left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
-    <div class="absolute bottom-16 right-16 sm:bottom-20 sm:right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
-
-  <div class="relative z-10 container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-24">
-      <header class="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[90%] sm:w-[92%] max-w-3xl bg-brand-teal text-white rounded-xl px-3 sm:px-4 py-2 sm:py-3 z-50 shadow-md flex items-center justify-between">
+  <div class="min-h-screen bg-gray-50 pb-16 sm:pb-20">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
+      <div class="flex items-center justify-between max-w-7xl mx-auto">
         <div class="flex items-center gap-2 sm:gap-3">
-          <button @click="$router.back()" aria-label="Back" class="p-1 text-white/95 hover:text-white">
-            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button @click="$router.back()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 class="text-sm sm:text-base font-semibold">Explore Gigs</h1>
+          <h1 class="text-lg sm:text-xl font-semibold text-gray-800">Explore Services</h1>
         </div>
-        <div class="flex items-center gap-2 sm:gap-3">
-          <button @click="openMobileNav = !openMobileNav" class="p-1 text-white/95 hover:text-white md:hidden" aria-label="Menu">
-            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-teal-500"></div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-4xl mx-auto">
+      <!-- Welcome Section -->
+      <div class="text-center mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Available Services</h2>
+        <p class="text-gray-600">Browse through our available gig services</p>
+      </div>
+
+      <!-- Search Section -->
+      <div class="mb-6">
+        <div class="relative">
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="Search services..." 
+            class="w-full border border-gray-200 rounded-lg px-4 py-3 pr-12 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all"
+          />
+          <button 
+            v-if="searchQuery"
+            @click="searchQuery = ''"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-      </header>
+      </div>
 
-      <div class="mt-16 sm:mt-20">
-        <!-- Search Section -->
-        <div class="mb-8 animate-fade-up-delay-1">
-          <div class="relative max-w-md mx-auto">
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="Search available gigs..." 
-              class="w-full rounded-full border border-white/30 bg-white/10 px-5 py-3 pr-12 text-sm text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white focus:border-white transition-all backdrop-blur-sm"
-              readonly
-            />
-            <button 
-              v-if="searchQuery"
-              @click="searchQuery = ''"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+      <!-- Categories -->
+      <div class="mb-6">
+        <div class="flex flex-wrap gap-2">
+          <button 
+            v-for="category in categories" 
+            :key="category"
+            @click="selectedCategory = category"
+            :class="[
+              'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
+              selectedCategory === category 
+                ? 'bg-green-500 text-white shadow-sm' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ]"
+          >
+            {{ category }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Services Grid -->
+      <div class="grid grid-cols-1 gap-4">
+        <div 
+          v-for="gig in (filteredGigs || [])" 
+          :key="gig.id"
+          @click="selectService(gig)"
+          class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+        >
+          <div class="flex items-start gap-4">
+            <span class="text-3xl">{{ gig.icon }}</span>
+            <div class="flex-1">
+              <h3 class="text-lg font-bold text-gray-800 mb-2">{{ gig.title }}</h3>
+              <p class="text-sm text-gray-600 mb-3">{{ gig.description }}</p>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-bold text-teal-500">${{ gig.price }}</span>
+                  <span class="text-xs text-gray-500">per hour</span>
+                </div>
+                <div class="px-3 py-1 bg-green-100 text-green-600 text-xs font-semibold rounded-full">
+                  {{ gig.category }}
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="text-center text-white/80 text-sm mt-2">
-            View available gigs (Read-only mode)
-          </p>
         </div>
-
-        <!-- Gig Categories -->
-        <div class="mb-8 animate-fade-up-delay-2">
-          <div class="flex flex-wrap justify-center gap-2 sm:gap-3">
-            <button 
-              v-for="category in categories" 
-              :key="category"
-              :class="[
-                'px-4 py-2 rounded-full text-sm font-medium transition-all duration-300',
-                selectedCategory === category 
-                  ? 'bg-white text-brand-teal shadow-lg' 
-                  : 'bg-white/10 text-white/80 hover:bg-white/20'
-              ]"
-              disabled
-            >
-              {{ category }}
-            </button>
-          </div>
-        </div>
-
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+      </div>
     
-    <div 
-      v-for="gig in filteredGigs" 
-      :key="gig.id"
-      class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 opacity-75 cursor-not-allowed"
-    >
-      <div class="block" @click.stop>
-        <div class="flex items-center mb-3 sm:mb-4 gap-3">
-          <span class="text-2xl sm:text-3xl">{{ gig.icon }}</span>
-          <h3 class="text-lg sm:text-xl font-bold text-brand-teal">{{ gig.title }}</h3>
+      <!-- No results message -->
+      <div v-if="filteredGigs && filteredGigs.length === 0" class="text-center py-12">
+        <div class="bg-gray-50 rounded-2xl p-8 border border-gray-200">
+          <span class="text-4xl mb-4 block">🔍</span>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">No services found</h3>
+          <p class="text-gray-600">Try adjusting your search terms.</p>
         </div>
-        <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ gig.description }}</p>
-        <div class="flex justify-between items-center mb-3 sm:mb-4">
-          <span class="text-xl sm:text-2xl font-bold text-brand-teal">${{ gig.price }}</span>
-          <span class="text-xs sm:text-sm text-gray-500">per hour</span>
-        </div>
-        <div class="w-full bg-gray-300 text-gray-500 py-2 px-4 rounded-full text-center block text-sm sm:text-base cursor-not-allowed">
-          View Details (Read-only)
-        </div>
-      </div>
-    </div>
-    
-    <!-- No results message -->
-    <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-12">
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-8">
-        <span class="text-4xl mb-4 block">🔍</span>
-        <h3 class="text-xl font-bold text-brand-teal mb-2">No gigs found</h3>
-        <p class="text-gray-600">Try adjusting your search terms.</p>
-      </div>
-    </div>
       </div>
 
-  <!-- Back Button -->
-  <div class="text-center mt-8">
-        <router-link to="/client/welcome" class="inline-flex items-center text-white hover:text-white/80 transition-colors duration-300">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Client Dashboard
-        </router-link>
-      </div>
-      
-      <div class="text-center mt-6">
-        <router-link to="/client/gigs-listing" class="btn-pressable mt-4 inline-flex items-center justify-center rounded-full bg-brand-teal px-6 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 w-full sm:w-auto">
-          Next
-        </router-link>
+      <!-- Continue Button -->
+      <div class="mt-8">
+        <button 
+          @click="goToProjects"
+          class="w-full bg-teal-500 text-white font-medium py-4 rounded-xl hover:bg-teal-600 transition-colors duration-200 shadow-sm hover:shadow-md"
+        >
+          Continue to Projects
+        </button>
       </div>
     </div>
-    <BottomNav />
+    <!-- Client Bottom Navigation -->
+    <ClientBottomNav />
   </div>
-</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import BottomNav from '../../components/BottomNav.vue'
+import { useRouter } from 'vue-router'
+import ClientBottomNav from '../../components/ClientBottomNav.vue'
 
-const openMobileNav = ref(false)
+const router = useRouter()
 const selectedCategory = ref('All')
 const searchQuery = ref('')
+const selectedServices = ref<any[]>([])
 
 const categories = [
   'All',
@@ -203,27 +192,57 @@ const availableGigs = [
 ]
 
 const filteredGigs = computed(() => {
-  let gigs = availableGigs
-  
-  // Filter by category
-  if (selectedCategory.value !== 'All') {
-    gigs = gigs.filter(gig => gig.category === selectedCategory.value)
+  if (!availableGigs || !Array.isArray(availableGigs)) {
+    return []
   }
   
-  // Filter by search query
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    gigs = gigs.filter(gig => 
-      gig.title.toLowerCase().includes(query) ||
-      gig.description.toLowerCase().includes(query) ||
-      gig.keywords.some(keyword => keyword.toLowerCase().includes(query))
-    )
-  }
-  
-  return gigs
+  return availableGigs.filter(gig => {
+    if (!gig) return false
+    
+    const matchesCategory = selectedCategory.value === 'All' || gig.category === selectedCategory.value
+    
+    let matchesSearch = true
+    if (searchQuery.value.trim()) {
+      const searchLower = searchQuery.value.toLowerCase()
+      matchesSearch = gig.title.toLowerCase().includes(searchLower) ||
+                      gig.description.toLowerCase().includes(searchLower) ||
+                      (gig.keywords && Array.isArray(gig.keywords) && gig.keywords.some((keyword: string) => 
+                        keyword.toLowerCase().includes(searchLower)
+                      ))
+    }
+    
+    return matchesCategory && matchesSearch
+  })
 })
+
+// Methods
+const selectService = (service: any) => {
+  // Toggle service selection
+  const existingIndex = selectedServices.value.findIndex(s => s.id === service.id)
+  if (existingIndex > -1) {
+    selectedServices.value.splice(existingIndex, 1)
+  } else {
+    selectedServices.value.push(service)
+  }
+}
+
+const goToProjects = () => {
+  // Save selected services to localStorage
+  try {
+    localStorage.setItem('selectedClientServices', JSON.stringify(selectedServices.value))
+  } catch (e) {
+    // ignore
+  }
+  
+  // Navigate to projects page
+  router.push('/client/projects')
+}
 
 onMounted(() => {
   // Any initialization logic can go here
 })
 </script>
+
+<style scoped>
+/* No custom styles needed - using Tailwind classes */
+</style>

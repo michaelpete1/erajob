@@ -6,15 +6,15 @@
     <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
     
     <!-- Floating particles -->
-    <div class="absolute top-20 left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1" />
-    <div class="absolute top-40 right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2" />
-    <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
-    <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
+    <div class="absolute top-16 left-16 w-2 h-2 sm:top-20 sm:left-20 bg-white/20 rounded-full animate-float-delayed-1" />
+    <div class="absolute top-32 right-24 w-1 h-1 sm:top-40 sm:right-32 bg-white/30 rounded-full animate-float-delayed-2" />
+    <div class="absolute bottom-24 left-32 w-1.5 h-1.5 sm:bottom-32 sm:left-40 bg-white/25 rounded-full animate-float-delayed-3" />
+    <div class="absolute bottom-16 right-16 w-2.5 h-2.5 sm:bottom-20 sm:right-20 bg-white/15 rounded-full animate-float-delayed-4" />
 
-    <div class="relative z-10 w-full max-w-md mx-auto flex flex-col items-center justify-center text-center py-12">
-      <h2 class="mb-8 text-3xl font-extrabold text-white animate-fade-up-delay-1">Service Category</h2>
-      <div class="w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-up-delay-2">
-        <div v-for="(category, index) in categories" :key="index" class="flex items-center p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+    <div class="relative z-10 w-full max-w-md sm:max-w-lg mx-auto flex flex-col items-center justify-center text-center py-8 sm:py-12">
+      <h2 class="mb-4 sm:mb-8 text-2xl sm:text-3xl font-extrabold text-white animate-fade-up-delay-1">Service Category</h2>
+      <div class="w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 animate-fade-up-delay-2">
+        <div v-for="(category, index) in categories" :key="index" class="flex items-center p-3 sm:p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
           <input
             type="checkbox"
             :id="`category-${index}`"
@@ -23,12 +23,12 @@
             class="w-5 h-5 text-brand-teal border-gray-300 rounded focus:ring-brand-teal focus:ring-2"
           />
           <label :for="`category-${index}`" class="flex items-center flex-1 cursor-pointer ml-4">
-            <div class="p-3 bg-gray-100 rounded-lg mr-4 flex-shrink-0">
-              <component :is="category.icon" class="w-6 h-6 text-gray-600" />
+            <div class="p-2 sm:p-3 bg-gray-100 rounded-lg mr-3 sm:mr-4 flex-shrink-0">
+              <component :is="category.icon" class="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
             </div>
             <div class="flex-grow text-left">
-              <p class="text-lg font-medium text-gray-900">{{ category.title }}</p>
-              <p class="text-sm text-gray-500">{{ category.description }}</p>
+              <p class="text-base sm:text-lg font-medium text-gray-900">{{ category.title }}</p>
+              <p class="text-xs sm:text-sm text-gray-500">{{ category.description }}</p>
             </div>
           </label>
         </div>
@@ -39,11 +39,11 @@
         Selected: {{ selectedCategories.length }} (minimum 3 required)
       </div>
       
-      <div class="px-2 py-6 space-y-3 w-full animate-fade-up-delay-4">
+      <div class="px-2 py-4 sm:py-6 space-y-3 w-full animate-fade-up-delay-4">
         <button
           @click="goNext"
           :disabled="selectedCategories.length < 3"
-          class="btn-pressable block w-full rounded-full px-6 py-3 text-center text-sm font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          class="btn-pressable block w-full rounded-full px-4 sm:px-6 py-2.5 sm:py-3 text-center text-sm font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
           :class="selectedCategories.length >= 3 
             ? 'bg-brand-teal text-white hover:bg-teal-600' 
             : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
@@ -55,12 +55,16 @@
         </button>
       </div>
     </div>
+    
+    <!-- Agent Bottom Navigation -->
+    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import AgentBottomNav from '../../components/AgentBottomNav.vue'
 import { PencilSquareIcon, MegaphoneIcon, FilmIcon, CodeBracketSquareIcon, CameraIcon, CpuChipIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
 

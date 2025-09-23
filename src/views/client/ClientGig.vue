@@ -43,10 +43,15 @@
         </div>
       </div>
     </div>
+    
+    <!-- Client Bottom Navigation -->
+    <ClientBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
+import ClientBottomNav from '../../components/ClientBottomNav.vue'
+
 const items = [
   'Assistant',
   'Associate',

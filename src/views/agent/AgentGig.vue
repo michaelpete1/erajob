@@ -43,10 +43,15 @@
         </div>
       </div>
     </div>
+    
+    <!-- Agent Bottom Navigation -->
+    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
+import AgentBottomNav from '../../components/AgentBottomNav.vue'
+
 const items = [
   'Content Writing',
   'Graphic Design',

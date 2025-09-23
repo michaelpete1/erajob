@@ -65,8 +65,8 @@ const selectRole = (role: 'client' | 'agent') => {
       // For sign-up flow: go to client welcome first
       router.push('/client/welcome')
     } else {
-      // For sign-in flow: go to client explore page
-      router.push('/client/explore-gigs')
+      // For sign-in flow: go to client projects page
+      router.push('/client/projects')
     }
   }
 }
