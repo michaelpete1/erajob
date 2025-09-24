@@ -14,9 +14,16 @@ const isAuthPage = computed(() => {
   return authRoutes.includes(currentRoute.path)
 })
 
+// Check if current route is a project page
+const isProjectPage = computed(() => {
+  const projectRoutes = ['/client/projects', '/agent/gigs-listing']
+  return projectRoutes.includes(currentRoute.path)
+})
+
 // Check if navbar should be shown
 const shouldShowNavbar = computed(() => {
-  return !isAuthPage.value && userRole.value !== ''
+  // Show navbar ONLY on project pages
+  return isProjectPage.value
 })
 
 onMounted(() => {

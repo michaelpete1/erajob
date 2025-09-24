@@ -2,15 +2,7 @@
   <nav class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm shadow-sm z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
-        <!-- Logo/Brand -->
-        <div class="flex items-center">
-          <router-link to="/client/projects" class="flex items-center space-x-2">
-            <div class="w-8 h-8 bg-brand-teal rounded-lg flex items-center justify-center">
-              <span class="text-white font-bold text-sm">EJ</span>
-            </div>
-            <span class="text-xl font-bold text-gray-900">EraJob</span>
-          </router-link>
-        </div>
+        <!-- Logo/Brand Removed -->
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-1">
