@@ -173,7 +173,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNav.vue'
+import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
 
 const router = useRouter()
 const logData = ref<any>(null)

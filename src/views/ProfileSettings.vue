@@ -222,14 +222,12 @@
         </div>
       </div>
     </main>
-
-    <BottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import BottomNav from '../components/BottomNav.vue'
+// This page uses role-based navigation from App.vue
 
 // User data
 const userName = ref('Jacob Jones')

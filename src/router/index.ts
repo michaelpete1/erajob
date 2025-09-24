@@ -31,7 +31,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/agent/welcome', name: 'agent-welcome', component: () => import('../views/agent/AgentWelcome.vue') },
   { path: '/agent/services', name: 'agent-services', component: () => import('../views/agent/AgentServices.vue') },
   { path: '/agent/explore-gigs', name: 'agent-explore-gigs', component: () => import('../views/agent/AgentExploreGigs.vue') },
-  { path: '/agent/gigs-listing', name: 'agent-gigs-listing', component: () => import('../views/agent/AgentGigsListing.vue') },
+  { path: '/agent/gigs-listing', name: 'agent-gigs-listing', component: () => import('../views/agent/AgentProjectListing.vue') },
   { path: '/agent/log-work', name: 'agent-log-work', component: () => import('../views/agent/AgentLogWork.vue') },
   { path: '/agent/gig/:slug', name: 'agent-gig-detail', component: () => import('../views/agent/AgentGigDetail.vue') },
   { path: '/agent/job/:slug', name: 'agent-job-overview', component: () => import('../views/agent/AgentJobOverview.vue') },
@@ -63,15 +63,45 @@ router.beforeEach((to, _from, next) => {
   const userRole = localStorage.getItem('userRole')
   
   // Pages that should only be accessible to agents
-  const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing', '/agent/log-work', '/agent/logs', '/agent/logging-dashboard', '/agent/proposition-accepted', '/agent/proposition-rejected']
+  const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing', '/agent/log-work', '/agent/logs', '/agent/logging-dashboard', '/agent/proposition-accepted', '/agent/proposition-rejected', '/agent/welcome', '/agent/services', '/agent/congrats', '/agent/welcome-back']
+  
+  // Pages that should only be accessible to clients
+  const clientOnlyPages = ['/client/welcome', '/client/services', '/client/explore-gigs', '/client/projects', '/client/recommended-agents', '/client/work-log', '/client/work-log-dashboard', '/client/notifications', '/client/settings', '/client/profile']
+  
+  // Auth pages that don't require role check
+  const authPages = ['/sign-in', '/sign-up', '/role-select']
+  
+  // Skip role check for auth pages and utility pages
+  if (authPages.includes(to.path) || to.path.startsWith('/terms-and-conditions')) {
+    next()
+    return
+  }
   
   // Check if the current route is an agent-only page
-  if (agentOnlyPages.includes(to.path)) {
+  if (agentOnlyPages.some(page => to.path.startsWith(page))) {
     if (userRole !== 'agent') {
+      console.log('Agent route accessed by non-agent:', to.path, 'Role:', userRole)
       // If user is not an agent, redirect to sign in
       next('/sign-in')
       return
     }
+  }
+  
+  // Check if the current route is a client-only page
+  if (clientOnlyPages.some(page => to.path.startsWith(page))) {
+    if (userRole !== 'client') {
+      console.log('Client route accessed by non-client:', to.path, 'Role:', userRole)
+      // If user is not a client, redirect to sign in
+      next('/sign-in')
+      return
+    }
+  }
+  
+  // If user has no role, redirect to role select
+  if (!userRole && !authPages.includes(to.path)) {
+    console.log('No user role found, redirecting to role select')
+    next('/role-select')
+    return
   }
   
   next()

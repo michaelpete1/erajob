@@ -13,10 +13,9 @@
     <main class="p-4 pb-24">
       <p class="text-gray-700">Messages placeholder</p>
     </main>
-    <BottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
-import BottomNav from '../components/BottomNav.vue'
+// This page uses role-based navigation from App.vue
 </script>

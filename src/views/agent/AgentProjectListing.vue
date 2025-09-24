@@ -311,6 +311,7 @@ const filteredGigs = computed(() => {
     return activeJobs
   } else {
     
+    
     let result = browseGigs
     
     

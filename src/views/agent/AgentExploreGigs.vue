@@ -70,7 +70,7 @@
   </template>
   
   <script setup lang="ts">
-  import AgentBottomNav from '../../components/AgentBottomNav.vue'
+  import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
   </script>
 
 <style scoped>

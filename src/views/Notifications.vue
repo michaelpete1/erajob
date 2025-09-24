@@ -242,14 +242,12 @@
         <p class="text-gray-500">You're all caught up! Check back later for updates.</p>
       </div>
     </main>
-
-    <BottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import BottomNav from '../components/BottomNav.vue'
+// This page uses role-based navigation from App.vue
 
 interface Notification {
   id: string

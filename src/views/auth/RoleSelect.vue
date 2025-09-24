@@ -44,28 +44,41 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const selectRole = (role: 'client' | 'agent') => {
+  console.log('RoleSelect: Setting role to:', role)
+  
   // Set the user role in localStorage
   localStorage.setItem('userRole', role)
+  console.log('RoleSelect: userRole set in localStorage:', localStorage.getItem('userRole'))
+  
+  // Update userInfo with the selected role
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  userInfo.role = role
+  localStorage.setItem('userInfo', JSON.stringify(userInfo))
+  console.log('RoleSelect: Updated userInfo:', userInfo)
   
   // Check if this is a sign-up flow (has signUpTime in userInfo)
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
   const isSignUpFlow = userInfo.signUpTime
+  console.log('RoleSelect: isSignUpFlow:', isSignUpFlow)
   
   // Navigate to the appropriate page
   if (role === 'agent') {
     if (isSignUpFlow) {
       // For sign-up flow: go to agent welcome first
+      console.log('RoleSelect: Navigating to agent welcome (sign-up flow)')
       router.push('/agent/welcome')
     } else {
       // For sign-in flow: go directly to explore gigs
+      console.log('RoleSelect: Navigating to agent explore gigs (sign-in flow)')
       router.push('/agent/explore-gigs')
     }
   } else {
     if (isSignUpFlow) {
       // For sign-up flow: go to client welcome first
+      console.log('RoleSelect: Navigating to client welcome (sign-up flow)')
       router.push('/client/welcome')
     } else {
       // For sign-in flow: go to client projects page
+      console.log('RoleSelect: Navigating to client projects (sign-in flow)')
       router.push('/client/projects')
     }
   }

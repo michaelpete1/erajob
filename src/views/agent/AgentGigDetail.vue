@@ -69,7 +69,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNav.vue'
+import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
 import { extractIdFromSlug } from '../../utils/slugUtils'
 
 const route = useRoute()

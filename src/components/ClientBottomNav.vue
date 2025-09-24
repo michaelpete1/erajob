@@ -1,0 +1,124 @@
+<template>
+  <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg z-50 lg:hidden">
+    <div class="max-w-lg mx-auto px-2 py-2">
+      <div class="flex items-center justify-around">
+        <!-- Projects Button -->
+        <router-link 
+          to="/client/projects" 
+          :class="navItemClass('/client/projects')"
+          class="flex flex-col items-center justify-center flex-1 py-2"
+        >
+          <PencilSquareIcon :class="iconClass('/client/projects')" />
+          <span class="text-xs mt-1">Projects</span>
+        </router-link>
+
+        <!-- Messages Button -->
+        <router-link 
+          to="/messages" 
+          :class="navItemClass('/messages')"
+          class="flex flex-col items-center justify-center flex-1 py-2"
+        >
+          <MusicalNoteIcon :class="iconClass('/messages')" />
+          <span class="text-xs mt-1">Messages</span>
+        </router-link>
+
+        <!-- Plus Button (Only for Clients on Project Pages) -->
+        <button
+          v-if="showPlusButton"
+          @click="handlePlusClick"
+          class="flex flex-col items-center justify-center flex-1 py-2"
+        >
+          <div class="w-12 h-12 bg-brand-teal rounded-full flex items-center justify-center shadow-lg hover:bg-brand-teal-600 transition-colors">
+            <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <span class="text-xs mt-1 text-gray-600">Create</span>
+        </button>
+
+        <!-- Notifications Button -->
+        <router-link 
+          to="/client/notifications" 
+          :class="['relative', navItemClass('/client/notifications')]"
+          class="flex flex-col items-center justify-center flex-1 py-2"
+        >
+          <CheckCircleIcon :class="iconClass('/client/notifications')" />
+          <span class="text-xs mt-1">Alerts</span>
+          <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
+        </router-link>
+
+        <!-- Settings Button -->
+        <router-link 
+          to="/client/settings" 
+          :class="navItemClass('/client/settings')"
+          class="flex flex-col items-center justify-center flex-1 py-2"
+        >
+          <AdjustmentsHorizontalIcon :class="iconClass('/client/settings')" />
+          <span class="text-xs mt-1">Settings</span>
+        </router-link>
+      </div>
+    </div>
+  </nav>
+</template>
+
+<script setup lang="ts">
+import { 
+  PencilSquareIcon, 
+  AdjustmentsHorizontalIcon
+} from '@heroicons/vue/24/outline'
+import { 
+  MusicalNoteIcon,
+  CheckCircleIcon
+} from '@heroicons/vue/24/solid'
+import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+
+const route = useRoute()
+const router = useRouter()
+
+// Check if plus button should be shown (only for clients on project-related pages)
+const showPlusButton = computed(() => {
+  const clientProjectPages = [
+    '/client/projects',
+    '/client/projects/create',
+    '/client/explore-gigs',
+    '/client/recommended-agents'
+  ]
+  
+  return clientProjectPages.some(page => route.path.startsWith(page) || route.path === page)
+})
+
+// Handle plus button click
+function handlePlusClick() {
+  router.push('/client/projects/create')
+}
+
+// Navigation item classes
+function navItemClass(path: string) {
+  const isActive = route.path === path
+  return [
+    'transition-colors',
+    'duration-200',
+    isActive 
+      ? 'text-brand-teal' 
+      : 'text-gray-600 hover:text-gray-900'
+  ]
+}
+
+// Icon classes
+function iconClass(path: string) {
+  const isActive = route.path === path
+  return [
+    'w-6',
+    'h-6',
+    isActive ? 'text-brand-teal' : 'text-gray-600'
+  ]
+}
+</script>
+
+<style scoped>
+/* Add padding to body content to account for fixed bottom nav */
+.client-bottom-nav-safe { 
+  padding-bottom: 80px; 
+}
+</style>

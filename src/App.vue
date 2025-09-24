@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onErrorCaptured, onMounted, computed } from 'vue'
+import { ref, onErrorCaptured, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import TopNav from './components/TopNav.vue'
+import AgentNavbar from './components/AgentNavbar.vue'
 import ClientNavbar from './components/ClientNavbar.vue'
+import ClientBottomNav from './components/ClientBottomNav.vue'
+import AgentBottomNav from './components/AgentBottomNavUpdated.vue'
 
 const routeError = ref<string | null>(null)
 const userRole = ref<string>('')
@@ -14,27 +16,61 @@ const isAuthPage = computed(() => {
   return authRoutes.includes(currentRoute.path)
 })
 
-// Check if current route is a project page
-const isProjectPage = computed(() => {
-  const projectRoutes = ['/client/projects', '/agent/gigs-listing']
-  return projectRoutes.includes(currentRoute.path)
-})
-
 // Check if navbar should be shown
 const shouldShowNavbar = computed(() => {
-  // Show navbar ONLY on project pages
-  return isProjectPage.value
+  // Show navbar for all authenticated routes except auth pages
+  return !isAuthPage.value
+})
+
+// Compute navbar padding class based on user role
+const navbarPaddingClass = computed(() => {
+  if (userRole.value === 'client') {
+    return 'client-navbar-safe'
+  } else if (userRole.value === 'agent') {
+    return 'agent-navbar-safe'
+  }
+  return ''
+})
+
+// Compute bottom nav padding class
+const bottomNavPaddingClass = computed(() => {
+  if (userRole.value === 'client') {
+    return 'client-bottom-nav-safe'
+  } else if (userRole.value === 'agent') {
+    return 'agent-bottom-nav-safe'
+  }
+  return ''
 })
 
 onMounted(() => {
+  updateUserRole()
+  
+  // Listen for storage changes to update role reactively
+  window.addEventListener('storage', updateUserRole)
+})
+
+// Function to update user role
+function updateUserRole() {
   const storedRole = localStorage.getItem('userRole')
   console.log('Debug - stored userRole from localStorage:', storedRole)
   userRole.value = storedRole || ''
   console.log('Debug - userRole.value set to:', userRole.value)
-  console.log('Debug - should show ClientNavbar:', userRole.value === 'client')
+  console.log('Debug - should show ClientNavbar:', shouldShowNavbar.value && userRole.value === 'client')
+  console.log('Debug - should show AgentNavbar:', shouldShowNavbar.value && userRole.value === 'agent')
   console.log('Debug - isAuthPage:', isAuthPage.value)
   console.log('Debug - shouldShowNavbar:', shouldShowNavbar.value)
+  console.log('Debug - current route:', currentRoute.path)
+}
+
+// Cleanup event listener
+onUnmounted(() => {
+  window.removeEventListener('storage', updateUserRole)
 })
+
+// Watch for route changes and update role
+watch(currentRoute, () => {
+  updateUserRole()
+}, { immediate: false })
 
 onErrorCaptured((err) => {
   
@@ -52,10 +88,14 @@ function reloadApp() {
 </script>
 
 <template>
-  <div id="app-shell" class="min-h-screen" :class="userRole === 'client' ? 'client-navbar-safe' : 'top-nav-safe'">
-    <!-- Conditional Navigation -->
+  <div id="app-shell" class="min-h-screen" :class="[navbarPaddingClass, bottomNavPaddingClass]">
+    <!-- Conditional Top Navigation -->
     <ClientNavbar v-if="shouldShowNavbar && userRole === 'client'" />
-    <TopNav v-else-if="shouldShowNavbar" />
+    <AgentNavbar v-else-if="shouldShowNavbar && userRole === 'agent'" />
+    
+    <!-- Role-specific Bottom Navigation (Mobile Only) -->
+    <ClientBottomNav v-if="shouldShowNavbar && userRole === 'client'" />
+    <AgentBottomNav v-if="shouldShowNavbar && userRole === 'agent'" />
     <template v-if="!routeError">
       <router-view v-slot="{ Component }">
         <Transition name="route" mode="out-in">
