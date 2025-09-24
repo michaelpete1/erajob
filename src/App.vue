@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import { ref, onErrorCaptured, onMounted } from 'vue'
+import { ref, onErrorCaptured, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import TopNav from './components/TopNav.vue'
 import ClientNavbar from './components/ClientNavbar.vue'
 
 const routeError = ref<string | null>(null)
 const userRole = ref<string>('')
+const currentRoute = useRoute()
+
+// Check if current route is an authentication page
+const isAuthPage = computed(() => {
+  const authRoutes = ['/sign-in', '/sign-up', '/role-select']
+  return authRoutes.includes(currentRoute.path)
+})
+
+// Check if navbar should be shown
+const shouldShowNavbar = computed(() => {
+  return !isAuthPage.value && userRole.value !== ''
+})
 
 onMounted(() => {
   const storedRole = localStorage.getItem('userRole')
@@ -12,6 +25,8 @@ onMounted(() => {
   userRole.value = storedRole || ''
   console.log('Debug - userRole.value set to:', userRole.value)
   console.log('Debug - should show ClientNavbar:', userRole.value === 'client')
+  console.log('Debug - isAuthPage:', isAuthPage.value)
+  console.log('Debug - shouldShowNavbar:', shouldShowNavbar.value)
 })
 
 onErrorCaptured((err) => {
@@ -32,8 +47,8 @@ function reloadApp() {
 <template>
   <div id="app-shell" class="min-h-screen" :class="userRole === 'client' ? 'client-navbar-safe' : 'top-nav-safe'">
     <!-- Conditional Navigation -->
-    <ClientNavbar v-if="userRole === 'client'" />
-    <TopNav v-else />
+    <ClientNavbar v-if="shouldShowNavbar && userRole === 'client'" />
+    <TopNav v-else-if="shouldShowNavbar" />
     <template v-if="!routeError">
       <router-view v-slot="{ Component }">
         <Transition name="route" mode="out-in">
