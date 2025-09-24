@@ -70,10 +70,10 @@ const sendUpdate = () => {
           </div>
         </div>
         <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-          <button @click="openMessages" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm transition-shadow">
+          <button @click="openMessages" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm font-medium transition-shadow min-h-[44px] touch-manipulation">
             <span>Message Client</span>
           </button>
-          <button @click="sendUpdate" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm transition-shadow">
+          <button @click="sendUpdate" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm font-medium transition-shadow min-h-[44px] touch-manipulation">
             <span>Send Update</span>
           </button>
         </div>
@@ -141,7 +141,7 @@ const sendUpdate = () => {
             <h4 class="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">Client</h4>
             <div class="mt-2 text-xs sm:text-sm text-gray-600">{{ job?.client }}</div>
             <div class="mt-3 sm:mt-4">
-              <button @click="openMessages" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-md bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-medium transition-colors">
+              <button @click="openMessages" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation">
                 Message
               </button>
             </div>
@@ -150,10 +150,10 @@ const sendUpdate = () => {
           <div class="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5">
             <h4 class="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">Actions</h4>
             <div class="mt-2 space-y-2 sm:space-y-3">
-              <button @click="markComplete" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium transition-colors">
+              <button @click="markComplete" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation">
                 Mark Complete
               </button>
-              <button @click="$router.push('/agent/gigs-listing')" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-md bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium transition-colors">
+              <button @click="$router.push('/agent/gigs-listing')" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation">
                 Back to Projects
               </button>
             </div>
