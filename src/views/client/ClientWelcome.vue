@@ -10,8 +10,18 @@
     <div class="absolute bottom-16 right-16 w-2.5 h-2.5 sm:bottom-20 sm:right-20 bg-white/15 rounded-full animate-float-delayed-4" />
     
     <header class="sticky top-0 z-10 flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-teal-500 text-white animate-fade-up">
-      <button class="text-lg animate-bounce-in" @click="$router.back()">&lt;</button>
-      <h1 class="font-semibold animate-fade-up-delay-1">Client Information</h1>
+      <button @click="$router.push('/landing')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        Home
+      </button>
+      <div class="flex items-center gap-2 animate-fade-up-delay-1">
+        <div class="w-2 h-2 rounded-full bg-white/60"></div>
+        <div class="w-2 h-2 rounded-full bg-white"></div>
+        <div class="w-2 h-2 rounded-full bg-white/60"></div>
+        <div class="w-2 h-2 rounded-full bg-white/60"></div>
+      </div>
       <div class="w-8 h-8 rounded-full bg-white" />
     </header>
 
@@ -104,16 +114,12 @@
         <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 md:border-brand-teal bg-brand-teal/10 md:bg-brand-teal/5 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 md:hover:bg-brand-teal/10 transition-all duration-300" @click="$router.back()">Back</button>
       </div>
     </div>
-    
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </PageContainer>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import PageContainer from '../../components/PageContainer.vue'
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 
 const form = reactive({
   email: '',

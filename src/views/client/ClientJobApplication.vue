@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 
 const job = {
   budget: "$68/hr",
@@ -114,7 +113,5 @@ The goal is to modernize the user experience by making the interface more modern
 
     </div>
     
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </div>
 </template>

@@ -144,14 +144,11 @@
       </div>
     </div>
 
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 
 // Recommended agents data - standardized with ClientAgentProfile.vue structure
 const recommendedAgents = ref([

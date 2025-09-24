@@ -13,8 +13,18 @@
 
     <div class="relative z-10 w-full max-w-md mx-auto px-4 py-6">
       <header class="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 bg-white/10 backdrop-blur-sm px-4 py-3 md:rounded-t-2xl md:border-x animate-fade-up">
-        <button class="text-sm text-brand-teal hover:text-brand-teal/80 transition-colors animate-bounce-in" @click="$router.back()">←</button>
-        <h1 class="text-sm font-semibold text-white animate-fade-up-delay-1">Additional Details</h1>
+        <button @click="$router.push('/client/services')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+        <div class="flex items-center gap-2 animate-fade-up-delay-1">
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+          <div class="w-2 h-2 rounded-full bg-white/60"></div>
+        </div>
         <div class="w-6" />
       </header>
 
@@ -45,7 +55,7 @@
           </fieldset>
 
           <div class="space-y-3 pt-4 animate-fade-up-delay-4">
-            <router-link to="/client/gig" class="btn-pressable block w-full rounded-full bg-brand-teal px-6 py-3 text-center text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <router-link to="/client/congrats" class="btn-pressable block w-full rounded-full bg-brand-teal px-6 py-3 text-center text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
               Next
             </router-link>
             <button type="button" class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">Back</button>
@@ -53,12 +63,8 @@
         </form>
       </div>
     </div>
-    
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 </script>

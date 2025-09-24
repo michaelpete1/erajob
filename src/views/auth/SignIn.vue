@@ -10,11 +10,12 @@
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
     <div class="relative z-10 w-full max-w-sm mx-auto px-4 py-6">
-      <button @click="$router.back()" class="absolute top-4 left-4 z-20 text-brand-teal hover:text-brand-teal/80 transition-colors animate-fade-up">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
+      <!-- Navigation Header -->
+      <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-center animate-fade-up">
+        <button @click="$router.push('/sign-up')" class="text-white/80 hover:text-white transition-colors text-sm font-medium">
+          Sign Up
+        </button>
+      </div>
       
       <div class="flex flex-col items-center justify-center text-center py-12">
         <BrandLogo size="lg" class="mb-8 [filter:brightness(0)_invert(1)] animate-bounce-in" />

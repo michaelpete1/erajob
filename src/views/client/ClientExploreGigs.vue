@@ -109,15 +109,12 @@
         </button>
       </div>
     </div>
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 
 const router = useRouter()
 const selectedCategory = ref('All')

@@ -286,3 +286,12 @@
 .content-front {
   z-index: 20;
 }
+
+/* Padding classes for different navbars to prevent content overlap */
+.client-navbar-safe {
+  padding-top: 4rem; /* 64px for the fixed navbar */
+}
+
+.top-nav-safe {
+  padding-top: 4rem; /* 64px for the fixed navbar */
+}

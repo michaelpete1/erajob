@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AgentBottomNav from '../../components/AgentBottomNav.vue'
+import { extractIdFromSlug } from '../../utils/slugUtils'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,9 +23,10 @@ onMounted(() => {
     // ignore
   }
 
-  // fallback: read id from route and show a minimal placeholder if no stored job
-  const id = route.params.id
-  if (id) {
+  // fallback: read slug from route and show a minimal placeholder if no stored job
+  const slug = route.params.slug
+  const id = extractIdFromSlug(slug as string)
+  if (slug) {
     job.value = {
       id,
       title: `Job #${id}`,
@@ -159,9 +161,7 @@ const sendUpdate = () => {
         </aside>
       </section>
     </div>
-
     <!-- Agent Bottom Navigation -->
     <AgentBottomNav />
   </div>
 </template>
-

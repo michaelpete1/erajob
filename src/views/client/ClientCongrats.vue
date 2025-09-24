@@ -10,35 +10,47 @@
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
     <div class="relative z-10 w-full max-w-md mx-auto px-4 py-6">
+      <!-- Navigation Header -->
+      <header class="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white/10 backdrop-blur-sm rounded-t-2xl animate-fade-up">
+        <button @click="$router.push('/client/additional')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+        <div class="flex items-center gap-2 animate-fade-up-delay-1">
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+          <div class="w-2 h-2 rounded-full bg-white"></div>
+        </div>
+        <div class="w-6" />
+      </header>
       
       <div class="rounded-2xl bg-white/95 backdrop-blur-sm px-6 py-12 text-center shadow-xl animate-fade-up-delay-2">
       <div class="flex justify-center mb-4 animate-bounce">
         <span class="text-4xl">🎉</span>
       </div>
       <h2 class="text-2xl md:text-3xl font-extrabold text-brand-teal mb-2 animate-fade-up-delay-1">Congratulations!</h2>
-      <p class="text-base md:text-lg font-semibold text-brand-teal mb-4 animate-fade-up-delay-2">You've submitted your application</p>
+      <p class="text-base md:text-lg font-semibold text-brand-teal mb-4 animate-fade-up-delay-2">Your client account has been created successfully!</p>
       <div class="mx-auto mt-2 max-w-sm text-left space-y-3 text-gray-700 animate-fade-up-delay-3">
-        <p>If you pass the selection process, you'll go through our free onboarding and training program.</p>
+        <p>Welcome to ERA! Your client account is now ready to help you find the perfect talent for your projects.</p>
         <ul class="list-disc pl-5 space-y-1">
-          <li>Structured learning to prepare you for real projects.</li>
-          <li>Equip you with the tools and knowledge to succeed as an ERA agent.</li>
-          <li>Completely free, no fees required.</li>
-          <li>Once you pass the training, you'll be eligible to receive jobs as an ERA agent.</li>
+          <li>Access to skilled professionals across various industries.</li>
+          <li>Streamlined hiring process with vetted candidates.</li>
+          <li>Dedicated support for your project needs.</li>
+          <li>Flexible hiring options to match your requirements.</li>
         </ul>
-        <p>We look forward to working with you!</p>
+        <p>We're excited to help you build your dream team!</p>
       </div>
 
-      <router-link to="/client/explore-gigs" class="btn-pressable mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4">
+      <router-link to="/agent/welcome-back" class="btn-pressable mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4">
         Next
       </router-link>
       </div>
     </div>
-    
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 </script>

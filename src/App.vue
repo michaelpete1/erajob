@@ -1,7 +1,19 @@
 <script setup lang="ts">
-import { ref, onErrorCaptured } from 'vue'
+import { ref, onErrorCaptured, onMounted } from 'vue'
+import TopNav from './components/TopNav.vue'
+import ClientNavbar from './components/ClientNavbar.vue'
 
 const routeError = ref<string | null>(null)
+const userRole = ref<string>('')
+
+onMounted(() => {
+  const storedRole = localStorage.getItem('userRole')
+  console.log('Debug - stored userRole from localStorage:', storedRole)
+  userRole.value = storedRole || ''
+  console.log('Debug - userRole.value set to:', userRole.value)
+  console.log('Debug - should show ClientNavbar:', userRole.value === 'client')
+})
+
 onErrorCaptured((err) => {
   
   
@@ -18,7 +30,10 @@ function reloadApp() {
 </script>
 
 <template>
-  <div id="app-shell" class="min-h-screen">
+  <div id="app-shell" class="min-h-screen" :class="userRole === 'client' ? 'client-navbar-safe' : 'top-nav-safe'">
+    <!-- Conditional Navigation -->
+    <ClientNavbar v-if="userRole === 'client'" />
+    <TopNav v-else />
     <template v-if="!routeError">
       <router-view v-slot="{ Component }">
         <Transition name="route" mode="out-in">

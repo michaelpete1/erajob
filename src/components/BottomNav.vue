@@ -10,19 +10,32 @@
       <span class="text-xs">Log Work</span>
     </router-link>
 
-    <router-link :to="'/messages'" :class="['flex-1', linkClass('/messages')]" aria-label="Messages">
-      <MusicalNoteIcon :class="['mb-1', iconClass('/messages')]" />
-      <span class="text-xs">Messages</span>
+    <router-link 
+      v-if="userRole === 'client'" 
+      :to="'/client/projects'" 
+      :class="['flex-1', linkClass('/client/projects')]" 
+      aria-label="Projects"
+    >
+      <PencilSquareIcon :class="['mb-1', iconClass('/client/projects')]" />
+      <span class="text-xs">Projects</span>
     </router-link>
 
-    <router-link :to="'/notifications'" :class="['relative', 'flex-1', linkClass('/notifications')]" aria-label="Notifications">
-      <CheckCircleIcon :class="['mb-1', iconClass('/notifications')]" />
+    <router-link 
+      :to="userRole === 'client' ? '/client/notifications' : '/notifications'" 
+      :class="['relative', 'flex-1', linkClass(userRole === 'client' ? '/client/notifications' : '/notifications')]" 
+      aria-label="Notifications"
+    >
+      <CheckCircleIcon :class="['mb-1', iconClass(userRole === 'client' ? '/client/notifications' : '/notifications')]" />
       <span class="absolute -top-1 -right-2 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
       <span class="text-xs">Alerts</span>
     </router-link>
 
-    <router-link :to="'/settings'" :class="['flex-1', linkClass('/settings')]" aria-label="Settings">
-      <AdjustmentsHorizontalIcon :class="['mb-1', iconClass('/settings')]" />
+    <router-link 
+      :to="userRole === 'client' ? '/client/settings' : '/settings'" 
+      :class="['flex-1', linkClass(userRole === 'client' ? '/client/settings' : '/settings')]" 
+      aria-label="Settings"
+    >
+      <AdjustmentsHorizontalIcon :class="['mb-1', iconClass(userRole === 'client' ? '/client/settings' : '/settings')]" />
       <span class="text-xs">Settings</span>
     </router-link>
   </nav>
@@ -30,7 +43,7 @@
 
 <script setup lang="ts">
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
-import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
+import { CheckCircleIcon } from '@heroicons/vue/24/solid'
 import { useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
 

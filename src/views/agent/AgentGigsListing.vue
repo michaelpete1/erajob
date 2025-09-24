@@ -177,6 +177,7 @@ import BottomNav from '../../components/BottomNav.vue'
 import BrandLogo from '../../components/BrandLogo.vue'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
+import { createGigSlug } from '../../utils/slugUtils'
 
 const openMobileNav = ref(false)
 const activeTab = ref<'active' | 'browse'>('browse')
@@ -194,8 +195,9 @@ const goToLogWorkHours = (gig: any) => {
     // ignore storage errors
   }
   
-  // Navigate to the logging dashboard
-  router.push({ path: '/agent/logs' })
+  // Navigate to the job overview page
+  const slug = createGigSlug(gig.title, gig.id)
+  router.push({ path: `/agent/job/${slug}` })
 }
 
 const goToGig = (gig: any) => {
@@ -211,7 +213,8 @@ const goToGig = (gig: any) => {
     router.push({ path: '/agent/logging-details' })
   } else {
     // browse -> go to detail page
-    router.push({ path: `/agent/gig/${gig.id}` })
+    const slug = createGigSlug(gig.title, gig.id)
+    router.push({ path: `/agent/gig/${slug}` })
   }
 }
 

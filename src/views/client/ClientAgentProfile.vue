@@ -334,7 +334,14 @@
         </div>
         
         <!-- Calendar Container -->
-        <div class="bg-gradient-to-br from-pink-50 to-purple-50 border border-pink-200 rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6">
+        <div @click="goToSetAppointment" class="bg-gradient-to-br from-pink-50 to-purple-50 border border-pink-200 rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden">
+          <!-- Click hint overlay -->
+          <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-5 transition-all duration-300 rounded-lg sm:rounded-xl"></div>
+          
+          <!-- Click hint badge -->
+          <div class="absolute top-2 right-2 bg-teal-500 text-white text-xs px-2 py-1 rounded-full font-medium opacity-90">
+            Click to Schedule
+          </div>
           <!-- Calendar Header -->
           <div class="flex items-center justify-between mb-4 sm:mb-5">
             <button class="p-2 sm:p-2.5 rounded-lg hover:bg-white hover:bg-opacity-50 transition-colors active:scale-95">
@@ -456,9 +463,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 
 // Agent data
 const agent = ref({
@@ -538,28 +546,77 @@ const formatDate = (day) => {
 
 // Send meet and greet request
 const sendMeetAndGreetRequest = () => {
-  if (!selectedDate.value) {
-    alert('Please select a date for the meet and greet')
-    return
+  // Get all saved appointments for this agent
+  try {
+    const savedAppointments = JSON.parse(localStorage.getItem('savedAppointments') || '[]')
+    const agentAppointments = savedAppointments.filter(apt => apt.agentId === agent.value.id)
+    
+    if (agentAppointments.length === 0) {
+      alert('No appointments found. Please set an appointment first.')
+      return
+    }
+    
+    // In a real app, this would send all appointments to a backend
+    console.log('Sending all appointments for:', {
+      agent: agent.value.name,
+      appointments: agentAppointments,
+      totalAppointments: agentAppointments.length,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Show success message with appointment details
+    const appointmentDetails = agentAppointments.map(apt => 
+      `${apt.date} at ${apt.time} (${apt.timezone})`
+    ).join(', ')
+    
+    alert(`Successfully sent ${agentAppointments.length} appointment(s) to ${agent.value.name}:\n${appointmentDetails}`)
+    
+    // Clear saved appointments for this agent
+    const remainingAppointments = savedAppointments.filter(apt => apt.agentId !== agent.value.id)
+    localStorage.setItem('savedAppointments', JSON.stringify(remainingAppointments))
+    console.log('Cleared sent appointments for agent:', agent.value.id)
+    
+  } catch (error) {
+    console.error('Error processing saved appointments:', error)
+    alert('Error sending appointments. Please try again.')
+  }
+}
+
+// Navigate to set appointment page
+const goToSetAppointment = () => {
+  // Save agent data to localStorage for the appointment page
+  try {
+    localStorage.setItem('selectedAgent', JSON.stringify(agent.value))
+    console.log('Saved agent data for appointment:', agent.value)
+  } catch (error) {
+    console.error('Error saving agent data:', error)
   }
   
-  // In a real app, this would send the request to a backend
-  console.log('Sending meet and greet request for:', {
-    agent: agent.value.name,
-    date: formatDate(selectedDate.value),
-    timestamp: new Date().toISOString()
-  })
-  
-  // Show success message
-  alert(`Meet and greet request sent to ${agent.value.name} for ${formatDate(selectedDate.value)}!`)
+  // Navigate to the set appointment page
+  router.push(`/client/agent/${agent.value.id}/set-appointment`)
 }
 
 // Load agent data based on route parameter
 onMounted(() => {
   const agentId = route.params.id
-  // In a real app, you would fetch agent data based on the ID
-  // For now, we're using mock data
   console.log('Loading agent profile for ID:', agentId)
+  
+  // Try to load agent data from localStorage
+  try {
+    const savedAgentData = localStorage.getItem('selectedAgent')
+    if (savedAgentData) {
+      const parsedAgentData = JSON.parse(savedAgentData)
+      // Update the agent ref with the data from localStorage
+      agent.value = {
+        ...agent.value, // Keep default values as fallback
+        ...parsedAgentData // Override with saved data
+      }
+      console.log('Loaded agent data from localStorage:', parsedAgentData)
+    }
+  } catch (error) {
+    console.error('Error loading agent data from localStorage:', error)
+    // Keep using default mock data if localStorage fails
+  }
 })
 </script>
 

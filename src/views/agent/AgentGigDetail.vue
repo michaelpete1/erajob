@@ -70,6 +70,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AgentBottomNav from '../../components/AgentBottomNav.vue'
+import { extractIdFromSlug } from '../../utils/slugUtils'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,8 +90,9 @@ onMounted(() => {
     // ignore
   }
 
-  const id = route.params.id
-  if (!gig.value && id) {
+  const slug = route.params.slug
+  const id = extractIdFromSlug(slug as string)
+  if (!gig.value && slug) {
     gig.value = { id, title: 'Posted Project', description: defaultDescription, price: '—', client: 'Sydney, Australia', memberSince: '03 September 2025' }
   }
 

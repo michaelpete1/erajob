@@ -10,14 +10,24 @@
     <div class="absolute bottom-16 right-16 w-2.5 h-2.5 sm:bottom-20 sm:right-20 bg-white/15 rounded-full animate-float-delayed-4" />
 
     <!-- Header -->
-    <div class="sticky top-0 z-20 w-full flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-teal-500 text-white animate-fade-up">
-      <button class="text-lg animate-bounce-in" @click="$router.back()">&lt;</button>
-      <h1 class="font-semibold animate-fade-up-delay-1">Service Category</h1>
+    <header class="sticky top-0 z-10 flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-teal-500 text-white animate-fade-up">
+      <button @click="$router.push('/client/welcome')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
+      <div class="flex items-center gap-2 animate-fade-up-delay-1">
+        <div class="w-2 h-2 rounded-full bg-white"></div>
+        <div class="w-2 h-2 rounded-full bg-white"></div>
+        <div class="w-2 h-2 rounded-full bg-white/60"></div>
+        <div class="w-2 h-2 rounded-full bg-white/60"></div>
+      </div>
       <div class="w-8 h-8 rounded-full bg-white" />
-    </div>
+    </header>
 
-    <div class="relative z-10 w-full max-w-md sm:max-w-lg mx-auto flex flex-col items-center text-center pt-4 pb-32">
-      <h2 class="mb-4 sm:mb-6 text-2xl sm:text-3xl font-extrabold text-white drop-shadow-md z-20 animate-fade-up-delay-1">Service Category</h2>
+    <div class="relative z-10 w-full max-w-md sm:max-w-lg mx-auto flex flex-col items-center justify-center text-center py-8 sm:py-12">
+      <h2 class="mb-4 sm:mb-8 text-2xl sm:text-3xl font-extrabold text-white animate-fade-up-delay-1">Service Category</h2>
       <div class="w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 animate-fade-up-delay-2">
         <div v-for="(category, index) in categories" :key="index" class="flex items-center p-3 sm:p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
           <input
@@ -39,6 +49,7 @@
         </div>
       </div>
       
+      <!-- Selection counter -->
       <div class="mt-4 text-sm text-white/80 animate-fade-up-delay-3">
         Selected: {{ selectedCategories.length }} (minimum 3 required)
       </div>
@@ -54,23 +65,20 @@
         >
           Next
         </button>
-        <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-4 sm:px-6 py-2.5 sm:py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">
+        <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.push('/client/welcome')">
           Back
         </button>
       </div>
     </div>
-    
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { PencilSquareIcon, MegaphoneIcon, FilmIcon, UserGroupIcon, CodeBracketSquareIcon, CameraIcon, CpuChipIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
+import { PencilSquareIcon, MegaphoneIcon, FilmIcon, CodeBracketSquareIcon, CameraIcon, CpuChipIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
+import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
 import { onMounted, onErrorCaptured } from 'vue'
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 
 const router = useRouter()
 
@@ -78,7 +86,7 @@ const categories = [
   { title: 'Graphic Design', description: 'Logo & brand identity', icon: PencilSquareIcon },
   { title: 'Digital Marketing', description: 'Social media marketing, SEO', icon: MegaphoneIcon },
   { title: 'Video & Animation', description: 'Video editing & Video Reels', icon: FilmIcon },
-  { title: 'Sales, customer, process...', description: 'Producers & Composers', icon: UserGroupIcon },
+  { title: 'Music & Audio', description: 'Producers & Composers', icon: MusicalNoteIcon },
   { title: 'Program & Tech', description: 'Website & App development', icon: CodeBracketSquareIcon },
   { title: 'Product Photography', description: 'Product photographers', icon: CameraIcon },
   { title: 'Build AI Service', description: 'Build your AI app', icon: CpuChipIcon },

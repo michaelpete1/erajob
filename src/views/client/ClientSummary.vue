@@ -87,13 +87,10 @@
       </button>
     </div>
     
-    <!-- Client Bottom Navigation -->
-    <ClientBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
-import ClientBottomNav from '../../components/ClientBottomNav.vue'
 const job = {
   budget: "$68/hr",
   title: "Complete Freelancer Application UI/UX Revamp",
