@@ -99,7 +99,8 @@
 import { 
   PencilSquareIcon, 
   AdjustmentsHorizontalIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  MusicalNoteIcon
 } from '@heroicons/vue/24/outline'
 import { 
   CheckCircleIcon

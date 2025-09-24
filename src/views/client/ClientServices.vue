@@ -4,27 +4,11 @@
     <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
     <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
     
+    <!-- Floating particles -->
     <div class="absolute top-16 left-16 w-2 h-2 sm:top-20 sm:left-20 bg-white/20 rounded-full animate-float-delayed-1" />
     <div class="absolute top-32 right-24 w-1 h-1 sm:top-40 sm:right-32 bg-white/30 rounded-full animate-float-delayed-2" />
     <div class="absolute bottom-24 left-32 w-1.5 h-1.5 sm:bottom-32 sm:left-40 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-16 right-16 w-2.5 h-2.5 sm:bottom-20 sm:right-20 bg-white/15 rounded-full animate-float-delayed-4" />
-
-    <!-- Header -->
-    <header class="sticky top-0 z-10 flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-teal-500 text-white animate-fade-up">
-      <button @click="$router.push('/client/welcome')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </button>
-      <div class="flex items-center gap-2 animate-fade-up-delay-1">
-        <div class="w-2 h-2 rounded-full bg-white"></div>
-        <div class="w-2 h-2 rounded-full bg-white"></div>
-        <div class="w-2 h-2 rounded-full bg-white/60"></div>
-        <div class="w-2 h-2 rounded-full bg-white/60"></div>
-      </div>
-      <div class="w-8 h-8 rounded-full bg-white" />
-    </header>
 
     <div class="relative z-10 w-full max-w-md sm:max-w-lg mx-auto flex flex-col items-center justify-center text-center py-8 sm:py-12">
       <h2 class="mb-4 sm:mb-8 text-2xl sm:text-3xl font-extrabold text-white animate-fade-up-delay-1">Service Category</h2>
@@ -65,7 +49,7 @@
         >
           Next
         </button>
-        <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.push('/client/welcome')">
+        <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">
           Back
         </button>
       </div>
@@ -103,20 +87,52 @@ const categories = [
 
 const selectedCategories = ref<any[]>([])
 
-const goNext = () => {
-  if (selectedCategories.value.length >= 3) {
-    localStorage.setItem('selectedClientServices', JSON.stringify(selectedCategories.value))
-    router.push('/client/additional')
+const goNext = async () => {
+  try {
+    if (selectedCategories.value.length >= 3) {
+      // Store selected categories in localStorage or state management
+      try {
+        localStorage.setItem('selectedClientServices', JSON.stringify(selectedCategories.value))
+      } catch (storageError) {
+        console.error('LocalStorage error:', storageError)
+        // Continue even if localStorage fails
+      }
+      
+      // Use setTimeout to prevent potential async issues
+      setTimeout(() => {
+        try {
+          router.push('/client/additional').catch((navError) => {
+            console.error('Navigation error:', navError)
+          })
+        } catch (timeoutError) {
+          console.error('Timeout navigation error:', timeoutError)
+        }
+      }, 0)
+    }
+  } catch (error) {
+    console.error('Error in goNext:', error)
   }
 }
 
 onMounted(() => {
-  console.log('ClientServices mounted')
+  try {
+    console.log('ClientServices mounted')
+    // Add a small delay to ensure component is fully mounted
+    setTimeout(() => {
+      try {
+        // Any additional initialization can go here
+      } catch (initError) {
+        console.error('Initialization error:', initError)
+      }
+    }, 100)
+  } catch (error) {
+    console.error('Error in onMounted:', error)
+  }
 })
 
 onErrorCaptured((err) => {
   console.error('ClientServices render error:', err)
-  try { alert(`ClientServices error: ${String((err as any)?.message ?? err)}`) } catch (e) {}
+  // Return false to prevent the error from propagating further
   return false
 })
 </script>

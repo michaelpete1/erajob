@@ -79,7 +79,7 @@
     <div class="px-4 sm:px-6 pb-6">
       <div class="max-w-4xl mx-auto space-y-3 sm:space-y-4">
         <!-- Summary Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
           <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
             <div class="flex items-center justify-between">
               <div>
@@ -89,20 +89,6 @@
               <div class="w-10 h-10 sm:w-12 sm:h-12 bg-teal-100 rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-xs sm:text-sm text-gray-500 font-medium">Tasks Completed</p>
-                <p class="text-xl sm:text-2xl font-bold text-gray-800">24</p>
-              </div>
-              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>

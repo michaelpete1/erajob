@@ -1,5 +1,6 @@
 <template>
-    <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center overflow-hidden">
+  <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex flex-col overflow-hidden">
+    <div class="flex-grow flex items-center justify-center">
       <!-- Animated background elements -->
       <div class="absolute top-0 right-0 h-24 w-24 sm:h-32 sm:w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
       <div class="absolute bottom-0 left-0 h-20 w-20 sm:h-24 sm:w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
@@ -65,6 +66,7 @@
     
     <!-- Agent Bottom Navigation -->
     <AgentBottomNav />
+    </div>
   </template>
   
   <script setup lang="ts">

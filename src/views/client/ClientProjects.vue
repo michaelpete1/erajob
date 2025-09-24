@@ -16,11 +16,11 @@
           Active
         </button>
         <button 
-          @click="activeTab = 'browse'"
-          :class="activeTab === 'browse' ? 'bg-teal-500 text-white' : 'text-gray-600'"
+          @click="activeTab = 'pending'"
+          :class="activeTab === 'pending' ? 'bg-teal-500 text-white' : 'text-gray-600'"
           class="flex-1 py-3 sm:py-3 text-sm sm:text-base font-medium transition-colors duration-200 hover:bg-gray-200"
         >
-          Browse
+          Pending
         </button>
       </div>
 
@@ -115,7 +115,7 @@
           </div>
           <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <button 
-              @click="activeTab = 'browse'"
+              @click="activeTab = 'pending'"
               class="px-6 py-3 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 transition-colors duration-200"
             >
               Browse Projects
@@ -130,20 +130,7 @@
         </div>
       </div>
 
-        <div v-if="activeTab === 'browse'" class="md:col-span-2 lg:col-span-3">
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-            <div class="flex flex-wrap gap-4">
-              <button class="flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-100 transition-colors">
-                <span class="text-lg">🕒</span>
-                <span class="text-sm sm:text-base font-medium">Recent Projects</span>
-              </button>
-              <button class="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
-                <span class="text-lg">❤️</span>
-                <span class="text-sm sm:text-base font-medium">Favorites</span>
-              </button>
-          </div>
-        </div>
-
+        <div v-if="activeTab === 'pending'" class="md:col-span-2 lg:col-span-3">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div 
               v-for="project in browseProjects"
@@ -195,7 +182,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const activeTab = ref<'active' | 'browse'>('browse')
+const activeTab = ref<'active' | 'pending'>('pending')
 
 const activeProjects = ref([
   {

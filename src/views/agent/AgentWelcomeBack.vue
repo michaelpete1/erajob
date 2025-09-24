@@ -37,15 +37,11 @@
         </div>
       </div>
     </div>
-    
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNav.vue'
 
 const router = useRouter()
 

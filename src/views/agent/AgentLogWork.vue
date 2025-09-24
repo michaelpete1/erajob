@@ -156,33 +156,6 @@
       </div>
     </div>
 
-    <!-- Bottom Navbar -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 sm:py-3 z-50">
-      <div class="max-w-7xl mx-auto">
-        <div class="flex justify-around items-center">
-          <button class="flex flex-col items-center text-teal-500 hover:text-teal-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">📂</span>
-            <span class="text-xs sm:text-sm font-medium">Log Work</span>
-          </button>
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">💬</span>
-            <span class="text-xs sm:text-sm font-medium">Chat</span>
-          </button>
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">➕</span>
-            <span class="text-xs sm:text-sm font-medium">Add</span>
-          </button>
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">🔔</span>
-            <span class="text-xs sm:text-sm font-medium">Alerts</span>
-          </button>
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">⚙️</span>
-            <span class="text-xs sm:text-sm font-medium">Settings</span>
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 

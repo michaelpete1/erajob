@@ -55,16 +55,12 @@
         </button>
       </div>
     </div>
-    
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNav.vue'
 import { PencilSquareIcon, MegaphoneIcon, FilmIcon, CodeBracketSquareIcon, CameraIcon, CpuChipIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
 
@@ -91,22 +87,65 @@ const categories = [
 
 const selectedCategories = ref<any[]>([])
 
-const goNext = () => {
-  if (selectedCategories.value.length >= 3) {
-    // Store selected categories in localStorage or state management
-    localStorage.setItem('selectedAgentServices', JSON.stringify(selectedCategories.value))
-    
-    // Check if this is a sign-up flow
-    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-    const isSignUpFlow = userInfo.signUpTime
-    
-    if (isSignUpFlow) {
-      // For sign-up flow: go directly to congrats
-      router.push('/agent/congrats')
-    } else {
-      // For sign-in flow: go to congrats
-      router.push('/agent/congrats')
+const goNext = async () => {
+  try {
+    if (selectedCategories.value.length >= 3) {
+      // Store selected categories in localStorage or state management
+      try {
+        localStorage.setItem('selectedAgentServices', JSON.stringify(selectedCategories.value))
+      } catch (storageError) {
+        console.error('LocalStorage error:', storageError)
+        // Continue even if localStorage fails
+      }
+      
+      // Check if this is a sign-up flow
+      let userInfo
+      try {
+        userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
+        userInfo = {}
+      }
+      
+      const isSignUpFlow = userInfo.signUpTime
+      
+      // Use setTimeout to prevent potential async issues
+      setTimeout(() => {
+        try {
+          if (isSignUpFlow) {
+            // For sign-up flow: go directly to congrats
+            router.push('/agent/congrats').catch((navError) => {
+              console.error('Navigation error:', navError)
+            })
+          } else {
+            // For sign-in flow: go to congrats
+            router.push('/agent/congrats').catch((navError) => {
+              console.error('Navigation error:', navError)
+            })
+          }
+        } catch (timeoutError) {
+          console.error('Timeout navigation error:', timeoutError)
+        }
+      }, 0)
     }
+  } catch (error) {
+    console.error('Error in goNext:', error)
   }
 }
+
+onMounted(() => {
+  try {
+    console.log('AgentServices mounted')
+    // Add a small delay to ensure component is fully mounted
+    setTimeout(() => {
+      try {
+        // Any additional initialization can go here
+      } catch (initError) {
+        console.error('Initialization error:', initError)
+      }
+    }, 100)
+  } catch (error) {
+    console.error('Error in onMounted:', error)
+  }
+})
 </script>

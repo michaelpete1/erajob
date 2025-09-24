@@ -112,16 +112,12 @@
         <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">Back</button>
       </div>
     </div>
-    
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNav.vue'
 
 const router = useRouter()
 

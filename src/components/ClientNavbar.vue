@@ -14,19 +14,12 @@
             <span>Projects</span>
           </router-link>
           
-          <router-link 
-            :to="'/client/explore-gigs'" 
-            :class="navLinkClass('/client/explore-gigs')"
-          >
-            <CheckCircleIcon :class="navIconClass('/client/explore-gigs')" />
-            <span>Explore</span>
-          </router-link>
           
           <router-link 
             :to="'/client/projects/create'" 
             :class="navLinkClass('/client/projects/create')"
           >
-            <MusicalNoteIcon :class="navIconClass('/client/projects/create')" />
+            <UserGroupIcon :class="navIconClass('/client/projects/create')" />
             <span>Post Job</span>
           </router-link>
 
@@ -96,21 +89,13 @@
           <span>Projects</span>
         </router-link>
         
-        <router-link 
-          :to="'/client/explore-gigs'" 
-          :class="mobileNavLinkClass('/client/explore-gigs')"
-          @click="closeMobileMenu"
-        >
-          <CheckCircleIcon :class="mobileNavIconClass('/client/explore-gigs')" />
-          <span>Explore</span>
-        </router-link>
         
         <router-link 
           :to="'/client/projects/create'" 
           :class="mobileNavLinkClass('/client/projects/create')"
           @click="closeMobileMenu"
         >
-          <MusicalNoteIcon :class="mobileNavIconClass('/client/projects/create')" />
+          <UserGroupIcon :class="mobileNavIconClass('/client/projects/create')" />
           <span>Post Job</span>
         </router-link>
 
@@ -156,11 +141,11 @@
 <script setup lang="ts">
 import { 
   PencilSquareIcon, 
-  AdjustmentsHorizontalIcon
+  AdjustmentsHorizontalIcon,
+  UserGroupIcon
 } from '@heroicons/vue/24/outline'
 import { 
-  CheckCircleIcon, 
-  MusicalNoteIcon 
+  CheckCircleIcon
 } from '@heroicons/vue/24/solid'
 import { useRoute } from 'vue-router'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'

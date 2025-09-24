@@ -37,6 +37,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/agent/job/:slug', name: 'agent-job-overview', component: () => import('../views/agent/AgentJobOverview.vue') },
   { path: '/agent/congrats', name: 'agent-congrats', component: () => import('../views/agent/AgentCongrats.vue') },
   { path: '/agent/logs', name: 'agent-logs', component: () => import('../views/agent/AgentLoggingDashboard.vue') },
+  { path: '/agent/logging-dashboard', name: 'agent-logging-dashboard', component: () => import('../views/agent/AgentLoggingDashboard.vue') },
   { path: '/agent/logging-details', name: 'agent-logging-details', component: () => import('../views/agent/AgentLoggingDetails.vue') },
   { path: '/agent/log-receipt/:id?', name: 'agent-log-receipt', component: () => import('../views/agent/AgentLogReceipt.vue') },
   { path: '/agent/proposition-accepted', name: 'agent-proposition-accepted', component: () => import('../views/agent/AgentPropositionAccepted.vue') },
@@ -62,7 +63,7 @@ router.beforeEach((to, _from, next) => {
   const userRole = localStorage.getItem('userRole')
   
   // Pages that should only be accessible to agents
-  const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing', '/agent/log-work', '/agent/logs', '/agent/proposition-accepted', '/agent/proposition-rejected']
+  const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing', '/agent/log-work', '/agent/logs', '/agent/logging-dashboard', '/agent/proposition-accepted', '/agent/proposition-rejected']
   
   // Check if the current route is an agent-only page
   if (agentOnlyPages.includes(to.path)) {

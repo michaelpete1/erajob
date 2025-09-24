@@ -1,6 +1,5 @@
 
 <script setup lang="ts">
-import AgentBottomNav from '../../components/AgentBottomNav.vue'
 // No job data needed anymore
 </script>
 
@@ -40,8 +39,5 @@ import AgentBottomNav from '../../components/AgentBottomNav.vue'
         </router-link>
       </div>
     </div>
-    
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>
