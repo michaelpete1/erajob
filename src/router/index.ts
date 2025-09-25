@@ -43,7 +43,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/agent/proposition-accepted', name: 'agent-proposition-accepted', component: () => import('../views/agent/AgentPropositionAccepted.vue') },
   { path: '/agent/proposition-rejected', name: 'agent-proposition-rejected', component: () => import('../views/agent/AgentPropositionRejected.vue') },
   { path: '/agent/welcome-back', name: 'agent-welcome-back', component: () => import('../views/agent/AgentWelcomeBack.vue') },
+  { path: '/agent/notifications', name: 'agent-notifications', component: () => import('../views/agent/AgentNotifications.vue') },
   // removed duplicate/placeholder logging routes; use /agent/logs
+  // Admin flow
+  { path: '/admin/job-approval', name: 'admin-job-approval', component: () => import('../views/admin/AdminJobApproval.vue') },
+  { path: '/admin/notifications', name: 'admin-notifications', component: () => import('../views/admin/AdminNotifications.vue') },
+  { path: '/admin/profile', name: 'admin-profile', component: () => import('../views/admin/AdminProfile.vue') },
   // Utility pages
   { path: '/notifications', name: 'notifications', component: () => import('../views/Notifications.vue') },
   { path: '/messages', name: 'messages', component: () => import('../views/Messages.vue') },
@@ -63,10 +68,13 @@ router.beforeEach((to, _from, next) => {
   const userRole = localStorage.getItem('userRole')
   
   // Pages that should only be accessible to agents
-  const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing', '/agent/log-work', '/agent/logs', '/agent/logging-dashboard', '/agent/proposition-accepted', '/agent/proposition-rejected', '/agent/welcome', '/agent/services', '/agent/congrats', '/agent/welcome-back']
+  const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing', '/agent/log-work', '/agent/logs', '/agent/logging-dashboard', '/agent/proposition-accepted', '/agent/proposition-rejected', '/agent/welcome', '/agent/services', '/agent/congrats', '/agent/welcome-back', '/agent/notifications']
   
   // Pages that should only be accessible to clients
   const clientOnlyPages = ['/client/welcome', '/client/services', '/client/explore-gigs', '/client/projects', '/client/recommended-agents', '/client/work-log', '/client/work-log-dashboard', '/client/notifications', '/client/settings', '/client/profile']
+  
+  // Pages that should only be accessible to admins
+  const adminOnlyPages = ['/admin/job-approval', '/admin/notifications', '/admin/profile']
   
   // Auth pages that don't require role check
   const authPages = ['/sign-in', '/sign-up', '/role-select']
@@ -92,6 +100,16 @@ router.beforeEach((to, _from, next) => {
     if (userRole !== 'client') {
       console.log('Client route accessed by non-client:', to.path, 'Role:', userRole)
       // If user is not a client, redirect to sign in
+      next('/sign-in')
+      return
+    }
+  }
+  
+  // Check if the current route is an admin-only page
+  if (adminOnlyPages.some(page => to.path.startsWith(page))) {
+    if (userRole !== 'admin') {
+      console.log('Admin route accessed by non-admin:', to.path, 'Role:', userRole)
+      // If user is not an admin, redirect to sign in
       next('/sign-in')
       return
     }

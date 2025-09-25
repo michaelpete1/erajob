@@ -9,18 +9,6 @@
     <div class="absolute bottom-24 left-32 w-1.5 h-1.5 sm:bottom-32 sm:left-40 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-16 right-16 w-2.5 h-2.5 sm:bottom-20 sm:right-20 bg-white/15 rounded-full animate-float-delayed-4" />
     
-    <header class="sticky top-0 z-10 flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-teal-500 text-white animate-fade-up">
-      <button @click="$router.push('/role-select')" class="text-white/80 hover:text-white transition-colors text-sm animate-bounce-in">
-        Back
-      </button>
-      <div class="flex items-center gap-2 animate-fade-up-delay-1">
-        <div class="w-2 h-2 rounded-full bg-white/60"></div>
-        <div class="w-2 h-2 rounded-full bg-white"></div>
-        <div class="w-2 h-2 rounded-full bg-white/60"></div>
-        <div class="w-2 h-2 rounded-full bg-white/60"></div>
-      </div>
-      <div class="w-8 h-8 rounded-full bg-white" />
-    </header>
 
     <div class="mx-auto w-full max-w-md sm:max-w-lg px-4 py-6 pb-32">
       <form class="space-y-4 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl animate-fade-up-delay-2">

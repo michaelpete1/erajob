@@ -30,6 +30,11 @@
       <span class="text-xs">Dashboard</span>
     </router-link>
 
+    <router-link :to="'/agent/notifications'" :class="['flex-1', linkClass('/agent/notifications')]" aria-label="Notifications">
+      <MusicalNoteIcon :class="['mb-1', iconClass('/agent/notifications')]" />
+      <span class="text-xs">Notifications</span>
+    </router-link>
+
     <router-link :to="'/messages'" :class="['flex-1', linkClass('/messages')]" aria-label="Messages">
       <MusicalNoteIcon :class="['mb-1', iconClass('/messages')]" />
       <span class="text-xs">Messages</span>

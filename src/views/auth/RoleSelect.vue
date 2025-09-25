@@ -30,6 +30,12 @@
         >
           I am an Agent
         </button>
+        <button
+          @click="selectRole('admin')"
+          class="btn-pressable block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-brand-teal shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-slide-in-up"
+        >
+          I am an Admin
+        </button>
       </div>
       <div class="mt-8 animate-fade-up-delay-3">
         <router-link to="/sign-in" class="text-xs text-white/80 hover:text-white underline transition-colors">Back to Sign in</router-link>
@@ -43,7 +49,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const selectRole = (role: 'client' | 'agent') => {
+const selectRole = (role: 'client' | 'agent' | 'admin') => {
   console.log('RoleSelect: Setting role to:', role)
   
   // Set the user role in localStorage
@@ -71,6 +77,10 @@ const selectRole = (role: 'client' | 'agent') => {
       console.log('RoleSelect: Navigating to agent explore gigs (sign-in flow)')
       router.push('/agent/explore-gigs')
     }
+  } else if (role === 'admin') {
+    // For admin: go to job approval page
+    console.log('RoleSelect: Navigating to admin job approval')
+    router.push('/admin/job-approval')
   } else {
     if (isSignUpFlow) {
       // For sign-up flow: go to client welcome first

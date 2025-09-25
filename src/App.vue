@@ -5,6 +5,7 @@ import AgentNavbar from './components/AgentNavbar.vue'
 import ClientNavbar from './components/ClientNavbar.vue'
 import ClientBottomNav from './components/ClientBottomNav.vue'
 import AgentBottomNav from './components/AgentBottomNavUpdated.vue'
+import AdminBottomNav from './components/AdminBottomNav.vue'
 
 const routeError = ref<string | null>(null)
 const userRole = ref<string>('')
@@ -12,7 +13,7 @@ const currentRoute = useRoute()
 
 // Check if current route is an authentication page
 const isAuthPage = computed(() => {
-  const authRoutes = ['/sign-in', '/sign-up', '/role-select']
+  const authRoutes = ['/', '/sign-in', '/sign-up', '/role-select']
   return authRoutes.includes(currentRoute.path)
 })
 
@@ -28,6 +29,8 @@ const navbarPaddingClass = computed(() => {
     return 'client-navbar-safe'
   } else if (userRole.value === 'agent') {
     return 'agent-navbar-safe'
+  } else if (userRole.value === 'admin') {
+    return 'admin-navbar-safe'
   }
   return ''
 })
@@ -38,6 +41,8 @@ const bottomNavPaddingClass = computed(() => {
     return 'client-bottom-nav-safe'
   } else if (userRole.value === 'agent') {
     return 'agent-bottom-nav-safe'
+  } else if (userRole.value === 'admin') {
+    return 'admin-bottom-nav-safe'
   }
   return ''
 })
@@ -96,6 +101,7 @@ function reloadApp() {
     <!-- Role-specific Bottom Navigation (Mobile Only) -->
     <ClientBottomNav v-if="shouldShowNavbar && userRole === 'client'" />
     <AgentBottomNav v-if="shouldShowNavbar && userRole === 'agent'" />
+    <AdminBottomNav v-if="shouldShowNavbar && userRole === 'admin'" />
     <template v-if="!routeError">
       <router-view v-slot="{ Component }">
         <Transition name="route" mode="out-in">

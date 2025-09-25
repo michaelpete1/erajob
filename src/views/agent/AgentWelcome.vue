@@ -50,7 +50,11 @@
         </div>
 
         <div class="animate-slide-in-left">
-          <input type="text" placeholder="How many hours can you commit per week" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <select class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+            <option value="" disabled selected>How many hours can you commit per week</option>
+            <option value="80 hours part time">80 hours part time</option>
+            <option value="160 hours part time">160 hours part time</option>
+          </select>
         </div>
         <div class="animate-slide-in-right">
           <input type="text" placeholder="Time Zone / Location" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />

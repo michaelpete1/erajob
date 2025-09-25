@@ -1,0 +1,395 @@
+<template>
+  <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 overflow-hidden">
+    <div class="absolute top-0 right-0 h-24 w-24 sm:h-32 sm:w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow"></div>
+    <div class="absolute bottom-0 left-0 h-20 w-20 sm:h-24 sm:w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse"></div>
+    <div class="absolute top-1/2 left-1/2 h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float"></div>
+    
+    <div class="absolute top-16 left-16 sm:top-20 sm:left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1"></div>
+    <div class="absolute top-32 right-24 sm:top-40 sm:right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2"></div>
+    <div class="absolute bottom-24 left-32 sm:bottom-32 sm:left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3"></div>
+    <div class="absolute bottom-16 right-16 sm:bottom-20 sm:right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4"></div>
+
+    <div class="relative z-10 container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-24">
+      <header class="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[90%] sm:w-[92%] max-w-3xl bg-brand-teal text-white rounded-xl px-3 sm:px-4 py-2 sm:py-3 z-50 shadow-md flex items-center justify-between">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button @click="goToJobApproval" aria-label="Back to Job Offers" class="p-1 text-white/95 hover:text-white">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 class="text-sm sm:text-base font-semibold">Admin Notifications</h1>
+        </div>
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button @click="markAllAsRead" class="p-1 text-white/95 hover:text-white" aria-label="Mark all as read">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+          <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/90" />
+        </div>
+      </header>
+
+      <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex gap-2 overflow-x-auto">
+            <button 
+              v-for="filter in filters" 
+              :key="filter.id"
+              @click="activeFilter = filter.id"
+              :class="[
+                'px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors',
+                activeFilter === filter.id 
+                  ? 'bg-brand-teal text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ]"
+            >
+              {{ filter.name }}
+              <span v-if="filter.count" class="ml-1 text-xs">({{ filter.count }})</span>
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <label class="text-xs sm:text-sm text-gray-600">Sort by:</label>
+            <select 
+              v-model="sortBy" 
+              class="px-3 py-1 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="priority">Priority</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <main class="animate-fade-in">
+        <div v-if="filteredNotifications.length > 0">
+          <div v-for="notification in filteredNotifications" :key="notification.id" class="mb-4">
+            <!-- Priority Notification -->
+            <section 
+              v-if="notification.type === 'priority'" 
+              class="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">🔥</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-red-600 font-semibold">{{ notification.time }}</p>
+                    <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button 
+                      v-for="action in notification.actions" 
+                      :key="action"
+                      @click="handleNotificationAction(notification.id, action)"
+                      :class="[
+                        'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors',
+                        action === 'Approve' ? 'bg-red-500 text-white hover:bg-red-600' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      ]"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Info Notification -->
+            <section 
+              v-else-if="notification.type === 'info'" 
+              class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">ℹ️</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-blue-600 font-semibold">{{ notification.time }}</p>
+                    <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button 
+                      v-for="action in notification.actions" 
+                      :key="action"
+                      @click="handleNotificationAction(notification.id, action)"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Success Notification -->
+            <section 
+              v-else-if="notification.type === 'success'" 
+              class="bg-green-50 border-l-4 border-green-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">✅</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-green-600 font-semibold">{{ notification.time }}</p>
+                    <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button 
+                      v-for="action in notification.actions" 
+                      :key="action"
+                      @click="handleNotificationAction(notification.id, action)"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Default Notification -->
+            <section 
+              v-else 
+              class="bg-white/95 backdrop-blur-sm border-l-4 border-gray-300 rounded-xl p-4 sm:p-5 shadow-lg"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-400 flex-shrink-0" />
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-gray-600">{{ notification.time }}</p>
+                    <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button 
+                      v-for="action in notification.actions" 
+                      :key="action"
+                      @click="handleNotificationAction(notification.id, action)"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else class="text-center py-12 sm:py-16">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-2.81a6.002 6.002 0 00-1.238-3.037l-.95-.95a2.5 2.5 0 01-3.536 0L10 11.414l-1.414 1.414a2.5 2.5 0 01-3.536 0L3 11.414V17h12zm-4-9a1 1 0 100-2 1 1 0 000 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg sm:text-xl font-semibold text-white mb-2">No notifications</h3>
+          <p class="text-sm text-white/80">You're all caught up! No new notifications at this time.</p>
+        </div>
+      </main>
+    </div>
+    <!-- Admin Bottom Navigation -->
+    <AdminBottomNav />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import AdminBottomNav from '../../components/AdminBottomNav.vue';
+
+interface Notification {
+  id: string;
+  type: 'priority' | 'info' | 'success' | 'default';
+  title: string;
+  description: string;
+  time: string;
+  actions: string[];
+  read: boolean;
+}
+
+interface Filter {
+  id: string;
+  name: string;
+  count: number;
+}
+
+const activeFilter = ref<string>('all');
+const sortBy = ref<string>('newest');
+const notifications = ref<Notification[]>([
+  {
+    id: '1',
+    type: 'priority',
+    title: 'New Job Approval Required',
+    description: 'A new job submission from Matt Barrie requires your approval. The job is for "Create a Social Media Banner for a Fitness Brand" with a rate of $68/hr.',
+    time: '2 hours ago',
+    actions: ['Review', 'Approve'],
+    read: false
+  },
+  {
+    id: '2',
+    type: 'info',
+    title: 'System Update Scheduled',
+    description: 'A system maintenance update is scheduled for tonight at 2:00 AM. The system will be unavailable for approximately 2 hours.',
+    time: '5 hours ago',
+    actions: ['Details'],
+    read: false
+  },
+  {
+    id: '3',
+    type: 'success',
+    title: 'Job Approved Successfully',
+    description: 'The job "Complete Freelancer Application UI/UX Revamp" by Jenny Wilson has been approved and is now live on the platform.',
+    time: '1 day ago',
+    actions: ['View Job'],
+    read: true
+  },
+  {
+    id: '4',
+    type: 'priority',
+    title: 'Agent Verification Pending',
+    description: 'New agent Sarah Johnson has completed the onboarding process and requires verification before they can start accepting jobs.',
+    time: '1 day ago',
+    actions: ['Verify', 'Review Profile'],
+    read: false
+  },
+  {
+    id: '5',
+    type: 'info',
+    title: 'Monthly Report Available',
+    description: 'Your monthly admin report is now available. This includes job approval statistics, agent performance metrics, and platform usage data.',
+    time: '2 days ago',
+    actions: ['Download Report'],
+    read: true
+  }
+]);
+
+const filters = ref<Filter[]>([
+  { id: 'all', name: 'All', count: 5 },
+  { id: 'priority', name: 'Priority', count: 2 },
+  { id: 'unread', name: 'Unread', count: 3 },
+  { id: 'system', name: 'System', count: 2 }
+]);
+
+const filteredNotifications = computed(() => {
+  let filtered = notifications.value;
+
+  // Apply filter
+  if (activeFilter.value === 'priority') {
+    filtered = filtered.filter(n => n.type === 'priority');
+  } else if (activeFilter.value === 'unread') {
+    filtered = filtered.filter(n => !n.read);
+  } else if (activeFilter.value === 'system') {
+    filtered = filtered.filter(n => n.type === 'info' || n.type === 'success');
+  }
+
+  // Apply sorting
+  if (sortBy.value === 'newest') {
+    filtered.sort((a, b) => {
+      const timeA = new Date(a.time).getTime();
+      const timeB = new Date(b.time).getTime();
+      return timeB - timeA;
+    });
+  } else if (sortBy.value === 'oldest') {
+    filtered.sort((a, b) => {
+      const timeA = new Date(a.time).getTime();
+      const timeB = new Date(b.time).getTime();
+      return timeA - timeB;
+    });
+  } else if (sortBy.value === 'priority') {
+    const priorityOrder = { 'priority': 0, 'info': 1, 'success': 2, 'default': 3 };
+    filtered.sort((a, b) => priorityOrder[a.type] - priorityOrder[b.type]);
+  }
+
+  return filtered;
+});
+
+const markAllAsRead = () => {
+  notifications.value.forEach(notification => {
+    notification.read = true;
+  });
+};
+
+const removeNotification = (id: string) => {
+  const index = notifications.value.findIndex(n => n.id === id);
+  if (index > -1) {
+    notifications.value.splice(index, 1);
+  }
+};
+
+const handleNotificationAction = (notificationId: string, action: string) => {
+  const notification = notifications.value.find(n => n.id === notificationId);
+  if (notification) {
+    console.log(`Action "${action}" clicked for notification:`, notification.title);
+    
+    // Handle specific actions
+    if (action === 'Review' || action === 'Approve') {
+      // Navigate to job approval page
+      // In a real app, this would navigate to the specific job
+      console.log('Navigating to job approval page...');
+    } else if (action === 'Verify') {
+      // Navigate to agent verification
+      console.log('Navigating to agent verification...');
+    }
+    
+    // Mark as read when action is taken
+    notification.read = true;
+  }
+};
+
+// Update filter counts
+const updateFilterCounts = () => {
+  const allCount = notifications.value.length;
+  const priorityCount = notifications.value.filter(n => n.type === 'priority').length;
+  const unreadCount = notifications.value.filter(n => !n.read).length;
+  const systemCount = notifications.value.filter(n => n.type === 'info' || n.type === 'success').length;
+
+  filters.value = [
+    { id: 'all', name: 'All', count: allCount },
+    { id: 'priority', name: 'Priority', count: priorityCount },
+    { id: 'unread', name: 'Unread', count: unreadCount },
+    { id: 'system', name: 'System', count: systemCount }
+  ];
+};
+
+// Initialize filter counts
+updateFilterCounts();
+
+const router = useRouter();
+
+const goToJobApproval = () => {
+  router.push('/admin/job-approval');
+};
+</script>
+
+<style scoped>
+/* Scoped styles can be added here */
+</style>
