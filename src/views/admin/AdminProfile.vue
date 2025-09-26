@@ -12,7 +12,7 @@
     <div class="relative z-10 container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-24">
       <header class="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[90%] sm:w-[92%] max-w-3xl bg-brand-teal text-white rounded-xl px-3 sm:px-4 py-2 sm:py-3 z-50 shadow-md flex items-center justify-between">
         <div class="flex items-center gap-2 sm:gap-3">
-          <button @click="confirmLogout" aria-label="Logout" class="p-1.5 sm:p-2 text-white/95 hover:text-white rounded-md hover:bg-white/10 transition-colors">
+          <button @click="goBack" aria-label="Back" class="p-1.5 sm:p-2 text-white/95 hover:text-white rounded-md hover:bg-white/10 transition-colors">
             <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
@@ -132,6 +132,14 @@
 
 <script setup lang="ts">
 import AdminBottomNav from '../../components/AdminBottomNav.vue';
+
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const goBack = () => {
+  router.push('/admin/job-approval');
+};
 
 const confirmLogout = () => {
   if (confirm('Are you sure you want to logout?')) {

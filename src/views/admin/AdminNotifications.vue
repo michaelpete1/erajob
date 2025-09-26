@@ -17,7 +17,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 class="text-sm sm:text-base font-semibold">Admin Notifications</h1>
+          <h1 class="text-sm sm:text-base font-semibold display-font">Admin Notifications</h1>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
           <button @click="markAllAsRead" class="p-1 text-white/95 hover:text-white" aria-label="Mark all as read">
@@ -37,10 +37,10 @@
               :key="filter.id"
               @click="activeFilter = filter.id"
               :class="[
-                'px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors',
+                'px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300 btn-pressable',
                 activeFilter === filter.id 
-                  ? 'bg-brand-teal text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-brand-teal text-white animate-pulse-subtle' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
               ]"
             >
               {{ filter.name }}
@@ -62,13 +62,13 @@
         </div>
       </div>
 
-      <main class="animate-fade-in">
+      <main>
         <div v-if="filteredNotifications.length > 0">
-          <div v-for="notification in filteredNotifications" :key="notification.id" class="mb-4">
+          <div v-for="(notification, index) in filteredNotifications" :key="notification.id" :class="`animate-stagger-${(index % 4) + 1}`" class="mb-4">
             <!-- Priority Notification -->
             <section 
               v-if="notification.type === 'priority'" 
-              class="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm"
+              class="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
             >
               <div class="flex items-start gap-3 sm:gap-4">
                 <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-400 flex items-center justify-center flex-shrink-0">
@@ -83,7 +83,7 @@
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
                   <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
                     <button 
@@ -91,7 +91,7 @@
                       :key="action"
                       @click="handleNotificationAction(notification.id, action)"
                       :class="[
-                        'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors',
+                        'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]',
                         action === 'Approve' ? 'bg-red-500 text-white hover:bg-red-600' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                       ]"
                     >
@@ -105,7 +105,7 @@
             <!-- Info Notification -->
             <section 
               v-else-if="notification.type === 'info'" 
-              class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm"
+              class="bg-blue-50 border-l-4 border-blue-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
             >
               <div class="flex items-start gap-3 sm:gap-4">
                 <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-400 flex items-center justify-center flex-shrink-0">
@@ -120,14 +120,14 @@
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
                   <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
                     <button 
                       v-for="action in notification.actions" 
                       :key="action"
                       @click="handleNotificationAction(notification.id, action)"
-                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
                     >
                       {{ action }}
                     </button>
@@ -139,7 +139,7 @@
             <!-- Success Notification -->
             <section 
               v-else-if="notification.type === 'success'" 
-              class="bg-green-50 border-l-4 border-green-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm"
+              class="bg-green-50 border-l-4 border-green-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
             >
               <div class="flex items-start gap-3 sm:gap-4">
                 <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-400 flex items-center justify-center flex-shrink-0">
@@ -154,14 +154,14 @@
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
                   <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
                     <button 
                       v-for="action in notification.actions" 
                       :key="action"
                       @click="handleNotificationAction(notification.id, action)"
-                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
                     >
                       {{ action }}
                     </button>
@@ -173,7 +173,7 @@
             <!-- Default Notification -->
             <section 
               v-else 
-              class="bg-white/95 backdrop-blur-sm border-l-4 border-gray-300 rounded-xl p-4 sm:p-5 shadow-lg"
+              class="bg-white/95 backdrop-blur-sm border-l-4 border-gray-300 rounded-xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
             >
               <div class="flex items-start gap-3 sm:gap-4">
                 <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-400 flex-shrink-0" />
@@ -186,14 +186,14 @@
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
                   <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
                     <button 
                       v-for="action in notification.actions" 
                       :key="action"
                       @click="handleNotificationAction(notification.id, action)"
-                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
                     >
                       {{ action }}
                     </button>

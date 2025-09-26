@@ -5,7 +5,7 @@
         <svg class="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2h2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6"></path>
         </svg>
-        <p class="text-xs sm:text-sm mt-0.5">Job Offers</p>
+        <p class="text-xs sm:text-sm mt-0.5">Job Review</p>
       </router-link>
     </div>
     <div class="text-center flex-1" :class="{ 'text-teal-500': $route.path === '/admin/notifications', 'text-gray-500': $route.path !== '/admin/notifications' }">

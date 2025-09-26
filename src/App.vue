@@ -11,10 +11,38 @@ const routeError = ref<string | null>(null)
 const userRole = ref<string>('')
 const currentRoute = useRoute()
 
-// Check if current route is an authentication page
+// Check if current route is an authentication page or signup process page
 const isAuthPage = computed(() => {
-  const authRoutes = ['/', '/sign-in', '/sign-up', '/role-select']
-  return authRoutes.includes(currentRoute.path)
+  const authRoutes = [
+    '/', 
+    '/sign-in', 
+    '/sign-up', 
+    '/role-select',
+    // Client signup process
+    '/client/welcome',
+    '/client/services',
+    '/client/additional',
+    '/client/congrats',
+    // Agent signup process
+    '/agent/welcome',
+    '/agent/services',
+    '/agent/congrats',
+    '/agent/welcome-back',
+    '/agent/explore-gigs',
+    // Admin auth
+    '/admin/sign-in'
+  ]
+  return authRoutes.includes(currentRoute.path) || 
+         currentRoute.path.startsWith('/client/welcome') ||
+         currentRoute.path.startsWith('/client/services') ||
+         currentRoute.path.startsWith('/client/additional') ||
+         currentRoute.path.startsWith('/client/congrats') ||
+         currentRoute.path.startsWith('/agent/welcome') ||
+         currentRoute.path.startsWith('/agent/services') ||
+         currentRoute.path.startsWith('/agent/congrats') ||
+         currentRoute.path.startsWith('/agent/welcome-back') ||
+         currentRoute.path.startsWith('/agent/explore-gigs') ||
+         currentRoute.path.startsWith('/admin/sign-in')
 })
 
 // Check if navbar should be shown

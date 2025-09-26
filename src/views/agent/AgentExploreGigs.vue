@@ -63,14 +63,10 @@
         </div>
       </div>
     </div>
-    
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
     </div>
   </template>
   
   <script setup lang="ts">
-  import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
   </script>
 
 <style scoped>

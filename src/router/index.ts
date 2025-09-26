@@ -7,6 +7,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/sign-in', name: 'sign-in', component: () => import('../views/auth/SignIn.vue') },
   { path: '/sign-up', name: 'sign-up', component: () => import('../views/auth/SignUp.vue') },
   { path: '/role-select', name: 'role-select', component: () => import('../views/auth/RoleSelect.vue') },
+  // Admin auth
+  { path: '/admin/sign-in', name: 'admin-sign-in', component: () => import('../views/admin/AdminSignIn.vue') },
   // Client flow
   { path: '/client/welcome', name: 'client-welcome', component: () => import('../views/client/ClientWelcome.vue') },
   { path: '/client/services', name: 'client-services', component: () => import('../views/client/ClientServices.vue') },
@@ -49,6 +51,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/admin/job-approval', name: 'admin-job-approval', component: () => import('../views/admin/AdminJobApproval.vue') },
   { path: '/admin/notifications', name: 'admin-notifications', component: () => import('../views/admin/AdminNotifications.vue') },
   { path: '/admin/profile', name: 'admin-profile', component: () => import('../views/admin/AdminProfile.vue') },
+  { path: '/admin/job/:id', name: 'admin-job-details', component: () => import('../views/admin/AdminJobDetails.vue') },
+  { path: '/admin/job/:id/reject', name: 'admin-job-rejection', component: () => import('../views/admin/AdminJobRejection.vue') },
   // Utility pages
   { path: '/notifications', name: 'notifications', component: () => import('../views/Notifications.vue') },
   { path: '/messages', name: 'messages', component: () => import('../views/Messages.vue') },
@@ -74,10 +78,10 @@ router.beforeEach((to, _from, next) => {
   const clientOnlyPages = ['/client/welcome', '/client/services', '/client/explore-gigs', '/client/projects', '/client/recommended-agents', '/client/work-log', '/client/work-log-dashboard', '/client/notifications', '/client/settings', '/client/profile']
   
   // Pages that should only be accessible to admins
-  const adminOnlyPages = ['/admin/job-approval', '/admin/notifications', '/admin/profile']
+  const adminOnlyPages = ['/admin/job-approval', '/admin/notifications', '/admin/profile', '/admin/job', '/admin/job-rejection']
   
   // Auth pages that don't require role check
-  const authPages = ['/sign-in', '/sign-up', '/role-select']
+  const authPages = ['/sign-in', '/sign-up', '/role-select', '/admin/sign-in']
   
   // Skip role check for auth pages and utility pages
   if (authPages.includes(to.path) || to.path.startsWith('/terms-and-conditions')) {

@@ -162,16 +162,12 @@
       </div>
 
   </div>
-  
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
 import BrandLogo from '../../components/BrandLogo.vue'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'

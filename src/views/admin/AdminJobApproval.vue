@@ -17,7 +17,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 class="text-sm sm:text-base font-semibold">Job Approval</h1>
+          <h1 class="text-sm sm:text-base font-semibold display-font">Job Approval</h1>
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
           <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/90" />
@@ -42,23 +42,23 @@
         <div class="bg-white/95 backdrop-blur-sm rounded-full p-1 flex items-center gap-1 shadow-sm w-full max-w-xs">
           <button 
             @click="currentTab = 'Approved'" 
-            :class="currentTab === 'Approved' ? 'bg-brand-teal text-white' : 'text-gray-700'"
-            class="flex-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 min-h-[40px] touch-manipulation"
+            :class="currentTab === 'Approved' ? 'bg-brand-teal text-white animate-pulse-subtle' : 'text-gray-700 hover:bg-gray-100'"
+            class="flex-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 min-h-[40px] touch-manipulation btn-pressable"
           >
             Approved
           </button>
           <button 
             @click="currentTab = 'Pending'" 
-            :class="currentTab === 'Pending' ? 'bg-brand-teal text-white' : 'text-gray-700'"
-            class="flex-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 min-h-[40px] touch-manipulation"
+            :class="currentTab === 'Pending' ? 'bg-brand-teal text-white animate-pulse-subtle' : 'text-gray-700 hover:bg-gray-100'"
+            class="flex-1 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 min-h-[40px] touch-manipulation btn-pressable"
           >
             Pending
           </button>
         </div>
       </div>
 
-      <div class="space-y-3 sm:space-y-4 animate-fade-in">
-        <div v-for="job in filteredJobs" :key="job.id" class="bg-white/95 backdrop-blur-sm p-4 sm:p-5 rounded-xl shadow-lg border-l-4 border-white/30 cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+      <div class="space-y-3 sm:space-y-4">
+        <div v-for="(job, index) in filteredJobs" :key="job.id" :class="`animate-stagger-${(index % 4) + 1}`" class="bg-white/95 backdrop-blur-sm p-4 sm:p-5 rounded-xl shadow-lg border-l-4 border-white/30 cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02]">
           
           <div class="flex items-center text-xs text-gray-500 mb-2">
             <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -67,7 +67,7 @@
             <span>{{ job.timeAgo }}</span>
           </div>
 
-          <h4 class="text-sm sm:text-lg font-bold mb-3 text-gray-900">{{ job.title }}</h4>
+          <h4 class="text-sm sm:text-lg font-bold mb-3 text-gray-900 display-font">{{ job.title }}</h4>
           
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
             <div class="flex items-center text-gray-600">
@@ -90,7 +90,7 @@
               <button 
                 v-if="job.status === 'Pending'"
                 @click="approveJob(job.id)" 
-                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
+                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
               >
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -100,7 +100,7 @@
               <button 
                 v-if="job.status === 'Pending'"
                 @click="rejectJob(job.id)" 
-                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
+                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
               >
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -109,7 +109,7 @@
               </button>
               <button 
                 @click="viewJobDetails(job.id)" 
-                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
+                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
               >
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -130,8 +130,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import AdminBottomNav from '../../components/AdminBottomNav.vue';
 
+const router = useRouter();
 const currentTab = ref('Approved'); // Default tab to display
 
 const allJobs = ref([
@@ -164,20 +166,15 @@ const approveJob = (jobId: number) => {
 };
 
 const rejectJob = (jobId: number) => {
-    console.log('Rejecting job:', jobId);
-    // In a real app, this would call an API to reject the job
-    const jobIndex = allJobs.value.findIndex(j => j.id === jobId);
-    if (jobIndex !== -1) {
-        allJobs.value.splice(jobIndex, 1);
-        // Show rejection message or notification
-    }
+    console.log('Navigating to rejection page for job:', jobId);
+    // Navigate to the rejection reason page
+    router.push(`/admin/job/${jobId}/reject`);
 };
 
 const viewJobDetails = (jobId: number) => {
     console.log('Viewing details for job:', jobId);
-    // In a real app, this would navigate to a detailed job view
-    // For now, we'll just log it
-    alert(`Viewing details for job #${jobId}`);
+    // Navigate to the job details page
+    router.push(`/admin/job/${jobId}`);
 };
 
 const deleteSelectedJobs = () => {
