@@ -243,7 +243,7 @@
             </button>
             <button
               @click="submitRejection"
-              :disabled="isSubmittingRejection || !rejectionReason.value.trim()"
+              :disabled="isSubmittingRejection || !rejectionReason.trim()"
               class="flex-1 px-4 py-2.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <svg v-if="isSubmittingRejection" class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -141,15 +141,6 @@ const goBack = () => {
   router.push('/admin/job-approval');
 };
 
-const confirmLogout = () => {
-  if (confirm('Are you sure you want to logout?')) {
-    // Clear admin data and redirect to sign-in
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userInfo');
-    // In a real app, you might also clear admin-specific data
-    window.location.href = '/sign-in';
-  }
-};
 </script>
 
 <style scoped>
