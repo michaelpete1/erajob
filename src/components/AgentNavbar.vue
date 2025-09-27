@@ -1,73 +1,75 @@
 <template>
   <nav class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm shadow-sm z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
+      <div class="relative min-h-[64px]">
         <!-- Logo/Brand -->
-        <div class="flex items-center">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2">
           <BrandLogo />
         </div>
 
         <!-- Desktop Navigation -->
-        <div class="hidden md:flex items-center space-x-1">
-          <router-link 
-            :to="'/agent/gigs-listing'" 
-            :class="navLinkClass('/agent/gigs-listing')"
-          >
-            <PencilSquareIcon :class="navIconClass('/agent/gigs-listing')" />
-            <span>Projects</span>
-          </router-link>
-          
-          <router-link 
-            :to="'/agent/log-work'" 
-            :class="navLinkClass('/agent/log-work')"
-          >
-            <PencilSquareIcon :class="navIconClass('/agent/log-work')" />
-            <span>Log Work</span>
-          </router-link>
+        <div class="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div class="flex items-center gap-1">
+            <router-link 
+              :to="'/agent/gigs-listing'" 
+              :class="navLinkClass('/agent/gigs-listing')"
+            >
+              <PencilSquareIcon :class="navIconClass('/agent/gigs-listing')" />
+              <span>Projects</span>
+            </router-link>
+            
+            <router-link 
+              :to="'/agent/log-work'" 
+              :class="navLinkClass('/agent/log-work')"
+            >
+              <PencilSquareIcon :class="navIconClass('/agent/log-work')" />
+              <span>Log Work</span>
+            </router-link>
 
-          <router-link 
-            :to="'/agent/logging-dashboard'" 
-            :class="navLinkClass('/agent/logging-dashboard')"
-          >
-            <ChartBarIcon :class="navIconClass('/agent/logging-dashboard')" />
-            <span>Dashboard</span>
-          </router-link>
+            <router-link 
+              :to="'/agent/logging-dashboard'" 
+              :class="navLinkClass('/agent/logging-dashboard')"
+            >
+              <ChartBarIcon :class="navIconClass('/agent/logging-dashboard')" />
+              <span>Dashboard</span>
+            </router-link>
 
-          <router-link 
-            :to="'/messages'" 
-            :class="['relative', navLinkClass('/messages')]"
-          >
-            <MusicalNoteIcon :class="navIconClass('/messages')" />
-            <span>Messages</span>
-            <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
-          </router-link>
+            <router-link 
+              :to="'/messages'" 
+              :class="['relative', navLinkClass('/messages')]"
+            >
+              <MusicalNoteIcon :class="navIconClass('/messages')" />
+              <span>Messages</span>
+              <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
+            </router-link>
 
-          <router-link 
-            :to="'/settings'" 
-            :class="navLinkClass('/settings')"
-          >
-            <AdjustmentsHorizontalIcon :class="navIconClass('/settings')" />
-            <span>Settings</span>
-          </router-link>
+            <router-link 
+              :to="'/settings'" 
+              :class="navLinkClass('/settings')"
+            >
+              <AdjustmentsHorizontalIcon :class="navIconClass('/settings')" />
+              <span>Settings</span>
+            </router-link>
+          </div>
         </div>
 
         <!-- User Profile (Desktop) -->
-        <div class="hidden md:flex items-center space-x-3">
+        <div class="hidden md:block absolute right-4 top-1/2 -translate-y-1/2">
           <div class="flex items-center space-x-2">
             <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
               <span class="text-gray-600 text-sm font-medium">
                 {{ userInitial }}
               </span>
             </div>
-            <span class="text-sm text-gray-700">{{ userRoleDisplay }}</span>
+            <span class="text-sm text-gray-700 whitespace-nowrap">{{ userRoleDisplay }}</span>
           </div>
         </div>
 
         <!-- Mobile menu button -->
-        <div class="md:hidden">
+        <div class="md:hidden absolute right-4 top-1/2 -translate-y-1/2">
           <button 
             @click="toggleMobileMenu" 
-            class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-teal"
+            class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-teal min-h-[44px] min-w-[44px] touch-manipulation"
             aria-expanded="false"
           >
             <span class="sr-only">Open main menu</span>
@@ -197,13 +199,17 @@ function navLinkClass(path: string) {
     'flex',
     'items-center',
     'space-x-2',
-    'px-3',
+    'px-2',
     'py-2',
     'rounded-md',
     'text-sm',
     'font-medium',
     'transition-colors',
     'duration-200',
+    'whitespace-nowrap',
+    'min-h-[40px]',
+    'touch-manipulation',
+    'flex-shrink-0',
     isActive 
       ? 'bg-brand-teal/10 text-brand-teal' 
       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -226,12 +232,15 @@ function mobileNavLinkClass(path: string) {
     'items-center',
     'space-x-3',
     'px-3',
-    'py-2',
+    'py-2.5',
     'rounded-md',
     'text-base',
     'font-medium',
     'transition-colors',
     'duration-200',
+    'whitespace-nowrap',
+    'min-h-[48px]',
+    'touch-manipulation',
     isActive 
       ? 'bg-brand-teal/10 text-brand-teal' 
       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -269,5 +278,10 @@ onBeforeUnmount(() => {
 .mobile-menu-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+/* Ensure navbar content doesn't overflow */
+.navbar-content {
+  overflow-x: hidden;
 }
 </style>

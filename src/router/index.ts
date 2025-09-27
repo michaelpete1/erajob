@@ -28,6 +28,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/client/work-log-dashboard', name: 'client-work-log-dashboard', component: () => import('../views/client/ClientWorkLogDashboard.vue') },
   { path: '/client/notifications', name: 'client-notifications', component: () => import('../views/client/ClientNotifications.vue') },
   { path: '/client/settings', name: 'client-settings', component: () => import('../views/client/ClientSettings.vue') },
+  { path: '/client/account', name: 'client-account', component: () => import('../views/client/ClientAccount.vue') },
   { path: '/client/profile', name: 'client-profile', component: () => import('../views/client/ClientProfile.vue') },
   // Agent flow
   { path: '/agent/welcome', name: 'agent-welcome', component: () => import('../views/agent/AgentWelcome.vue') },
@@ -56,6 +57,8 @@ const routes: RouteRecordRaw[] = [
   // Utility pages
   { path: '/notifications', name: 'notifications', component: () => import('../views/Notifications.vue') },
   { path: '/messages', name: 'messages', component: () => import('../views/Messages.vue') },
+  { path: '/chat/:id', name: 'chat', component: () => import('../views/Chat.vue') },
+  { path: '/call/:id', name: 'call', component: () => import('../views/Call.vue') },
   { path: '/settings', name: 'settings', component: () => import('../views/Settings.vue') },
   { path: '/profile-settings', name: 'profile-settings', component: () => import('../views/ProfileSettings.vue') },
   { path: '/terms-and-conditions', name: 'terms-and-conditions', component: () => import('../views/TermsAndConditions.vue') },
@@ -75,7 +78,7 @@ router.beforeEach((to, _from, next) => {
   const agentOnlyPages = ['/agent/explore-gigs', '/agent/gigs-listing', '/agent/log-work', '/agent/logs', '/agent/logging-dashboard', '/agent/proposition-accepted', '/agent/proposition-rejected', '/agent/welcome', '/agent/services', '/agent/congrats', '/agent/welcome-back', '/agent/notifications']
   
   // Pages that should only be accessible to clients
-  const clientOnlyPages = ['/client/welcome', '/client/services', '/client/explore-gigs', '/client/projects', '/client/recommended-agents', '/client/work-log', '/client/work-log-dashboard', '/client/notifications', '/client/settings', '/client/profile']
+  const clientOnlyPages = ['/client/welcome', '/client/services', '/client/explore-gigs', '/client/projects', '/client/recommended-agents', '/client/work-log', '/client/work-log-dashboard', '/client/notifications', '/client/settings', '/client/profile', '/client/account']
   
   // Pages that should only be accessible to admins
   const adminOnlyPages = ['/admin/job-approval', '/admin/notifications', '/admin/profile', '/admin/job', '/admin/job-rejection']

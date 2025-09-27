@@ -123,10 +123,10 @@
 
       <!-- Settings Options -->
       <div class="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-hidden border border-gray-100">
-        <!-- Account Settings -->
+        <!-- Account -->
         <div 
           class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer active:bg-gray-100"
-          @click="handleSectionClick('account')"
+          @click="goToAccount"
         >
           <div class="flex items-center gap-3 sm:gap-4">
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -135,8 +135,8 @@
               </svg>
             </div>
             <div class="text-left">
-              <h3 class="font-medium text-gray-900 text-sm sm:text-base">Account Settings</h3>
-              <p class="text-xs sm:text-sm text-gray-500">Update your personal information and security</p>
+              <h3 class="font-medium text-gray-900 text-sm sm:text-base">Account</h3>
+              <p class="text-xs sm:text-sm text-gray-500">View your account details</p>
             </div>
           </div>
           <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -227,47 +227,7 @@
           </div>
         </div>
 
-        <!-- Privacy & Security -->
-        <div 
-          class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer active:bg-gray-100"
-          @click="handleSectionClick('privacy')"
-        >
-          <div class="flex items-center gap-3 sm:gap-4">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-              </svg>
-            </div>
-            <div class="text-left">
-              <h3 class="font-medium text-gray-900 text-sm sm:text-base">Privacy & Security</h3>
-              <p class="text-xs sm:text-sm text-gray-500">Manage your privacy and security settings</p>
-            </div>
-          </div>
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-          </svg>
-        </div>
 
-        <!-- Help & Support -->
-        <div 
-          class="flex items-center justify-between p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer active:bg-gray-100"
-          @click="handleSectionClick('help')"
-        >
-          <div class="flex items-center gap-3 sm:gap-4">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-teal-100 rounded-full flex items-center justify-center">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <div class="text-left">
-              <h3 class="font-medium text-gray-900 text-sm sm:text-base">Help & Support</h3>
-              <p class="text-xs sm:text-sm text-gray-500">Get help and contact support</p>
-            </div>
-          </div>
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-          </svg>
-        </div>
       </div>
 
       <!-- Sign Out Button -->
@@ -356,11 +316,13 @@ const selectLanguage = (language) => {
 
 const handleSectionClick = (section) => {
   console.log('Section clicked:', section)
-  if (section === 'account') {
-    showAccountSettings.value = !showAccountSettings.value
-  } else {
-    alert(`Opening ${section} settings...`)
-  }
+  alert(`Opening ${section} settings...`)
+}
+
+const goToAccount = () => {
+  console.log('Navigating to account page...')
+  // Navigate to account view page
+  router.push('/client/account')
 }
 
 const saveProfile = () => {

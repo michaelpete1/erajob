@@ -91,10 +91,10 @@ const goToLog = (log: any) => {
       <!-- Stats Overview -->
       <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
-          <h2 class="text-lg sm:text-xl font-bold text-gray-800">Logged Hours</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-gray-800 break-words">Logged Hours</h2>
           <div class="text-center sm:text-right">
             <div class="text-xs sm:text-sm text-gray-500">Total Hours</div>
-            <div class="text-xl sm:text-2xl font-bold text-teal-500">{{ totalHours }} h</div>
+            <div class="text-xl sm:text-2xl font-bold text-teal-500 whitespace-nowrap">{{ totalHours }} h</div>
           </div>
         </div>
         
@@ -103,14 +103,14 @@ const goToLog = (log: any) => {
           <button 
             @click="activeTab = 'daily'" 
             :class="activeTab === 'daily' ? 'bg-white text-teal-500 shadow-sm' : 'text-gray-600 hover:text-gray-800'" 
-            class="flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-all duration-200"
+            class="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 min-h-[44px] touch-manipulation"
           >
             Daily
           </button>
           <button 
             @click="activeTab = 'weekly'" 
             :class="activeTab === 'weekly' ? 'bg-white text-teal-500 shadow-sm' : 'text-gray-600 hover:text-gray-800'" 
-            class="flex-1 py-2 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-all duration-200"
+            class="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 min-h-[44px] touch-manipulation"
           >
             Weekly
           </button>
@@ -118,21 +118,21 @@ const goToLog = (log: any) => {
 
         <!-- Bar Chart -->
         <div class="bg-gray-50 rounded-xl p-3 sm:p-4">
-          <div class="flex items-end justify-between h-32 sm:h-40 mb-2">
+          <div class="flex items-end justify-between h-24 sm:h-32 md:h-40 mb-2">
             <div 
               v-for="(item, index) in currentChartData" 
               :key="index"
-              class="flex flex-col items-center flex-1 px-1"
+              class="flex flex-col items-center flex-1 px-0.5 sm:px-1"
             >
               <div 
-                class="w-full max-w-[2rem] sm:max-w-[2.5rem] bg-teal-500 rounded-t-lg transition-all duration-300 hover:bg-teal-600"
+                class="w-full max-w-[1.5rem] sm:max-w-[2rem] md:max-w-[2.5rem] bg-teal-500 rounded-t-lg transition-all duration-300 hover:bg-teal-600"
                 :style="{ height: `${(item.hours / maxHours) * 100}%` }"
               >
-                <div class="text-[10px] sm:text-xs text-white font-semibold text-center pt-1">
+                <div class="text-[8px] sm:text-[10px] md:text-xs text-white font-semibold text-center pt-0.5 sm:pt-1 break-words px-0.5">
                   {{ item.hours }}h
                 </div>
               </div>
-              <div class="text-[10px] sm:text-xs text-gray-600 mt-1 sm:mt-2 font-medium">
+              <div class="text-[9px] sm:text-[10px] md:text-xs text-gray-600 mt-1 sm:mt-2 font-medium whitespace-nowrap">
                 {{ getChartItemLabel(item) }}
               </div>
             </div>
@@ -142,7 +142,7 @@ const goToLog = (log: any) => {
 
       <!-- Recent Logs -->
       <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
-        <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">Recent Logs</h3>
+        <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 break-words">Recent Logs</h3>
         <div class="space-y-3">
           <div
             v-for="log in logs"
@@ -150,17 +150,17 @@ const goToLog = (log: any) => {
             @click="goToLog(log)"
             class="bg-gray-50 rounded-xl p-3 sm:p-4 hover:bg-gray-100 transition-colors duration-200 cursor-pointer border border-gray-100"
           >
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
+            <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-0">
+              <div class="flex-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-2">
                   <div class="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0"></div>
-                  <div class="text-xs text-gray-500 font-medium">{{ log.date }}</div>
-                  <div class="px-2 py-1 bg-teal-100 text-teal-600 text-xs rounded-full font-semibold">
+                  <div class="text-xs text-gray-500 font-medium whitespace-nowrap">{{ log.date }}</div>
+                  <div class="px-2 py-1 bg-teal-100 text-teal-600 text-xs rounded-full font-semibold whitespace-nowrap">
                     {{ log.hours }}h
                   </div>
                 </div>
-                <h4 class="font-semibold text-gray-800 mb-1 text-sm sm:text-base">{{ log.title }}</h4>
-                <p class="text-xs sm:text-sm text-gray-600">{{ log.comment }}</p>
+                <h4 class="font-semibold text-gray-800 mb-1 text-sm sm:text-base break-words">{{ log.title }}</h4>
+                <p class="text-xs sm:text-sm text-gray-600 break-words leading-relaxed">{{ log.comment }}</p>
               </div>
             </div>
           </div>
@@ -168,7 +168,7 @@ const goToLog = (log: any) => {
         
         <!-- View All Button -->
         <div class="mt-4 sm:mt-6 text-center">
-          <button class="text-teal-500 font-semibold hover:text-teal-600 transition-colors duration-200 text-sm sm:text-base">
+          <button class="text-teal-500 font-semibold hover:text-teal-600 transition-colors duration-200 text-sm sm:text-base touch-manipulation min-h-[44px] inline-flex items-center justify-center px-4 py-2">
             View All Logs →
           </button>
         </div>
@@ -179,24 +179,24 @@ const goToLog = (log: any) => {
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-2 sm:py-3 z-50">
       <div class="max-w-7xl mx-auto">
         <div class="flex justify-around items-center">
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">📊</span>
+          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group touch-manipulation min-h-[56px] min-w-[48px] justify-center">
+            <span class="text-lg sm:text-xl md:text-2xl mb-0.5 sm:mb-1 group-hover:scale-110 transition-transform">📊</span>
             <span class="text-xs sm:text-sm font-medium">Dashboard</span>
           </button>
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">📝</span>
+          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group touch-manipulation min-h-[56px] min-w-[48px] justify-center">
+            <span class="text-lg sm:text-xl md:text-2xl mb-0.5 sm:mb-1 group-hover:scale-110 transition-transform">📝</span>
             <span class="text-xs sm:text-sm font-medium">Logs</span>
           </button>
-          <button class="flex flex-col items-center text-teal-500 hover:text-teal-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">➕</span>
+          <button class="flex flex-col items-center text-teal-500 hover:text-teal-600 transition-colors group touch-manipulation min-h-[56px] min-w-[48px] justify-center">
+            <span class="text-lg sm:text-xl md:text-2xl mb-0.5 sm:mb-1 group-hover:scale-110 transition-transform">➕</span>
             <span class="text-xs sm:text-sm font-medium">Add</span>
           </button>
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">💬</span>
+          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group touch-manipulation min-h-[56px] min-w-[48px] justify-center">
+            <span class="text-lg sm:text-xl md:text-2xl mb-0.5 sm:mb-1 group-hover:scale-110 transition-transform">💬</span>
             <span class="text-xs sm:text-sm font-medium">Chat</span>
           </button>
-          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group">
-            <span class="text-xl sm:text-2xl mb-1 group-hover:scale-110 transition-transform">⚙️</span>
+          <button class="flex flex-col items-center text-gray-400 hover:text-gray-600 transition-colors group touch-manipulation min-h-[56px] min-w-[48px] justify-center">
+            <span class="text-lg sm:text-xl md:text-2xl mb-0.5 sm:mb-1 group-hover:scale-110 transition-transform">⚙️</span>
             <span class="text-xs sm:text-sm font-medium">Settings</span>
           </button>
         </div>

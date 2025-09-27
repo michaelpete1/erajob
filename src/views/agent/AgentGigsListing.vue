@@ -66,18 +66,18 @@
       </div>
 
       <div class="mt-2 mb-4 sm:mb-6 flex items-center justify-center">
-        <div class="bg-white/95 rounded-full p-1 flex items-center gap-1 shadow-sm">
+        <div class="bg-white/95 rounded-full p-1 flex items-center gap-1 shadow-sm max-w-xs sm:max-w-none w-full sm:w-auto">
           <button 
             @click="activeTab = 'active'" 
             :class="activeTab === 'active' ? 'bg-brand-teal text-white' : 'text-gray-600'"
-            class="px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200"
+            class="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 min-h-[40px] touch-manipulation"
           >
             Active
           </button>
           <button 
             @click="activeTab = 'browse'" 
             :class="activeTab === 'browse' ? 'bg-brand-teal text-white' : 'text-gray-600'"
-            class="px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200"
+            class="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 min-h-[40px] touch-manipulation"
           >
             Browse
           </button>
@@ -113,7 +113,7 @@
       </div>
 
       <div class="mt-6 sm:mt-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 max-w-6xl mx-auto">
           
           <div 
             v-for="gig in filteredGigs" 
@@ -123,17 +123,17 @@
           >
             <div class="block">
               <div class="flex items-center mb-3 sm:mb-4 gap-3">
-                <span class="text-2xl sm:text-3xl">{{ gig.icon }}</span>
-                <h3 class="text-lg sm:text-xl font-bold text-brand-teal">{{ gig.title }}</h3>
+                <span class="text-2xl sm:text-3xl flex-shrink-0">{{ gig.icon }}</span>
+                <h3 class="text-lg sm:text-xl font-bold text-brand-teal break-words flex-1 min-w-0">{{ gig.title }}</h3>
               </div>
-              <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{{ gig.description }}</p>
+              <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 break-words leading-relaxed">{{ gig.description }}</p>
               <div class="flex items-center justify-between mb-3 sm:mb-4">
-                <span class="text-xl sm:text-2xl font-bold text-brand-teal">${{ gig.price }}</span>
-                <span class="text-xs sm:text-sm text-gray-500">per hour</span>
+                <span class="text-xl sm:text-2xl font-bold text-brand-teal whitespace-nowrap">${{ gig.price }}</span>
+                <span class="text-xs sm:text-sm text-gray-500 whitespace-nowrap">per hour</span>
               </div>
 
               <div>
-                <button @click.stop="goToGig(gig)" class="w-full bg-brand-teal text-white py-2 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base">
+                <button @click.stop="goToGig(gig)" class="w-full bg-brand-teal text-white py-2.5 sm:py-3 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base font-medium min-h-[44px] touch-manipulation">
                   {{ activeTab === 'browse' ? 'View Details' : 'Log Work' }}
                 </button>
               </div>
@@ -141,20 +141,20 @@
           </div>
       
       <!-- No results message -->
-      <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-12">
-        <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-8">
-          <span class="text-4xl mb-4 block">🔍</span>
-          <h3 class="text-xl font-bold text-brand-teal mb-2">No gigs found</h3>
-          <p class="text-gray-600">Try adjusting your search terms or browse all gigs in the Active tab.</p>
+      <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-8 sm:py-12">
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-sm mx-auto">
+          <span class="text-3xl sm:text-4xl mb-3 sm:mb-4 block">🔍</span>
+          <h3 class="text-lg sm:text-xl font-bold text-brand-teal mb-2 break-words">No gigs found</h3>
+          <p class="text-sm sm:text-base text-gray-600 break-words leading-relaxed">Try adjusting your search terms or browse all gigs in the Active tab.</p>
         </div>
       </div>
         </div>
       </div>
 
       <!-- Back Button -->
-      <div class="text-center mt-8">
-        <router-link to="/agent/explore-gigs" class="inline-flex items-center text-white hover:text-white/80 transition-colors duration-300">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="text-center mt-6 sm:mt-8">
+        <router-link to="/agent/explore-gigs" class="inline-flex items-center text-white hover:text-white/80 transition-colors duration-300 text-sm sm:text-base">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
           Back to Explore

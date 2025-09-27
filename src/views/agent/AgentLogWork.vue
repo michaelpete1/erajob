@@ -53,7 +53,7 @@
             </div>
             
             <!-- Images Grid -->
-            <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               <div
                 v-for="(image, index) in getAllImages()"
                 :key="index"
@@ -68,11 +68,11 @@
                   />
                 </div>
                 <!-- Image info overlay -->
-                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex flex-col items-center justify-center p-2">
-                  <span class="text-white text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 truncate w-full">
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex flex-col items-center justify-center p-2 sm:p-3">
+                  <span class="text-white text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 break-words w-full line-clamp-2">
                     {{ image.file.name }}
                   </span>
-                  <span class="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-1">
+                  <span class="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-1 break-words text-center">
                     {{ image.logTitle }}
                   </span>
                 </div>
@@ -106,49 +106,49 @@
             </div>
             
             <!-- Notes List -->
-            <div v-else class="space-y-4">
+            <div v-else class="space-y-3 sm:space-y-4">
               <div
                 v-for="(note, index) in getAllNotes()"
                 :key="index"
-                class="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200"
               >
-                <div class="flex items-start justify-between mb-2">
-                  <h4 class="font-medium text-gray-800 text-sm">{{ note.logTitle }}</h4>
-                  <div class="flex items-center gap-2">
-                    <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2 py-1 rounded-full">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-3">
+                  <h4 class="font-medium text-gray-800 text-sm break-words flex-1 min-w-0">{{ note.logTitle }}</h4>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap">
                       {{ note.hours }} hrs
                     </span>
-                    <span class="text-xs text-gray-500">{{ note.date }}</span>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ note.date }}</span>
                   </div>
                 </div>
-                <p class="text-gray-700 text-sm leading-relaxed">{{ note.comment }}</p>
+                <p class="text-gray-700 text-sm leading-relaxed break-words">{{ note.comment }}</p>
               </div>
               
               <!-- Demo Notes with Lorem Ipsum -->
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div class="flex items-start justify-between mb-2">
-                  <h4 class="font-medium text-gray-800 text-sm">Content Writing Project</h4>
-                  <div class="flex items-center gap-2">
-                    <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2 py-1 rounded-full">
+              <div class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-3">
+                  <h4 class="font-medium text-gray-800 text-sm break-words flex-1 min-w-0">Content Writing Project</h4>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap">
                       8 hrs
                     </span>
-                    <span class="text-xs text-gray-500">9/23/2024, 11:30 AM</span>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">9/23/2024, 11:30 AM</span>
                   </div>
                 </div>
-                <p class="text-gray-700 text-sm leading-relaxed">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+                <p class="text-gray-700 text-sm leading-relaxed break-words">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
               </div>
               
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div class="flex items-start justify-between mb-2">
-                  <h4 class="font-medium text-gray-800 text-sm">UI/UX Design Revamp</h4>
-                  <div class="flex items-center gap-2">
-                    <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2 py-1 rounded-full">
+              <div class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-3">
+                  <h4 class="font-medium text-gray-800 text-sm break-words flex-1 min-w-0">UI/UX Design Revamp</h4>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap">
                       6 hrs
                     </span>
-                    <span class="text-xs text-gray-500">9/22/2024, 2:15 PM</span>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">9/22/2024, 2:15 PM</span>
                   </div>
                 </div>
-                <p class="text-gray-700 text-sm leading-relaxed">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                <p class="text-gray-700 text-sm leading-relaxed break-words">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
               </div>
             </div>
           </div>

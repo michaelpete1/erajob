@@ -1,11 +1,11 @@
 <template>
   <nav class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm shadow-sm z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
+      <div class="flex items-center justify-between min-h-[64px]">
         <!-- Logo/Brand Removed -->
 
         <!-- Desktop Navigation -->
-        <div class="hidden md:flex items-center space-x-1">
+        <div class="hidden md:flex items-center space-x-1 flex-1 justify-center px-4">
           <router-link 
             :to="'/client/projects'" 
             :class="navLinkClass('/client/projects')"
@@ -43,7 +43,7 @@
         </div>
 
         <!-- User Profile (Desktop) -->
-        <div class="hidden md:flex items-center space-x-3">
+        <div class="hidden md:flex items-center space-x-3 flex-shrink-0">
           <div class="flex items-center space-x-2">
             <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
               <span class="text-gray-600 text-sm font-medium">
