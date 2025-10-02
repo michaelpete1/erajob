@@ -113,8 +113,8 @@ const goNext = async () => {
       setTimeout(() => {
         try {
           if (isSignUpFlow) {
-            // For sign-up flow: go directly to congrats
-            router.push('/agent/congrats').catch((navError) => {
+            // For sign-up flow: go to additional details page
+            router.push('/agent/additional').catch((navError) => {
               console.error('Navigation error:', navError)
             })
           } else {

@@ -18,6 +18,8 @@ const isAuthPage = computed(() => {
     '/sign-in', 
     '/sign-up', 
     '/role-select',
+    '/forgot-password',
+    '/reset-password',
     // Client signup process
     '/client/welcome',
     '/client/services',
@@ -26,6 +28,7 @@ const isAuthPage = computed(() => {
     // Agent signup process
     '/agent/welcome',
     '/agent/services',
+    '/agent/additional',
     '/agent/congrats',
     '/agent/welcome-back',
     '/agent/explore-gigs',
@@ -39,6 +42,7 @@ const isAuthPage = computed(() => {
          currentRoute.path.startsWith('/client/congrats') ||
          currentRoute.path.startsWith('/agent/welcome') ||
          currentRoute.path.startsWith('/agent/services') ||
+         currentRoute.path.startsWith('/agent/additional') ||
          currentRoute.path.startsWith('/agent/congrats') ||
          currentRoute.path.startsWith('/agent/welcome-back') ||
          currentRoute.path.startsWith('/agent/explore-gigs') ||

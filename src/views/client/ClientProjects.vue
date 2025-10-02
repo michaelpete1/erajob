@@ -24,11 +24,26 @@
         </button>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+      </div>
+
+      <!-- Error State -->
+      <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-red-700 font-medium">{{ error }}</p>
+        </div>
+      </div>
+
       <!-- Projects Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 pb-32">
+      <div v-if="!loading && !error" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 pb-32">
         <div 
           v-for="project in activeProjects"
-          :key="project.id"
+          :key="project.id || `active-${project.project_title}-${project.date_created}`"
           v-show="activeTab === 'active'"
           @click="goToProject(project)"
           class="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm hover:shadow-lg hover:border-teal-300 transition-all duration-300 cursor-pointer group"
@@ -38,69 +53,39 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span class="text-xs sm:text-sm">{{ project.assignedTime }}</span>
+            <span class="text-xs sm:text-sm">{{ formatDate(project.date_created) }}</span>
           </p>
           <span class="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full whitespace-nowrap">
-            {{ project.timeLeft }}
+            Active
           </span>
         </div>
         
         <h2 class="font-semibold text-gray-800 text-base sm:text-lg lg:text-xl mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors">
-          {{ project.title }}
+          {{ project.project_title }}
         </h2>
         
         <div class="flex items-center gap-2 mb-4">
-          <span class="text-blue-500 text-lg sm:text-xl">👤</span>
-          <p class="text-sm sm:text-base text-gray-600">{{ project.client }}</p>
+          <span class="text-blue-500 text-lg sm:text-xl">📋</span>
+          <p class="text-sm sm:text-base text-gray-600">{{ project.category }}</p>
         </div>
         
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div class="flex items-center text-teal-600 font-semibold">
             <span class="text-lg sm:text-xl">💰</span>
-            <span class="ml-1 text-lg sm:text-xl font-bold">${{ project.budget }}</span>
+            <span class="ml-1 text-lg sm:text-xl font-bold">${{ project.budget.toLocaleString() }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="flex -space-x-2">
-              <div 
-                v-for="agent in (project.agents || []).slice(0, 3)" 
-                :key="agent.id" 
-                @click.stop="goToAgentProfile(agent)"
-                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-xs text-white font-semibold cursor-pointer hover:bg-teal-600 hover:scale-110 transition-all duration-200"
-                :title="`View ${agent.name}'s profile`"
-              >
-                {{ agent.name.charAt(0) }}
-              </div>
-              <div 
-                v-if="project.agents && project.agents.length > 3" 
-                @click.stop="goToAgentProfile(project.agents[3])"
-                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs text-gray-600 font-semibold cursor-pointer hover:bg-gray-400 hover:scale-110 transition-all duration-200"
-                :title="`View more agents`"
-              >
-                +{{ project.agents.length - 3 }}
-              </div>
-            </div>
+            <span class="text-xs text-gray-500">{{ formatDate(project.timeline?.deadline) }}</span>
           </div>
         </div>
         
-        <!-- Agent Names Section -->
-        <div v-if="project.agents && project.agents.length > 0" class="mt-3 pt-3 border-t border-gray-100">
-          <p class="text-xs text-gray-500 mb-2">Assigned Agents:</p>
-          <div class="flex flex-wrap gap-2">
-            <span
-              v-for="agent in project.agents"
-              :key="`name-${agent.id}`"
-              @click.stop="goToAgentProfile(agent)"
-              class="inline-flex items-center px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-800 text-xs sm:text-sm font-medium rounded-full cursor-pointer transition-colors duration-200 border border-teal-200 hover:border-teal-300"
-              :title="`View ${agent.name}'s profile`"
-            >
-              <span class="w-2 h-2 bg-teal-500 rounded-full mr-1.5"></span>
-              {{ agent.name }}
-            </span>
-          </div>
+        <!-- Description Preview -->
+        <div class="mt-3 pt-3 border-t border-gray-100">
+          <p class="text-sm text-gray-600 line-clamp-3">{{ project.description }}</p>
         </div>
       </div>
 
-        <div v-if="activeTab === 'active' && activeProjects.length === 0" class="md:col-span-2 lg:col-span-3">
+        <div v-if="activeTab === 'active' && activeProjects.length === 0 && !loading" class="md:col-span-2 lg:col-span-3">
           <div class="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-8 sm:p-12 text-center">
             <div class="mb-6">
               <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -130,29 +115,29 @@
         </div>
       </div>
 
-        <div v-if="activeTab === 'pending'" class="md:col-span-2 lg:col-span-3">
+        <div v-if="activeTab === 'pending' && !loading" class="md:col-span-2 lg:col-span-3">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <div 
               v-for="project in browseProjects"
-              :key="project.id"
+              :key="project.id || `browse-${project.project_title}-${project.date_created}`"
               @click="goToProject(project)"
               class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg hover:border-teal-300 transition-all duration-300 group cursor-pointer"
             >
               <div class="flex items-center justify-between mb-3">
                 <span class="text-xs text-gray-500 flex items-center gap-1">
                   <span class="text-lg">⏰</span>
-                  <span>{{ project.postedTime }}</span>
+                  <span>{{ formatDate(project.date_created) }}</span>
                 </span>
                 <span class="px-2 py-1 bg-green-100 text-green-600 text-xs font-semibold rounded-full">{{ project.category }}</span>
               </div>
               <h2 class="font-semibold text-gray-800 text-base sm:text-lg mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors">
-                {{ project.title }}
+                {{ project.project_title }}
               </h2>
               <p class="text-sm text-gray-600 mb-4 line-clamp-3">
-                Project description for {{ project.title }}
+                {{ project.description }}
               </p>
               <div class="flex items-center justify-between">
-                <span class="text-lg font-bold text-teal-600">${{ project.budget }}</span>
+                <span class="text-lg font-bold text-teal-600">${{ project.budget.toLocaleString() }}</span>
                 <button class="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm sm:text-base transition-colors">
                   View Details
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,6 +145,29 @@
                   </svg>
                 </button>
               </div>
+            </div>
+          </div>
+          
+          <!-- Empty state for browse projects -->
+          <div v-if="browseProjects.length === 0" class="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-8 sm:p-12 text-center">
+            <div class="mb-6">
+              <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Available Projects</h3>
+              <p class="text-gray-600 text-sm sm:text-base max-w-md mx-auto">
+                There are no available projects at the moment. Check back later or create your own project to get started.
+              </p>
+            </div>
+            <div class="flex justify-center">
+              <button 
+                @click="goToCreateProject"
+                class="px-6 py-3 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 transition-colors duration-200"
+              >
+                Create Project
+              </button>
             </div>
           </div>
         </div>
@@ -178,76 +186,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useJobs } from '../../composables/useJobs'
+import type { JobOut } from '../../types/api'
 
 const router = useRouter()
 const activeTab = ref<'active' | 'pending'>('pending')
+const { getClientJobs, getAllJobs, loading, error } = useJobs()
 
-const activeProjects = ref([
-  {
-    id: 1,
-    title: 'Complete Freelancer Application UI/UX Revamp',
-    client: 'Jenny Wilson (jennyson)',
-    budget: '2,500',
-    assignedTime: 'Assigned 8 hours ago',
-    timeLeft: '5 Hours',
-    agents: [
-      { id: 1, name: 'Jenny Wilson' },
-      { id: 2, name: 'Sarah Johnson' },
-      { id: 3, name: 'Mike Chen' },
-      { id: 4, name: 'Emily Davis' }
-    ]
-  },
-  {
-    id: 2,
-    title: 'E-commerce Website Development',
-    client: 'Matt Barrie (matt)',
-    budget: '5,000',
-    assignedTime: 'Assigned 3 days ago',
-    timeLeft: '7 Days',
-    agents: [
-      { id: 1, name: 'Alex Rodriguez' },
-      { id: 2, name: 'Lisa Thompson' }
-    ]
-  }
-])
-
-const browseProjects = ref([
-  {
-    id: 3,
-    title: 'Mobile App Design for Startup',
-    category: 'UI/UX Design',
-    budget: '3,500',
-    postedTime: 'Posted 2 days ago',
-    proposals: '12'
-  },
-  {
-    id: 4,
-    title: 'Content Writing for Blog',
-    category: 'Writing',
-    budget: '800',
-    postedTime: 'Posted 1 day ago',
-    proposals: '8'
-  },
-  {
-    id: 5,
-    title: 'Social Media Marketing Campaign',
-    category: 'Marketing',
-    budget: '1,200',
-    postedTime: 'Posted 5 hours ago',
-    proposals: '5'
-  }
-])
-
-const goToAgentProfile = (agent: any) => {
-  try {
-    localStorage.setItem('selectedAgent', JSON.stringify(agent))
-  } catch (e) {
-  }
+const formatDate = (timestamp: number | null) => {
+  if (!timestamp) return 'N/A'
+  const date = new Date(timestamp * 1000)
+  const now = new Date()
+  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   
-  router.push(`/client/agent/${agent.id}`)
+  if (diffDays === 0) {
+    return 'Today'
+  } else if (diffDays === 1) {
+    return 'Yesterday'
+  } else if (diffDays <= 7) {
+    return `${diffDays} days ago`
+  } else {
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
 }
+
+const activeProjects = ref<JobOut[]>([])
+const browseProjects = ref<JobOut[]>([])
+
+const fetchActiveProjects = async () => {
+  try {
+    const result = await getClientJobs()
+    if (result.success && result.data) {
+      activeProjects.value = result.data
+    }
+  } catch (err) {
+    console.error('Error fetching active projects:', err)
+  }
+}
+
+const fetchBrowseProjects = async () => {
+  try {
+    const result = await getAllJobs()
+    if (result.success && result.data) {
+      browseProjects.value = result.data
+    }
+  } catch (err) {
+    console.error('Error fetching browse projects:', err)
+  }
+}
+
+const fetchProjects = async () => {
+  if (activeTab.value === 'active') {
+    await fetchActiveProjects()
+  } else {
+    await fetchBrowseProjects()
+  }
+}
+
+// Watch for tab changes
+watch(activeTab, fetchProjects)
+
+// Fetch initial data
+onMounted(fetchProjects)
+
 
 const goToProject = (project: any) => {
   try {

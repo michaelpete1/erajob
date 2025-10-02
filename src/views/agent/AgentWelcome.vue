@@ -12,13 +12,13 @@
     <div class="relative z-10 w-full max-w-md sm:max-w-lg px-4 py-6">
       <form class="space-y-4 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl animate-fade-up-delay-2">
         <div class="animate-slide-in-left">
-          <input type="text" placeholder="What is your Primary area of expertise" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <input v-model="form.primaryExpertise" type="text" placeholder="What is your Primary area of expertise" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
         <div class="animate-slide-in-right">
-          <input type="text" placeholder="Years of Experience" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <input v-model="form.yearsOfExperience" type="text" placeholder="Years of Experience" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
         <div class="animate-slide-in-left">
-          <input type="text" placeholder="3 most used tools or platforms" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <input v-model="form.tools" type="text" placeholder="3 most used tools or platforms" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
 
         <div class="space-y-2 animate-slide-in-right">
@@ -50,32 +50,116 @@
         </div>
 
         <div class="animate-slide-in-left">
-          <select class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+          <select v-model="form.hoursPerWeek" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
             <option value="" disabled selected>How many hours can you commit per week</option>
             <option value="80 hours part time">80 hours part time</option>
             <option value="160 hours part time">160 hours part time</option>
           </select>
         </div>
         <div class="animate-slide-in-right">
-          <input type="text" placeholder="Time Zone / Location" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <select v-model="form.timezone" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+            <option value="" disabled selected>Time Zone / Location</option>
+            <option value="EST (Eastern Time)">EST (Eastern Time)</option>
+            <option value="CST (Central Time)">CST (Central Time)</option>
+            <option value="MST (Mountain Time)">MST (Mountain Time)</option>
+            <option value="PST (Pacific Time)">PST (Pacific Time)</option>
+            <option value="GMT (Greenwich Mean Time)">GMT (Greenwich Mean Time)</option>
+            <option value="CET (Central European Time)">CET (Central European Time)</option>
+            <option value="EET (Eastern European Time)">EET (Eastern European Time)</option>
+            <option value="IST (India Standard Time)">IST (India Standard Time)</option>
+            <option value="CST (China Standard Time)">CST (China Standard Time)</option>
+            <option value="JST (Japan Standard Time)">JST (Japan Standard Time)</option>
+            <option value="AEST (Australian Eastern Time)">AEST (Australian Eastern Time)</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
         <div class="animate-slide-in-left">
-          <input type="text" placeholder="Preferred projects" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <div class="relative" ref="projectsRef" style="z-index: 100;">
+            <div
+              @click="toggleProjectsDropdown"
+              role="button"
+              tabindex="0"
+              class="form-input cursor-pointer flex items-center justify-between bg-white min-h-[44px]"
+            >
+              <span class="text-gray-500">
+                {{ form.preferredProjects.length === 0 ? 'Select your preferred projects' : `${form.preferredProjects.length} project${form.preferredProjects.length > 1 ? 's' : ''} selected` }}
+              </span>
+              <svg
+                class="w-4 h-4 text-gray-400 transition-transform duration-200"
+                :class="{ 'rotate-180': showProjectsDropdown }"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            <!-- Modal Popup Box -->
+            <div
+              v-if="showProjectsDropdown"
+              class="absolute top-0 right-full mr-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[99999] overflow-hidden"
+              @click.stop
+            >
+                <!-- Modal Header -->
+                <div class="bg-brand-teal text-white p-6">
+                  <h3 class="text-xl font-bold">Select Your Preferred Projects</h3>
+                  <p class="text-teal-100 mt-1">Choose all the types of projects you're interested in working on</p>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="p-6 max-h-96 overflow-y-auto">
+                  <div
+                    v-for="project in projectOptions"
+                    :key="project"
+                    @click.stop="toggleProject(project)"
+                    class="px-4 py-3 cursor-pointer hover:bg-brand-teal/5 transition-colors flex items-center justify-between leading-relaxed"
+                  >
+                    <span class="text-sm text-gray-700 whitespace-normal break-words">{{ project }}</span>
+                    <svg
+                      v-if="form.preferredProjects.includes(project)"
+                      class="w-4 h-4 text-brand-teal"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+          </div>
         </div>
         <div class="animate-slide-in-right">
-          <input type="text" placeholder="Are you open to calls or video meetings?" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <select v-model="form.openToCalls" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+            <option value="" disabled selected>Are you open to calls or video meetings?</option>
+            <option value="yes">Yes, I am comfortable with calls</option>
+            <option value="no">No, I prefer asynchronous communication</option>
+          </select>
         </div>
         <div class="animate-slide-in-left">
-          <input type="text" placeholder="Do you have a working computer/laptop?" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <select v-model="form.hasComputer" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+            <option value="" disabled selected>Do you have a working computer/laptop?</option>
+            <option value="yes">Yes, I have a working computer/laptop</option>
+            <option value="no">No, I don't have a working computer/laptop</option>
+          </select>
         </div>
         <div class="animate-slide-in-right">
-          <input type="text" placeholder="Do you have access to stable internet?" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <select v-model="form.hasInternet" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+            <option value="" disabled selected>Do you have access to stable internet?</option>
+            <option value="yes">Yes, I have stable internet access</option>
+            <option value="no">No, I don't have stable internet access</option>
+          </select>
         </div>
         <div class="animate-slide-in-left">
-          <input type="text" placeholder="Are you comfortable using time-tracking tools?" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <select v-model="form.comfortableWithTracking" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+            <option value="" disabled selected>Are you comfortable using time-tracking tools?</option>
+            <option value="yes">Yes, I am comfortable with time-tracking</option>
+            <option value="no">No, I am not comfortable with time-tracking</option>
+          </select>
         </div>
         <div class="animate-slide-in-right">
-          <input type="url" placeholder="Submit your 1min video (URL)" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <input v-model="form.videoUrl" type="url" placeholder="Submit your 1min video (URL)" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
 
         <div class="space-y-2 animate-slide-in-left">
@@ -108,10 +192,11 @@
       </form>
       <div class="space-y-3 pt-4 animate-fade-up-delay-4">
         <button
-          @click="goToNextPage"
-          class="btn-pressable block w-full rounded-full bg-brand-teal px-6 py-3 text-center text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          @click="onSubmit"
+          :disabled="isSubmitting"
+          class="btn-pressable block w-full rounded-full bg-brand-teal px-6 py-3 text-center text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Next
+          {{ isSubmitting ? 'Submitting...' : 'Next' }}
         </button>
         <button class="btn-pressable block w-full rounded-full border border-brand-teal/30 bg-brand-teal/10 px-6 py-3 text-sm text-brand-teal hover:bg-brand-teal/20 transition-all duration-300" @click="$router.back()">Back</button>
       </div>
@@ -120,15 +205,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const isSubmitting = ref(false)
+const showProjectsDropdown = ref(false)
+const projectsRef = ref<HTMLElement | null>(null)
+
+const form = reactive({
+  primaryExpertise: '',
+  yearsOfExperience: '',
+  tools: '',
+  hoursPerWeek: '',
+  timezone: '',
+  preferredProjects: [] as string[],
+  openToCalls: '',
+  hasComputer: '',
+  hasInternet: '',
+  comfortableWithTracking: '',
+  videoUrl: ''
+})
 
 const certificationsFiles = ref<File[]>([])
 const personalityTestFile = ref<File | null>(null)
 const certificationsInput = ref<HTMLInputElement | null>(null)
 const personalityTestInput = ref<HTMLInputElement | null>(null)
+
+const projectOptions = [
+  'Software Development', 'Web Development', 'Mobile App Development', 'Data Science & Analytics',
+  'Artificial Intelligence & Machine Learning', 'Cloud Computing & DevOps', 'Cybersecurity',
+  'Digital Marketing', 'Project Management', 'UI/UX Design', 'Graphic Design',
+  'Content Writing & Copywriting', 'Business Consulting', 'Financial Services',
+  'Human Resources', 'Customer Service', 'Sales & Business Development',
+  'Accounting & Finance', 'Legal Services', 'Healthcare & Medical Services',
+  'Education & Training', 'Real Estate', 'Construction & Engineering',
+  'Manufacturing & Operations', 'Logistics & Supply Chain', 'Other'
+]
 
 const handleCertificationsUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -163,17 +276,46 @@ const handlePersonalityTestUpload = (event: Event) => {
   }
 }
 
-const goToNextPage = () => {
-  // Check if this is a sign-up flow
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-  const isSignUpFlow = userInfo.signUpTime
-  
-  if (isSignUpFlow) {
-    // For sign-up flow: go to agent services
-    router.push('/agent/services')
+// Project selection methods
+const toggleProjectsDropdown = () => {
+  console.log('toggleProjectsDropdown called, current value:', showProjectsDropdown.value)
+  showProjectsDropdown.value = !showProjectsDropdown.value
+  console.log('toggleProjectsDropdown new value:', showProjectsDropdown.value)
+}
+
+const toggleProject = (project: string) => {
+  const index = form.preferredProjects.indexOf(project)
+  if (index > -1) {
+    form.preferredProjects.splice(index, 1)
   } else {
-    // For sign-in flow: go to explore gigs
-    router.push('/agent/explore-gigs')
+    form.preferredProjects.push(project)
+  }
+}
+
+const onSubmit = async () => {
+  isSubmitting.value = true
+
+  try {
+    // Simulate form submission - in a real app, this would be an API call
+    console.log('Agent welcome form submitted:', {
+      formData: form,
+      certifications: certificationsFiles.value.map(f => f.name),
+      personalityTest: personalityTestFile.value?.name
+    })
+    
+    // Save form data to localStorage
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+    userInfo.welcomeFormData = form
+    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+    
+    // Navigate to next page
+    await router.push('/agent/services')
+
+  } catch (error) {
+    console.error('Form submission error:', error)
+    alert('There was an error submitting your form. Please try again.')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
