@@ -11,8 +11,8 @@
 
     <div class="mx-auto w-full max-w-md sm:max-w-lg px-4 py-8 pb-32 relative z-10">
       <header class="text-center mb-6 animate-fade-up-delay-1">
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">Agent Onboarding</h1>
-        <p class="text-white/80 text-sm mt-1">Complete your profile to unlock new opportunities.</p>
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Client Onboarding</h1>
+        <p class="text-white/80 text-sm mt-1">Complete your profile to connect with top agents.</p>
       </header>
 
       <form class="space-y-4 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-2xl animate-fade-up-delay-2" @submit.prevent="onSubmit">
