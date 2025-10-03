@@ -39,26 +39,24 @@
         <router-link 
           :to="'/agent/notifications'" 
           :class="['flex flex-col items-center justify-center flex-1 py-2 min-h-[56px] touch-manipulation', linkClass('/agent/notifications')]" 
-          aria-label="Notifications"
         >
           <MusicalNoteIcon :class="['mb-1', iconClass('/agent/notifications')]" />
           <span class="text-xs mt-0.5">Notifications</span>
         </router-link>
 
-        <!-- Messages Button -->
+        <!-- Proposals Button -->
         <router-link 
-          :to="'/messages'" 
-          :class="['flex flex-col items-center justify-center flex-1 py-2 min-h-[56px] touch-manipulation', linkClass('/messages')]" 
-          aria-label="Messages"
+          :to="'/proposals'" 
+          :class="['flex flex-col items-center justify-center flex-1 py-2 min-h-[56px] touch-manipulation', linkClass('/proposals')]" 
+          aria-label="Proposals"
         >
-          <MusicalNoteIcon :class="['mb-1', iconClass('/messages')]" />
-          <span class="text-xs mt-0.5">Messages</span>
+          <DocumentIcon :class="['mb-1', iconClass('/proposals')]" />
+          <span class="text-xs mt-0.5">Proposals</span>
         </router-link>
 
         <!-- Settings Button -->
         <router-link 
           :to="'/settings'" 
-          :class="['flex flex-col items-center justify-center flex-1 py-2 min-h-[56px] touch-manipulation', linkClass('/settings')]" 
           aria-label="Settings"
         >
           <AdjustmentsHorizontalIcon :class="['mb-1', iconClass('/settings')]" />

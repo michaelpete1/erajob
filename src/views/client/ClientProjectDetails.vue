@@ -107,7 +107,7 @@
       <!-- Action Buttons -->
       <div class="space-y-3">
         <button class="w-full bg-green-500 text-white font-medium py-3 rounded-xl hover:bg-green-600 transition-colors duration-200">
-          Message Team
+          Contact Team
         </button>
         <button class="w-full border border-gray-300 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-50 transition-colors duration-200">
           View Files

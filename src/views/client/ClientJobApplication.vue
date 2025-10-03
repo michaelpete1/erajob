@@ -99,7 +99,7 @@ The goal is to modernize the user experience by making the interface more modern
         <div class="border border-gray-200 rounded-b-xl p-4 bg-white">
           <textarea 
             class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-transparent resize-none" 
-            rows="4" placeholder="Write your proposal message here...">
+            rows="4" placeholder="Write your proposal here...">
           </textarea>
           <div class="flex items-center mt-3 space-x-2">
             <input type="checkbox" class="w-4 h-4 text-brand-teal border-gray-300 rounded focus:ring-brand-teal">

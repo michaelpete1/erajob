@@ -12,14 +12,17 @@
           <span class="text-xs mt-1">Projects</span>
         </router-link>
 
-        <!-- Messages Button -->
+        <!-- Proposals Button -->
         <router-link 
-          to="/messages" 
-          :class="navItemClass('/messages')"
+          to="/proposals" 
+          :class="navItemClass('/proposals')"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
-          <MusicalNoteIcon :class="iconClass('/messages')" />
-          <span class="text-xs mt-1">Messages</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+          </svg>
+          <span class="text-xs mt-1">Proposals</span>
         </router-link>
 
         <!-- Plus Button (Only for Clients on Project Pages) -->
@@ -67,8 +70,8 @@ import {
   AdjustmentsHorizontalIcon
 } from '@heroicons/vue/24/outline'
 import { 
-  MusicalNoteIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  DocumentTextIcon
 } from '@heroicons/vue/24/solid'
 import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
