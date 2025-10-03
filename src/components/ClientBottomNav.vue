@@ -70,8 +70,7 @@ import {
   AdjustmentsHorizontalIcon
 } from '@heroicons/vue/24/outline'
 import { 
-  CheckCircleIcon,
-  DocumentTextIcon
+  CheckCircleIcon
 } from '@heroicons/vue/24/solid'
 import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
