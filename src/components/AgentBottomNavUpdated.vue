@@ -12,14 +12,14 @@
           <span class="text-xs mt-1">Projects</span>
         </router-link>
 
-        <!-- Messages Button -->
+        <!-- Proposals Button -->
         <router-link 
-          to="/messages" 
-          :class="navItemClass('/messages')"
+          to="/agent/proposals" 
+          :class="navItemClass('/agent/proposals')"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
-          <MusicalNoteIcon :class="iconClass('/messages')" />
-          <span class="text-xs mt-1">Messages</span>
+          <DocumentTextIcon :class="iconClass('/agent/proposals')" />
+          <span class="text-xs mt-1">Proposals</span>
         </router-link>
 
         <!-- Dashboard Button (replaces plus button for agents) -->
@@ -32,13 +32,12 @@
           <span class="text-xs mt-1">Dashboard</span>
         </router-link>
 
-        <!-- Notifications Button -->
         <router-link 
           to="/notifications" 
           :class="['relative', navItemClass('/notifications')]"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
-          <CheckCircleIcon :class="iconClass('/notifications')" />
+          <BellIcon :class="iconClass('/notifications')" />
           <span class="text-xs mt-1">Alerts</span>
           <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
         </router-link>
@@ -59,33 +58,28 @@
 
 <script setup lang="ts">
 import { 
-  PencilSquareIcon, 
-  AdjustmentsHorizontalIcon,
-  ChartBarIcon
+  PencilSquareIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
+  BellIcon
 } from '@heroicons/vue/24/outline'
-import { 
-  MusicalNoteIcon,
-  CheckCircleIcon
-} from '@heroicons/vue/24/solid'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
 // Navigation item classes
 function navItemClass(path: string) {
-  const isActive = route.path === path
+  const isActive = route.path === path;
   return [
     'transition-colors',
     'duration-200',
-    isActive 
-      ? 'text-brand-teal' 
-      : 'text-gray-600 hover:text-gray-900'
-  ]
+    isActive ? 'text-brand-teal' : 'text-gray-600 hover:text-gray-900'
+  ];
 }
 
 // Icon classes
 function iconClass(path: string) {
-  const isActive = route.path === path
+  const isActive = route.path === path;
   return [
     'w-6',
     'h-6',

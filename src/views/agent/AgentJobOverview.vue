@@ -41,7 +41,11 @@ onMounted(() => {
 })
 
 const openMessages = () => {
-  router.push('/messages')
+  if (job.value?.id) {
+    router.push(`/proposals?jobId=${job.value.id}`)
+  } else {
+    router.push('/proposals')
+  }
 }
 
 const markComplete = () => {
@@ -71,7 +75,7 @@ const sendUpdate = () => {
         </div>
         <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto flex-shrink-0">
           <button @click="openMessages" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm font-medium transition-shadow min-h-[44px] touch-manipulation">
-            <span class="break-words">Message Client</span>
+            <span class="break-words">View Proposals</span>
           </button>
           <button @click="sendUpdate" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm font-medium transition-shadow min-h-[44px] touch-manipulation">
             <span class="break-words">Send Update</span>
@@ -144,7 +148,7 @@ const sendUpdate = () => {
             <div class="mt-2 text-xs sm:text-sm text-gray-600 break-words">{{ job?.client }}</div>
             <div class="mt-3 sm:mt-4">
               <button @click="openMessages" class="w-full inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation">
-                <span class="break-words">Message</span>
+                <span class="break-words">View Proposals</span>
               </button>
             </div>
           </div>

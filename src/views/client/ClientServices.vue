@@ -1,22 +1,56 @@
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { PencilSquareIcon, MegaphoneIcon, FilmIcon, MusicalNoteIcon, CodeBracketIcon, GlobeAltIcon, ChartBarIcon, DocumentTextIcon, CameraIcon, MicrophoneIcon, PuzzlePieceIcon, PencilIcon, LightBulbIcon, CurrencyDollarIcon, ShoppingCartIcon } from '@heroicons/vue/24/solid';
+
+const router = useRouter();
+const selectedCategories = ref([]);
+const showPreferredProjects = ref(false);
+
+const categories = [
+  { title: 'Graphic Design', description: 'Logo & brand identity', icon: PencilSquareIcon },
+  { title: 'Digital Marketing', description: 'Social media marketing, SEO', icon: MegaphoneIcon },
+  { title: 'Video & Animation', description: 'Video editing & Video Reels', icon: FilmIcon },
+  { title: 'Music & Audio', description: 'Producers & Composers', icon: MusicalNoteIcon },
+  { title: 'Programming & Tech', description: 'Web & Mobile development', icon: CodeBracketIcon },
+  { title: 'Business', description: 'Virtual Assistant & Admin', icon: GlobeAltIcon },
+  { title: 'Finance & Accounting', description: 'Bookkeeping & Tax', icon: ChartBarIcon },
+  { title: 'Writing & Translation', description: 'Content & Copywriting', icon: DocumentTextIcon },
+  { title: 'Photography', description: 'Product & Portrait', icon: CameraIcon },
+  { title: 'Voice Over', description: 'Narration & Dubbing', icon: MicrophoneIcon },
+  { title: 'AI Services', description: 'AI Integration & Development', icon: PuzzlePieceIcon },
+  { title: 'Art & Illustration', description: 'Digital Art & Design', icon: PencilIcon },
+  { title: 'Consulting', description: 'Business & Career Advice', icon: LightBulbIcon },
+  { title: 'Sales & Marketing', description: 'Lead Generation & Sales', icon: CurrencyDollarIcon },
+  { title: 'E-commerce', description: 'Store Management & Dropshipping', icon: ShoppingCartIcon }
+];
+
+const goNext = () => {
+  if (selectedCategories.value.length >= 3) {
+    localStorage.setItem('selectedClientServices', JSON.stringify(selectedCategories.value));
+    router.push('/client/additional');
+  }
+};
+</script>
+
 <template>
-  <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center overflow-hidden">
+  <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center p-4">
     <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
     <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
     <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
     
-    <!-- Floating particles -->
     <div class="absolute top-16 left-16 w-2 h-2 sm:top-20 sm:left-20 bg-white/20 rounded-full animate-float-delayed-1" />
     <div class="absolute top-32 right-24 w-1 h-1 sm:top-40 sm:right-32 bg-white/30 rounded-full animate-float-delayed-2" />
     <div class="absolute bottom-24 left-32 w-1.5 h-1.5 sm:bottom-32 sm:left-40 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-16 right-16 w-2.5 h-2.5 sm:bottom-20 sm:right-20 bg-white/15 rounded-full animate-float-delayed-4" />
 
-    <div class="relative z-10 w-full max-w-md sm:max-w-lg mx-auto flex flex-col items-center justify-center text-center py-8 sm:py-12">
-      <h2 class="mb-4 sm:mb-8 text-2xl sm:text-3xl font-extrabold text-white animate-fade-up-delay-1">Service Category</h2>
-      <div class="w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-6 animate-fade-up-delay-2">
+    <div class="relative z-10 w-full max-w-md mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-up-delay-2">
+      <h2 class="text-2xl font-bold text-gray-800 text-center">Service Category</h2>
+      <p class="mt-2 text-sm text-gray-500 text-center mb-6">Select at least 3 categories that match your needs</p>
+      <div class="space-y-2">
         <div v-for="(category, index) in categories" :key="index" class="flex items-center p-3 sm:p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
           <input
             type="checkbox"
-            :id="`category-${index}`"
             v-model="selectedCategories"
             :value="category"
             class="w-5 h-5 text-brand-teal border-gray-300 rounded focus:ring-brand-teal focus:ring-2"
@@ -34,11 +68,32 @@
       </div>
       
       <!-- Selection counter -->
-      <div class="mt-4 text-sm text-white/80 animate-fade-up-delay-3">
-        Selected: {{ selectedCategories.length }} (minimum 3 required)
+      <div class="mt-4 text-sm font-medium text-center" :class="selectedCategories.length >= 3 ? 'text-green-600' : 'text-amber-600'">
+        {{ selectedCategories.length }} of 3+ categories selected
       </div>
       
-      <div class="px-2 py-4 sm:py-6 space-y-3 w-full animate-fade-up-delay-4">
+      <div class="mt-6 space-y-3 w-full relative">
+        <div class="relative">
+          <button
+            @mouseenter="showPreferredProjects = true"
+            @mouseleave="showPreferredProjects = false"
+            class="w-full text-center text-sm font-medium text-brand-teal underline hover:text-teal-700 transition-colors duration-200 mb-2"
+          >
+            Preferred Projects
+          </button>
+          
+          <!-- Preferred Projects Dropdown -->
+          <div 
+            v-if="showPreferredProjects"
+            class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg p-4 z-20 border border-gray-200"
+            @mouseenter="showPreferredProjects = true"
+            @mouseleave="showPreferredProjects = false"
+          >
+            <h3 class="text-sm font-semibold text-gray-800 mb-2">Your Preferred Projects</h3>
+            <p class="text-xs text-gray-600">Select at least 3 categories that match your project needs.</p>
+          </div>
+        </div>
+
         <button
           @click="goNext"
           :disabled="selectedCategories.length < 3"
@@ -57,82 +112,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { PencilSquareIcon, MegaphoneIcon, FilmIcon, CodeBracketSquareIcon, CameraIcon, CpuChipIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
-import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
-import { onMounted, onErrorCaptured } from 'vue'
-
-const router = useRouter()
-
-const categories = [
-  { title: 'Graphic Design', description: 'Logo & brand identity', icon: PencilSquareIcon },
-  { title: 'Digital Marketing', description: 'Social media marketing, SEO', icon: MegaphoneIcon },
-  { title: 'Video & Animation', description: 'Video editing & Video Reels', icon: FilmIcon },
-  { title: 'Music & Audio', description: 'Producers & Composers', icon: MusicalNoteIcon },
-  { title: 'Program & Tech', description: 'Website & App development', icon: CodeBracketSquareIcon },
-  { title: 'Product Photography', description: 'Product photographers', icon: CameraIcon },
-  { title: 'Build AI Service', description: 'Build your AI app', icon: CpuChipIcon },
-  { title: 'Data', description: 'Data science & AI', icon: ChartBarIcon },
-  { title: 'Sales Associate', description: 'Sales', icon: PencilSquareIcon },
-  { title: 'Customer Sales Associate', description: 'Sales', icon: PencilSquareIcon },
-  { title: 'Administrators', description: 'Administrative Support', icon: PencilSquareIcon },
-  { title: 'Customer Service Rep', description: 'Customer Support', icon: PencilSquareIcon },
-  { title: 'Bookkeeper', description: 'Accounting & Finance', icon: PencilSquareIcon },
-  { title: 'Editor', description: 'Media & Content', icon: PencilSquareIcon },
-  { title: 'Credit Repair Disputer', description: 'Finance/Credit Services', icon: PencilSquareIcon },
-  { title: 'Executive Assistant', description: 'Administrative Support', icon: PencilSquareIcon }
-]
-
-const selectedCategories = ref<any[]>([])
-
-const goNext = async () => {
-  try {
-    if (selectedCategories.value.length >= 3) {
-      // Store selected categories in localStorage or state management
-      try {
-        localStorage.setItem('selectedClientServices', JSON.stringify(selectedCategories.value))
-      } catch (storageError) {
-        console.error('LocalStorage error:', storageError)
-        // Continue even if localStorage fails
-      }
-      
-      // Use setTimeout to prevent potential async issues
-      setTimeout(() => {
-        try {
-          router.push('/client/additional').catch((navError) => {
-            console.error('Navigation error:', navError)
-          })
-        } catch (timeoutError) {
-          console.error('Timeout navigation error:', timeoutError)
-        }
-      }, 0)
-    }
-  } catch (error) {
-    console.error('Error in goNext:', error)
-  }
+<style scoped>
+.btn-pressable:active {
+  transform: scale(0.98);
 }
-
-onMounted(() => {
-  try {
-    console.log('ClientServices mounted')
-    // Add a small delay to ensure component is fully mounted
-    setTimeout(() => {
-      try {
-        // Any additional initialization can go here
-      } catch (initError) {
-        console.error('Initialization error:', initError)
-      }
-    }, 100)
-  } catch (error) {
-    console.error('Error in onMounted:', error)
-  }
-})
-
-onErrorCaptured((err) => {
-  console.error('ClientServices render error:', err)
-  // Return false to prevent the error from propagating further
-  return false
-})
-</script>
+</style>

@@ -107,39 +107,50 @@
               </svg>
             </div>
 
-            <!-- Modal Popup Box -->
-            <div
-              v-if="showExpertiseDropdown"
-              class="absolute top-0 right-full mr-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[99999] overflow-hidden"
-              @click.stop
-            >
-              <!-- Modal Header -->
-              <div class="bg-brand-teal text-white p-6">
-                <h3 class="text-xl font-bold">Select Your Preferred Project Types</h3>
-                <p class="text-teal-100 mt-1">Choose all the types of projects you're interested in</p>
-              </div>
-              
-              <!-- Modal Body -->
-              <div class="p-6 max-h-96 overflow-y-auto">
+            <!-- Modal Popup Box will be teleported to body -->
+            <teleport to="body">
+              <div
+                v-if="showExpertiseDropdown"
+                class="fixed inset-0 z-[9999] bg-black/30 flex items-start pt-16 justify-center sm:items-start sm:justify-center sm:bg-transparent"
+                @click="showExpertiseDropdown = false"
+              >
                 <div
-                  v-for="projectType in expertiseOptions"
-                  :key="projectType"
-                  @click.stop="toggleExpertise(projectType)"
-                  class="px-4 py-3 cursor-pointer hover:bg-brand-teal/5 transition-colors flex items-center justify-between leading-relaxed"
+                  class="w-[85%] max-w-sm bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden mt-0 sm:absolute sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:top-20"
+                  @click.stop
                 >
-                  <span class="text-sm text-gray-700 whitespace-normal break-words">{{ projectType }}</span>
-                  <svg
-                    v-if="form.primaryAreaOfExpertise.includes(projectType)"
-                    class="w-4 h-4 text-brand-teal"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <!-- Modal Header -->
+                  <div class="bg-brand-teal text-white p-3 sm:p-4">
+                    <h3 class="text-base font-semibold">Select Project Types</h3>
+                    <p class="text-teal-100 text-xs">
+                      Choose project types you're interested in
+                    </p>
+                  </div>
+                  
+                  <!-- Modal Body -->
+                  <div class="p-3 max-h-[50vh] overflow-y-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <div
+                        v-for="projectType in expertiseOptions"
+                        :key="projectType"
+                        @click="toggleExpertise(projectType)"
+                        class="px-2.5 py-1.5 cursor-pointer hover:bg-brand-teal/5 rounded-md transition-colors flex items-center justify-between text-xs"
+                      >
+                        <span class="text-gray-700">{{ projectType }}</span>
+                        <svg
+                          v-if="form.primaryAreaOfExpertise.includes(projectType)"
+                          class="w-4 h-4 text-brand-teal flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </teleport>
           </div>
         </div>
 
@@ -271,7 +282,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onUnmounted } from 'vue'
+import { reactive, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import PageContainer from '../../components/PageContainer.vue'
 
@@ -279,7 +290,6 @@ const router = useRouter()
 const isSubmitting = ref(false)
 const showExpertiseDropdown = ref(false)
 const expertiseRef = ref<HTMLElement | null>(null)
-const dropdownPosition = ref({ top: 0, left: 0, width: 0 })
 
 const form = reactive({
   email: '',
@@ -300,19 +310,19 @@ const form = reactive({
 })
 
 // expertise methods
-const toggleExpertiseDropdown = () => {
-  console.log('toggleExpertiseDropdown called, current value:', showExpertiseDropdown.value)
-  if (!showExpertiseDropdown.value && expertiseRef.value) {
+const updateDropdownPosition = async () => {
+  await nextTick()
+  if (expertiseRef.value) {
     const rect = expertiseRef.value.getBoundingClientRect()
-    dropdownPosition.value = {
-      top: rect.bottom + window.scrollY + 8,
-      left: rect.left + window.scrollX,
-      width: rect.width
-    }
-    console.log('Dropdown position calculated:', dropdownPosition.value)
+    document.documentElement.style.setProperty('--dropdown-top', `${rect.bottom + window.scrollY}px`)
+  }
+}
+
+const toggleExpertiseDropdown = async () => {
+  if (!showExpertiseDropdown.value) {
+    await updateDropdownPosition()
   }
   showExpertiseDropdown.value = !showExpertiseDropdown.value
-  console.log('toggleExpertiseDropdown new value:', showExpertiseDropdown.value)
 }
 const toggleExpertise = (projectType: string) => {
   const index = form.primaryAreaOfExpertise.indexOf(projectType)
@@ -417,7 +427,7 @@ const onDocumentClick = (e: MouseEvent) => {
 onMounted(() => { document.addEventListener('click', onDocumentClick) })
 onUnmounted(() => { document.removeEventListener('click', onDocumentClick) })
 
-// submission (unchanged testing mode)
+// submission with navigation to services page
 const onSubmit = async () => {
   isSubmitting.value = true
   try {
@@ -427,6 +437,8 @@ const onSubmit = async () => {
       Object.assign(userInfo, testUserInfo)
       localStorage.setItem('userInfo', JSON.stringify(userInfo))
     }
+    
+    // Prepare form data
     const clientData = {
       email: form.email || userInfo.email,
       phone: form.phone,
@@ -446,17 +458,22 @@ const onSubmit = async () => {
       certificates: certificatesFiles.value.map(f => f.name),
       personality_test: personalityTestFile.value?.name
     }
-    console.log('Submitting client welcome form:', clientData)
-    console.log('Testing mode: Bypassing API call')
-    const result = true
-    if (result) {
-      const welcomeFormData = { ...form, certificates: certificatesFiles.value.map(f => f.name), personalityTest: personalityTestFile.value?.name }
-      userInfo.welcomeFormData = welcomeFormData
-      localStorage.setItem('userInfo', JSON.stringify(userInfo))
-      router.push('/client/additional')
-    } else {
-      alert('Failed to update profile. Please try again.')
+    
+    console.log('Saving client welcome form data:', clientData)
+    
+    // Save form data to local storage
+    const welcomeFormData = { 
+      ...form, 
+      certificates: certificatesFiles.value.map(f => f.name), 
+      personalityTest: personalityTestFile.value?.name 
     }
+    
+    userInfo.welcomeFormData = welcomeFormData
+    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+    localStorage.setItem('clientWelcomeData', JSON.stringify(clientData))
+    
+    // Navigate to services page
+    router.push('/client/services')
   } catch (error) {
     console.error('Error submitting form:', error)
     alert('An error occurred while submitting the form. Please try again.')

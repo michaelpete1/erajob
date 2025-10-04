@@ -9,7 +9,7 @@
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
-    <div class="relative z-50 w-full max-w-sm mx-auto px-4 py-6">
+    <div class="relative z-50 w-full max-w-sm mx-auto px-4 sm:px-6 py-6 sm:py-8">
       <!-- Navigation Header -->
       <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-center animate-fade-up">
         <button @click="$router.push('/sign-in')" class="text-white/80 hover:text-white transition-colors text-sm font-medium">
@@ -19,7 +19,7 @@
       
       <div class="flex flex-col items-center justify-center text-center py-12">
         <BrandLogo size="lg" class="mb-8 [filter:brightness(0)_invert(1)] animate-bounce-in" />
-      <h2 class="mb-8 text-3xl font-extrabold text-white animate-fade-up-delay-1">Sign Up</h2>
+      <h2 class="mb-6 sm:mb-8 text-2xl sm:text-3xl font-extrabold text-white animate-fade-up-delay-1">Sign Up</h2>
       
       <!-- Error Message -->
       <div v-if="error" class="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-white text-sm animate-fade-in">
@@ -32,7 +32,7 @@
             v-model="fullName"
             type="text"
             placeholder="Your Full Name"
-            class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all"
+            class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 sm:py-3.5 text-sm sm:text-base text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all"
             @input="console.log('Full name input:', fullName)"
           />
         </div>
@@ -41,7 +41,7 @@
             v-model="email"
             type="email"
             placeholder="Email"
-            class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all"
+            class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 sm:py-3.5 text-sm sm:text-base text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all"
             @input="console.log('Email input:', email)"
           />
         </div>
@@ -50,7 +50,7 @@
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
             placeholder="Password"
-            class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all"
+            class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 sm:py-3.5 text-sm sm:text-base text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all pr-12"
             @input="console.log('Password input:', password)"
           />
           <button
@@ -109,7 +109,7 @@
         <button
           type="submit"
           :disabled="loading"
-          class="btn-pressable w-full rounded-full bg-white px-6 py-3 text-brand-teal font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          class="btn-pressable w-full rounded-full bg-white px-6 py-3.5 sm:py-4 text-brand-teal font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-100 transition-all duration-300 animate-fade-up-delay-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <span v-if="loading" class="flex items-center justify-center">
             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-brand-teal" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -121,7 +121,7 @@
           <span v-else>Sign Up</span>
         </button>
       </form>
-      <p class="mt-6 text-sm text-white/80 animate-fade-up-delay-4">
+      <p class="mt-6 text-sm sm:text-base text-white/80 animate-fade-up-delay-4">
         Already have an account? 
         <router-link to="/sign-in" class="font-semibold text-white hover:text-teal-100 underline transition-colors">Sign in</router-link>
       </p>

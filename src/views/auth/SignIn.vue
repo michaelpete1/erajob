@@ -9,7 +9,7 @@
     <div class="absolute bottom-32 left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3" />
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
-    <div class="relative z-10 w-full max-w-sm mx-auto px-4 py-6">
+    <div class="relative z-10 w-full max-w-sm mx-auto px-4 sm:px-6 py-6 sm:py-8">
       <!-- Navigation Header -->
       <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-center animate-fade-up">
         <button @click="$router.push('/sign-up')" class="text-white/80 hover:text-white transition-colors text-sm font-medium">
@@ -19,7 +19,7 @@
       
       <div class="flex flex-col items-center justify-center text-center py-12">
         <BrandLogo size="lg" class="mb-8 [filter:brightness(0)_invert(1)] animate-bounce-in" />
-      <h2 class="mb-8 text-3xl font-extrabold text-white animate-fade-up-delay-1">Sign In</h2>
+      <h2 class="mb-6 sm:mb-8 text-2xl sm:text-3xl font-extrabold text-white animate-fade-up-delay-1">Sign In</h2>
       
       <!-- Error Message -->
       <div v-if="error" class="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-white text-sm animate-fade-in">
@@ -60,77 +60,62 @@
         </div>
         
         <!-- Role Selection -->
-        <div class="animate-fade-up-delay-3">
-          <label class="block text-sm font-medium text-white mb-2">Select your role</label>
-          <div class="grid grid-cols-3 gap-2">
+          <label class="block text-sm sm:text-base font-medium text-white mb-2">Select your role</label>
+          <div class="grid grid-cols-3 gap-2 sm:gap-3">
             <button
               type="button"
               @click="selectedRole = 'client'"
               :class="[
-                'px-3 py-2 rounded-lg border transition-all duration-200 text-sm font-medium',
+                'flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border-2 transition-all duration-300 text-xs sm:text-sm font-medium',
                 selectedRole === 'client'
                   ? 'bg-white text-brand-teal border-white shadow-lg'
                   : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20 hover:text-white'
               ]"
             >
-              <div class="flex flex-col items-center">
-                <svg class="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-                </svg>
-                Client
-              </div>
+              <svg class="w-4 h-4 sm:w-5 sm:h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>Client</span>
             </button>
             
             <button
               type="button"
               @click="selectedRole = 'agent'"
               :class="[
-                'px-3 py-2 rounded-lg border transition-all duration-200 text-sm font-medium',
+                'flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border-2 transition-all duration-300 text-xs sm:text-sm font-medium',
                 selectedRole === 'agent'
                   ? 'bg-white text-brand-teal border-white shadow-lg'
                   : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20 hover:text-white'
               ]"
             >
-              <div class="flex flex-col items-center">
-                <svg class="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
-                </svg>
-                Agent
-              </div>
+              <svg class="w-4 h-4 sm:w-5 sm:h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M12 18h.01" />
+              </svg>
+              <span>Agent</span>
             </button>
             
             <button
               type="button"
               @click="selectedRole = 'admin'"
               :class="[
-                'px-3 py-2 rounded-lg border transition-all duration-200 text-sm font-medium',
+                'flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border-2 transition-all duration-300 text-xs sm:text-sm font-medium',
                 selectedRole === 'admin'
                   ? 'bg-white text-brand-teal border-white shadow-lg'
                   : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20 hover:text-white'
               ]"
             >
-              <div class="flex flex-col items-center">
-                <svg class="w-5 h-5 mb-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-                </svg>
-                Admin
-              </div>
+              <svg class="w-4 h-4 sm:w-5 sm:h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Admin</span>
             </button>
           </div>
-        </div>
-        
-        <div class="flex items-center justify-between text-xs animate-fade-up-delay-3">
-          <label class="flex items-center gap-2 text-white/80 hover:text-white transition-colors">
-            <input type="checkbox" class="h-4 w-4 rounded border-white/20 bg-white/10 text-brand-teal focus:ring-white/50" />
-            Remember me
-          </label>
-          <router-link to="/forgot-password" class="text-white/80 hover:text-white underline transition-colors">Forgot password?</router-link>
-        </div>
         
         <button
           type="submit"
           :disabled="loading"
-          class="btn-pressable w-full rounded-full bg-white px-6 py-3 text-brand-teal font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          class="w-full rounded-full bg-white px-6 py-3.5 sm:py-4 text-brand-teal font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-100 transition-all duration-300 animate-fade-up-delay-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <span v-if="loading" class="flex items-center justify-center">
             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-brand-teal" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -142,7 +127,7 @@
           <span v-else>Log In</span>
         </button>
       </form>
-      <p class="mt-6 text-sm text-white/80 animate-fade-up-delay-4">
+      <p class="mt-6 text-sm sm:text-base text-white/80 animate-fade-up-delay-4">
         Don't have an account? 
         <router-link to="/sign-up" class="font-semibold text-white hover:text-teal-100 underline transition-colors">Sign up</router-link>
       </p>

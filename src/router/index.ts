@@ -49,6 +49,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/agent/proposition-rejected', name: 'agent-proposition-rejected', component: () => import('../views/agent/AgentPropositionRejected.vue') },
   { path: '/agent/welcome-back', name: 'agent-welcome-back', component: () => import('../views/agent/AgentWelcomeBack.vue') },
   { path: '/agent/notifications', name: 'agent-notifications', component: () => import('../views/agent/AgentNotifications.vue') },
+  { path: '/agent/proposals', name: 'agent-proposals', component: () => import('../views/Proposals.vue') },
   // removed duplicate/placeholder logging routes; use /agent/logs
   // Admin flow
   { path: '/admin/job-approval', name: 'admin-job-approval', component: () => import('../views/admin/AdminJobApproval.vue') },
@@ -58,8 +59,22 @@ const routes: RouteRecordRaw[] = [
   { path: '/admin/job/:id/reject', name: 'admin-job-rejection', component: () => import('../views/admin/AdminJobRejection.vue') },
   // Utility pages
   { path: '/notifications', name: 'notifications', component: () => import('../views/Notifications.vue') },
-  { path: '/messages', name: 'messages', component: () => import('../views/Messages.vue') },
-  { path: '/chat/:id', name: 'chat', component: () => import('../views/Chat.vue') },
+  { 
+    path: '/proposals', 
+    name: 'proposals', 
+    component: () => import('../views/Proposals.vue') 
+  },
+  { 
+    path: '/proposals/new', 
+    name: 'new-proposal', 
+    component: () => import('../views/Proposals.vue') 
+  },
+  { 
+    path: '/proposals/:id', 
+    name: 'proposal-detail', 
+    component: () => import('../views/ProposalDetail.vue'),
+    props: true
+  },
   { path: '/call/:id', name: 'call', component: () => import('../views/Call.vue') },
   { path: '/settings', name: 'settings', component: () => import('../views/Settings.vue') },
   { path: '/profile-settings', name: 'profile-settings', component: () => import('../views/ProfileSettings.vue') },

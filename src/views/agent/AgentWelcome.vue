@@ -95,39 +95,50 @@
               </svg>
             </div>
 
-            <!-- Modal Popup Box -->
-            <div
-              v-if="showProjectsDropdown"
-              class="absolute top-0 right-full mr-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[99999] overflow-hidden"
-              @click.stop
-            >
-                <!-- Modal Header -->
-                <div class="bg-brand-teal text-white p-6">
-                  <h3 class="text-xl font-bold">Select Your Preferred Projects</h3>
-                  <p class="text-teal-100 mt-1">Choose all the types of projects you're interested in working on</p>
-                </div>
-                
-                <!-- Modal Body -->
-                <div class="p-6 max-h-96 overflow-y-auto">
-                  <div
-                    v-for="project in projectOptions"
-                    :key="project"
-                    @click.stop="toggleProject(project)"
-                    class="px-4 py-3 cursor-pointer hover:bg-brand-teal/5 transition-colors flex items-center justify-between leading-relaxed"
-                  >
-                    <span class="text-sm text-gray-700 whitespace-normal break-words">{{ project }}</span>
-                    <svg
-                      v-if="form.preferredProjects.includes(project)"
-                      class="w-4 h-4 text-brand-teal"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
+            <!-- Modal Popup Box will be teleported to body -->
+            <teleport to="body">
+              <div
+                v-if="showProjectsDropdown"
+                class="fixed inset-0 z-[9999] bg-black/30 flex items-start pt-16 justify-center sm:items-start sm:justify-center sm:bg-transparent"
+                @click="showProjectsDropdown = false"
+              >
+                <div
+                  class="w-[85%] max-w-sm bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden mt-0 sm:absolute sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:top-20"
+                  @click.stop
+                >
+                  <!-- Modal Header -->
+                  <div class="bg-brand-teal text-white p-3 sm:p-4">
+                    <h3 class="text-base font-semibold">Select Project Types</h3>
+                    <p class="text-teal-100 text-xs">
+                      Choose project types you're interested in working on
+                    </p>
+                  </div>
+                  
+                  <!-- Modal Body -->
+                  <div class="p-3 max-h-[50vh] overflow-y-auto">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <div
+                        v-for="project in projectOptions"
+                        :key="project"
+                        @click="toggleProject(project)"
+                        class="px-2.5 py-1.5 cursor-pointer hover:bg-brand-teal/5 rounded-md transition-colors flex items-center justify-between text-xs"
+                      >
+                        <span class="text-gray-700">{{ project }}</span>
+                        <svg
+                          v-if="form.preferredProjects.includes(project)"
+                          class="w-4 h-4 text-brand-teal flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+            </teleport>
           </div>
         </div>
         <div class="animate-slide-in-right">
@@ -205,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -277,8 +288,18 @@ const handlePersonalityTestUpload = (event: Event) => {
 }
 
 // Project selection methods
-const toggleProjectsDropdown = () => {
-  console.log('toggleProjectsDropdown called, current value:', showProjectsDropdown.value)
+const updateDropdownPosition = async () => {
+  await nextTick()
+  if (projectsRef.value) {
+    const rect = projectsRef.value.getBoundingClientRect()
+    document.documentElement.style.setProperty('--dropdown-top', `${rect.bottom + window.scrollY}px`)
+  }
+}
+
+const toggleProjectsDropdown = async () => {
+  if (!showProjectsDropdown.value) {
+    await updateDropdownPosition()
+  }
   showProjectsDropdown.value = !showProjectsDropdown.value
   console.log('toggleProjectsDropdown new value:', showProjectsDropdown.value)
 }

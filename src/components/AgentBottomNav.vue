@@ -20,7 +20,7 @@
           :class="['flex flex-col items-center justify-center flex-1 py-2 min-h-[56px] touch-manipulation', linkClass('/agent/log-work')]" 
           aria-label="Log Work"
         >
-          <PencilSquareIcon :class="['mb-1', iconClass('/agent/log-work')]" />
+          <DocumentPlusIcon :class="['mb-1', iconClass('/agent/log-work')]" />
           <span class="text-xs mt-0.5">Log Work</span>
         </router-link>
 
@@ -40,7 +40,7 @@
           :to="'/agent/notifications'" 
           :class="['flex flex-col items-center justify-center flex-1 py-2 min-h-[56px] touch-manipulation', linkClass('/agent/notifications')]" 
         >
-          <MusicalNoteIcon :class="['mb-1', iconClass('/agent/notifications')]" />
+          <BellIcon :class="['mb-1', iconClass('/agent/notifications')]" />
           <span class="text-xs mt-0.5">Notifications</span>
         </router-link>
 
@@ -71,11 +71,10 @@
 import { 
   PencilSquareIcon, 
   AdjustmentsHorizontalIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  DocumentPlusIcon,
+  BellIcon
 } from '@heroicons/vue/24/outline'
-import { 
-  MusicalNoteIcon 
-} from '@heroicons/vue/24/solid'
 import { useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
 
