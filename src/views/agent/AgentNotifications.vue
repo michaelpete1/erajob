@@ -242,57 +242,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useNotifications } from '../../composables/useNotifications'
 
 // Reactive data
 const activeFilter = ref('all')
 const sortBy = ref('newest')
-const notifications = ref([
-  {
-    id: '1',
-    type: 'priority',
-    title: 'Urgent: Project Deadline Approaching',
-    description: 'The UI/UX Revamp project deadline is in 48 hours. Please submit your final deliverables.',
-    time: '2 hours ago',
-    actions: ['View Project', 'Contact Client'],
-    read: false
-  },
-  {
-    id: '2',
-    type: 'success',
-    title: 'New Project Assigned',
-    description: 'Congratulations! You have been assigned to the E-commerce Development project with TechCorp Inc.',
-    time: '5 hours ago',
-    actions: ['View Details', 'Accept Assignment'],
-    read: false
-  },
-  {
-    id: '3',
-    type: 'info',
-    title: 'Payment Received',
-    description: 'Payment of $2,500 has been received for the Mobile App Development project.',
-    time: '1 day ago',
-    actions: ['View Receipt', 'Download Invoice'],
-    read: true
-  },
-  {
-    id: '4',
-    type: 'default',
-    title: 'Client Feedback Received',
-    description: 'Sarah Johnson has provided feedback on your latest design submission.',
-    time: '2 days ago',
-    actions: ['View Feedback', 'Reply'],
-    read: true
-  },
-  {
-    id: '5',
-    type: 'success',
-    title: 'Profile Verification Complete',
-    description: 'Your agent profile has been successfully verified and is now visible to clients.',
-    time: '3 days ago',
-    actions: ['View Profile'],
-    read: true
-  }
-])
+
+// Use the notifications composable (API-driven only)
+const { notifications, loading, error, getNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
 
 const filters = ref([
   { id: 'all', name: 'All', count: 0 },
@@ -304,7 +261,7 @@ const filters = ref([
 
 // Computed properties
 const filteredNotifications = computed(() => {
-  let filtered = notifications.value
+  let filtered = [...notifications.value]
 
   // Apply filter
   if (activeFilter.value !== 'all') {
@@ -331,18 +288,15 @@ const filteredNotifications = computed(() => {
 })
 
 // Methods
-const markAllAsRead = () => {
-  notifications.value.forEach(notification => {
-    notification.read = true
-  })
-  updateFilterCounts()
-}
-
-const removeNotification = (id) => {
-  const index = notifications.value.findIndex(n => n.id === id)
-  if (index > -1) {
-    notifications.value.splice(index, 1)
-    updateFilterCounts()
+const removeNotification = async (id) => {
+  try {
+    const result = await deleteNotification(id)
+    if (result.success) {
+      // Update filter counts
+      updateFilterCounts()
+    }
+  } catch (error) {
+    console.error('Error deleting notification:', error)
   }
 }
 
@@ -350,29 +304,37 @@ const handleNotificationAction = (notificationId, action) => {
   console.log(`Action "${action}" clicked for notification ${notificationId}`)
   // In a real app, this would handle different actions like navigating to specific pages
   // For now, we'll just mark the notification as read
-  const notification = notifications.value.find(n => n.id === notificationId)
-  if (notification) {
-    notification.read = true
-    updateFilterCounts()
+  markNotificationAsRead(notificationId)
+}
+
+const markNotificationAsRead = async (notificationId) => {
+  try {
+    const result = await markAsRead(notificationId)
+    if (result.success) {
+      // Update filter counts
+      updateFilterCounts()
+    }
+  } catch (error) {
+    console.error('Error marking notification as read:', error)
   }
 }
 
 const updateFilterCounts = () => {
+  const list = notifications.value
   filters.value.forEach(filter => {
     if (filter.id === 'all') {
-      filter.count = notifications.value.length
+      filter.count = list.length
     } else if (filter.id === 'unread') {
-      filter.count = notifications.value.filter(n => !n.read).length
+      filter.count = list.filter(n => !n.read).length
     } else {
-      filter.count = notifications.value.filter(n => n.type === filter.id).length
+      filter.count = list.filter(n => n.type === filter.id).length
     }
   })
 }
 
 // Load notifications on mount
-onMounted(() => {
-  console.log('AgentNotifications component mounted')
-  // In a real app, this would fetch notifications from the backend
+onMounted(async () => {
+  await getNotifications()
   updateFilterCounts()
 })
 </script>

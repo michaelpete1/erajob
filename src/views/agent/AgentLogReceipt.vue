@@ -164,57 +164,139 @@
         </button>
       </div>
     </div>
-    
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
 
 const router = useRouter()
 const logData = ref<any>(null)
 const logImages = ref<any[]>([])
 const selectedImage = ref<any>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-onMounted(() => {
+// Work logs data with proper typing
+interface WorkLog {
+  id: string
+  title: string
+  hours: number
+  date: string
+  comment: string
+  files?: any[]
+  projectId?: string
+  gigId?: string
+  status: 'draft' | 'submitted' | 'approved'
+}
+
+// Simulate API call for individual work log (replace with real API call)
+const loadWorkLogFromAPI = async (logId: string): Promise<WorkLog | null> => {
+  // In a real implementation, this would call:
+  // const result = await workLogsService.getWorkLogById(logId)
+
+  // For now, simulate successful API response
+  const mockApiResponse = [
+    {
+      id: '1',
+      title: 'Content Writing for TechCorp',
+      hours: 8,
+      date: '2024-01-15',
+      comment: 'Completed blog post about React best practices',
+      projectId: 'proj_1',
+      gigId: 'gig_1',
+      status: 'submitted' as const,
+      files: []
+    },
+    {
+      id: '2',
+      title: 'UI Design for Mobile App',
+      hours: 6,
+      date: '2024-01-14',
+      comment: 'Created wireframes and mockups for user dashboard',
+      projectId: 'proj_2',
+      gigId: 'gig_2',
+      status: 'approved' as const,
+      files: [
+        { name: 'wireframes.png', data: 'mock-image-data' },
+        { name: 'mockups.jpg', data: 'mock-image-data-2' }
+      ]
+    }
+  ]
+
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  return mockApiResponse.find(log => log.id === logId) || null
+}
+
+// Fallback to localStorage
+const loadWorkLogFromLocalStorage = (logId?: string) => {
   try {
-    const logId = Array.isArray(router.currentRoute.value.params.id) 
-      ? router.currentRoute.value.params.id[0] 
+    const logs = localStorage.getItem('workLogs')
+    if (logs) {
+      const allLogs = JSON.parse(logs)
+      if (logId) {
+        return allLogs.find((log: any) => log.id === parseInt(logId))
+      } else {
+        return allLogs[0] // Return first log if no specific ID
+      }
+    }
+  } catch (e) {
+    console.error('Error loading work log from localStorage:', e)
+  }
+  return null
+}
+
+onMounted(async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const logId = Array.isArray(router.currentRoute.value.params.id)
+      ? router.currentRoute.value.params.id[0]
       : router.currentRoute.value.params.id
+
     if (logId) {
-      // Try to get from localStorage first (for demo purposes)
-      const logs = localStorage.getItem('workLogs')
-      if (logs) {
-        const allLogs = JSON.parse(logs)
-        const foundLog = allLogs.find((log: any) => log.id === parseInt(logId))
-        if (foundLog) {
-          logData.value = foundLog
-          extractImages(foundLog)
-        }
+      // Try to load from API first
+      const apiLog = await loadWorkLogFromAPI(logId)
+      if (apiLog) {
+        logData.value = apiLog
+        extractImages(apiLog)
+        console.log('Loaded work log from API:', logData.value)
+        return
       }
-      
-      // Fallback to selectedLog if not found by ID
-      if (!logData.value) {
-        const selectedLog = localStorage.getItem('selectedLog')
-        if (selectedLog) {
-          logData.value = JSON.parse(selectedLog)
-          extractImages(logData.value)
-        }
-      }
-    } else {
-      // Get from localStorage if no ID in route
+    }
+
+    // Fallback to localStorage if API fails or no logId
+    const localLog = loadWorkLogFromLocalStorage(logId)
+    if (localLog) {
+      logData.value = localLog
+      extractImages(localLog)
+      console.log('Loaded work log from localStorage')
+      return
+    }
+
+    // Final fallback to selectedLog if not found by ID
+    if (!logData.value) {
       const selectedLog = localStorage.getItem('selectedLog')
       if (selectedLog) {
         logData.value = JSON.parse(selectedLog)
         extractImages(logData.value)
+        console.log('Loaded work log from selectedLog')
       }
     }
-  } catch (e) {
-    console.error('Error loading log data:', e)
+  } catch (caughtError) {
+    console.error('Error loading log data:', caughtError)
+    // Type-safe error handling
+    if (caughtError instanceof Error) {
+      error.value = `Failed to load log details: ${caughtError.message}`
+    } else {
+      error.value = 'Failed to load log details'
+    }
+  } finally {
+    loading.value = false
   }
 })
 

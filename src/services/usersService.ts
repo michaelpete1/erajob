@@ -1,6 +1,6 @@
 // src/services/usersService.ts
 
-import { apiClient } from './api'
+import apiClient from './api'
 import type {
   UserOut,
   ApiResponse,

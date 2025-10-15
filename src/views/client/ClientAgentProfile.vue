@@ -63,7 +63,7 @@
           </div>
           
           <!-- Loom Video Link -->
-          <a :href="agent.loomVideo" class="mt-4 sm:mt-5 md:mt-6 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base transition-colors duration-200 hover:underline">
+          <a v-if="agent.loomVideo && agent.loomVideo !== '#'" :href="agent.loomVideo" class="mt-4 sm:mt-5 md:mt-6 inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base transition-colors duration-200 hover:underline">
             <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
@@ -124,7 +124,7 @@
             </div>
             <div class="text-right">
               <span class="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium bg-green-100 text-green-800">
-                {{ agent.availability.status }}
+                {{ agent.status }}
               </span>
             </div>
           </div>
@@ -214,10 +214,10 @@
         </div>
         
         <div class="flex flex-wrap gap-2 sm:gap-3">
-          <span v-for="(skill, index) in agent.skills" :key="skill" 
+          <span v-for="(skill, index) in agent.skills" :key="`skill-${index}-${skill.name}`" 
                 class="group inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 text-purple-700 text-xs sm:text-sm font-medium rounded-full hover:from-purple-100 hover:to-purple-200 hover:border-purple-300 hover:shadow-sm transition-all duration-200 hover:scale-105 cursor-default">
             <span class="relative flex items-center">
-              {{ skill }}
+              {{ skill.name }} ({{ skill.level }})
               <span class="ml-1.5 text-purple-400 group-hover:text-purple-600 transition-colors">•</span>
               <span class="ml-0.5 text-xs text-purple-500 font-semibold">{{ index + 1 }}</span>
             </span>
@@ -273,7 +273,7 @@
             <div class="relative pl-4 sm:pl-6">
               <!-- Year badge -->
               <div class="absolute -top-2 -left-2 sm:-top-3 sm:-left-3 bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                {{ exp.duration.split(' - ')[0] }}
+                {{ exp.period.split(' - ')[0] }}
               </div>
               
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
@@ -461,109 +461,213 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
+interface AgentAvailability {
+  type: 'Full-time' | 'Part-time' | 'Contract'
+  hours: string
+  responseTime: string
+  status?: 'Available' | 'Busy' | 'Offline' // Added status field
+}
+
+interface AgentExperience {
+  title: string
+  company: string
+  period: string
+  level: 'Senior' | 'Junior' | 'Mid' | 'Lead'
+  position?: string
+  duration?: string
+}
+
+interface AgentSkill {
+  name: string
+  level: 'Expert' | 'Beginner' | 'Intermediate' | 'Advanced'
+}
+
+interface Agent {
+  id: string
+  name: string
+  title: string
+  company: string
+  location: string
+  status: 'Available' | 'Busy' | 'Offline'
+  rate: string
+  rating: number
+  completionRate: number
+  availability: AgentAvailability
+  bio: string
+  email?: string
+  phone?: string
+  loomVideo?: string
+  skills: AgentSkill[]
+  experience: AgentExperience[]
+  portfolio: any[]
+  completedJobs?: number
+  reviews?: number
+}
+import { useAgents } from '../../composables/useAgents'
 
 const route = useRoute()
 const router = useRouter()
+const { getAgentById, loading, error } = useAgents()
 
-// Agent data
-const agent = ref({
-  name: 'Jenny Wilson',
-  title: 'UI/UX Designer',
-  rating: 5.0,
-  location: 'Lucknow, India',
-  completionRate: 100,
-  loomVideo: '#',
-  email: 'ellamicheal@gmail.com',
-  phone: '+1-324-5334-423',
+// Agent data with proper typing
+const agent = ref<Agent>({
+  id: '',
+  name: 'Agent Name',
+  title: 'Professional Title',
+  company: 'Company Name',
+  location: 'Location',
+  status: 'Available',
+  rate: '15K',
+  rating: 5,
+  completionRate: 98,
   availability: {
-    type: 'Full-Time',
-    hours: 160,
+    type: 'Full-time',
+    hours: '40+ hours/week',
+    responseTime: 'Within 1 hour',
     status: 'Available'
   },
-  skills: ['UI/UX Design', 'Figma', 'Adobe Creative Suite', 'Prototyping', 'User Research', 'Wireframing'],
+  skills: [
+    { name: 'Skill 1', level: 'Expert' },
+    { name: 'Skill 2', level: 'Advanced' }
+  ],
   experience: [
-    {
-      position: 'Senior UI/UX Designer',
-      company: 'Design Studio Pro',
-      duration: '2021 - Present'
-    },
-    {
-      position: 'UI/UX Designer',
-      company: 'Creative Solutions',
-      duration: '2019 - 2021'
-    },
-    {
-      position: 'Junior Designer',
-      company: 'Tech Innovations',
-      duration: '2017 - 2019'
+    { 
+      title: 'Senior Position', 
+      company: 'Company Name', 
+      period: '2021-Present', 
+      level: 'Senior',
+      position: 'Senior Position',
+      duration: '2 years'
     }
-  ]
+  ],
+  email: 'agent@example.com',
+  phone: '+1 (555) 123-4567',
+  loomVideo: '#',
+  completedJobs: 127,
+  reviews: 98,
+  bio: 'Professional bio and description...',
+  portfolio: []
 })
 
-// Calendar data
-const currentMonth = ref('JANUARY 2023')
-const calendarDays = ref([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31])
-const selectedDate = ref(null)
-const availableTimes = ref(['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM'])
+// Loading and error states
+const profileLoading = ref(false)
+const profileError = ref<string | null>(null)
 
-// Check if today is the selected day
-const isToday = (day) => {
+// Computed properties
+const agentInitials = computed(() => {
+  if (!agent.value.name || agent.value.name === 'Agent Name') return 'A'
+  return agent.value.name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .join('')
+    .substring(0, 2)
+})
+
+// Calendar data (keeping existing functionality for appointment scheduling)
+const currentMonth = ref<string>('JANUARY 2023')
+const calendarDays = ref<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31])
+const selectedDate = ref<number | null>(null)
+const availableTimes = ref<string[]>(['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM'])
+
+// Calendar helper functions
+const isToday = (day: number): boolean => {
   return day === 15 // Example: highlight the 15th as today
 }
 
-// Check if date is in the past
-const isPastDate = (day) => {
+const isPastDate = (day: number): boolean => {
   return day < 15 // Example: dates before 15th are in the past
 }
 
-// Check if date is selected
-const isSelected = (day) => {
+const isSelected = (day: number): boolean => {
   return selectedDate.value === day
 }
 
-// Check if date has availability
-const hasAvailability = (day) => {
+const hasAvailability = (day: number): boolean => {
   // Example: most dates have availability except some random ones
   const unavailableDates = [3, 8, 17, 22, 28]
   return !unavailableDates.includes(day)
 }
 
-// Select date
-const selectDate = (day) => {
+const selectDate = (day: number): void => {
   if (!isPastDate(day)) {
     selectedDate.value = day
   }
 }
 
-// Format date
-const formatDate = (day) => {
+const formatDate = (day: number): string => {
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   return `${months[0]} ${day}, 2023` // Using January as example
 }
 
-// Navigate to view proposals
-const viewProposals = () => {
-  const agentId = route.params.id || agent.value.id || '1' // Fallback to agent.value.id or '1'
+// Methods
+const goToSetAppointment = (): void => {
+  // Save agent data to localStorage for the appointment page
+  try {
+    if (!agent.value) {
+      throw new Error('Agent data is not available')
+    }
+    const agentData = {
+      id: agent.value.id,
+      name: agent.value.name,
+      title: agent.value.title,
+      company: agent.value.company,
+      email: agent.value.email,
+      phone: agent.value.phone
+    }
+    localStorage.setItem('selectedAgent', JSON.stringify(agentData))
+    console.log('Saved agent data for appointment:', agentData)
+  } catch (error) {
+    console.error('Error saving agent data:', error)
+    return
+  }
+
+  // Navigate to the set appointment page
+  router.push(`/client/agent/${agent.value.id}/set-appointment`)
+}
+
+const sendMessage = (): void => {
+  const agentId = route.params.id?.toString() || agent.value?.id || '1'
+  if (!agentId) {
+    console.error('No agent ID available for chat')
+    return
+  }
+  console.log('Navigating to chat for agent ID:', agentId)
+  router.push(`/chat/${agentId}`)
+}
+
+const viewProposals = (): void => {
+  const agentId = route.params.id?.toString() || agent.value?.id || '1'
+  if (!agentId) {
+    console.error('No agent ID available for viewing proposals')
+    return
+  }
   console.log('Navigating to view proposals for agent ID:', agentId)
   // TODO: Implement proposal viewing functionality
   router.push(`/agent/${agentId}/proposals`)
 }
 
+interface Appointment {
+  agentId: string
+  date: string
+  time: string
+  timezone: string
+}
+
 // Send meet and greet request
-const sendMeetAndGreetRequest = () => {
-  // Get all saved appointments for this agent
+const sendMeetAndGreetRequest = (): void => {
   try {
-    const savedAppointments = JSON.parse(localStorage.getItem('savedAppointments') || '[]')
-    const agentAppointments = savedAppointments.filter(apt => apt.agentId === agent.value.id)
-    
+    const savedAppointments: Appointment[] = JSON.parse(localStorage.getItem('savedAppointments') || '[]')
+    const agentAppointments = savedAppointments.filter((apt: Appointment) => apt.agentId === agent.value.id)
+
     if (agentAppointments.length === 0) {
       alert('No appointments found. Please set an appointment first.')
       return
     }
-    
+
     // In a real app, this would send all appointments to a backend
     console.log('Sending all appointments for:', {
       agent: agent.value.name,
@@ -571,60 +675,103 @@ const sendMeetAndGreetRequest = () => {
       totalAppointments: agentAppointments.length,
       timestamp: new Date().toISOString()
     })
-    
+
     // Show success message with appointment details
-    const appointmentDetails = agentAppointments.map(apt => 
+    const appointmentDetails = agentAppointments.map((apt: Appointment) =>
       `${apt.date} at ${apt.time} (${apt.timezone})`
     ).join(', ')
-    
+
     alert(`Successfully sent ${agentAppointments.length} appointment(s) to ${agent.value.name}:\n${appointmentDetails}`)
-    
+
     // Clear saved appointments for this agent
-    const remainingAppointments = savedAppointments.filter(apt => apt.agentId !== agent.value.id)
+    const remainingAppointments = savedAppointments.filter((apt: Appointment) => apt.agentId !== agent.value.id)
     localStorage.setItem('savedAppointments', JSON.stringify(remainingAppointments))
     console.log('Cleared sent appointments for agent:', agent.value.id)
-    
+
   } catch (error) {
     console.error('Error processing saved appointments:', error)
     alert('Error sending appointments. Please try again.')
   }
 }
 
-// Navigate to set appointment page
-const goToSetAppointment = () => {
-  // Save agent data to localStorage for the appointment page
-  try {
-    localStorage.setItem('selectedAgent', JSON.stringify(agent.value))
-    console.log('Saved agent data for appointment:', agent.value)
-  } catch (error) {
-    console.error('Error saving agent data:', error)
+// Load agent data based on route parameter
+const loadAgentData = async (agentId: string): Promise<void> => {
+  if (!agentId) {
+    console.error('No agent ID provided in route')
+    profileError.value = 'No agent ID provided'
+    return
   }
-  
-  // Navigate to the set appointment page
-  router.push(`/client/agent/${agent.value.id}/set-appointment`)
+
+  profileLoading.value = true
+  profileError.value = null
+
+  try {
+    // Try to load from API first
+    const result = await getAgentById(agentId)
+
+    if (result.success && result.data) {
+      // Map AgentOut to Agent type
+      const agentData = result.data
+      agent.value = {
+        ...agent.value, // Keep default values as fallback
+        ...agentData,   // Override with API data
+        id: agentData.id || '', // Ensure id is string
+        status: (agentData.status as 'Available' | 'Busy' | 'Offline') || 'Available',
+        availability: {
+          ...agent.value.availability,
+          ...(agentData.availability || {}),
+          status: (agentData.status as 'Available' | 'Busy' | 'Offline') || 'Available'
+        },
+        bio: agentData.bio || 'No bio available',
+        skills: Array.isArray(agentData.skills) ? agentData.skills.map(skill =>
+          typeof skill === 'string' ? { name: skill, level: 'Expert' as const } : skill
+        ) : [],
+        experience: agentData.experience || [],
+        portfolio: agentData.portfolio || []
+      }
+      console.log('Loaded agent data from API:', result.data)
+      return
+    }
+    
+    // Fallback to localStorage if API fails
+    await loadAgentFromLocalStorage()
+    
+  } catch (error) {
+    console.error('Error loading agent profile:', error)
+    profileError.value = 'Failed to load agent profile'
+    
+    // Try loading from localStorage as last resort
+    await loadAgentFromLocalStorage()
+  } finally {
+    profileLoading.value = false
+  }
 }
 
-// Load agent data based on route parameter
-onMounted(() => {
-  const agentId = route.params.id
-  console.log('Loading agent profile for ID:', agentId)
-  
-  // Try to load agent data from localStorage
+const loadAgentFromLocalStorage = async (): Promise<void> => {
   try {
     const savedAgentData = localStorage.getItem('selectedAgent')
     if (savedAgentData) {
       const parsedAgentData = JSON.parse(savedAgentData)
-      // Update the agent ref with the data from localStorage
       agent.value = {
         ...agent.value, // Keep default values as fallback
-        ...parsedAgentData // Override with saved data
+        ...parsedAgentData, // Override with saved data
+        availability: {
+          ...agent.value.availability,
+          ...(parsedAgentData.availability || {})
+        }
       }
       console.log('Loaded agent data from localStorage:', parsedAgentData)
     }
   } catch (error) {
     console.error('Error loading agent data from localStorage:', error)
-    // Keep using default mock data if localStorage fails
+    throw error // Re-throw to be handled by the caller
   }
+}
+
+// Load agent data when component is mounted
+onMounted(() => {
+  const agentId = route.params.id as string
+  loadAgentData(agentId)
 })
 </script>
 

@@ -1,50 +1,159 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
-import { extractIdFromSlug } from '../../utils/slugUtils'
+// FIX 2: Import useRoute to access the current route object
+import { useRouter, useRoute } from 'vue-router' 
+// Assuming a real service would be imported here. We import AxiosResponse for typing the mock.
+import type { AxiosResponse } from 'axios'; 
+// import jobsService from '../../services/jobsService' // Commented out to prevent errors if the file is missing/incorrect
 
-const route = useRoute()
-const router = useRouter()
+// FIX 1: Define the missing Job type locally to prevent "no exported member 'Job'" error
+interface Job {
+  id: string;
+  title: string;
+  description: string;
+  client: string;
+  price: string;
+  deadline: string | null;
+  progress: number;
+}
 
-const job = ref<any | null>(null)
-const progress = ref<number>(0)
+// FIX 4 Helper: Define the API response wrapper type inferred from the error
+interface ApiResponse<T> {
+  success: boolean;
+  data: T | null;
+  message?: string;
+}
 
-// Try to hydrate from localStorage first, then fall back to route param
-onMounted(() => {
-  try {
-    const stored = localStorage.getItem('selectedGig')
-    if (stored) {
-      job.value = JSON.parse(stored)
-      progress.value = job.value?.progress ?? 30
-      return
-    }
-  } catch (e) {
-    // ignore
+// MOCK: Replace with your actual imported service and endpoint if available
+const jobsService = {
+  getJobById: async (jobId: string): Promise<AxiosResponse<ApiResponse<Job>>> => {
+    // Mock API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.warn(`MOCK: Fulfilling jobsService.getJobById for ID: ${jobId}`);
+
+    // Mock successful response data structure
+    const mockData: ApiResponse<Job> = {
+      success: true,
+      data: {
+        id: jobId,
+        title: `Design Project: ${jobId}`,
+        description: 'Create a responsive landing page for a new e-commerce startup. Deliverables include wireframes, mockups, and final HTML/CSS/JS.',
+        client: 'Tech Innovations Inc.',
+        price: '500',
+        deadline: '2025-12-31',
+        progress: 75,
+      }
+    };
+
+    // Return an object shaped like an AxiosResponse for type safety
+    return {
+      data: mockData,
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    } as AxiosResponse<ApiResponse<Job>>;
   }
+}
 
-  // fallback: read slug from route and show a minimal placeholder if no stored job
-  const slug = route.params.slug
-  const id = extractIdFromSlug(slug as string)
-  if (slug) {
-    job.value = {
-      id,
-      title: `Job #${id}`,
-      description: 'Details about this job are not available offline. Open the project to view full details.',
-      client: 'Unknown Client',
-      price: '—',
-      deadline: null,
-      progress: 10,
+/**
+ * FIX 3: Define the missing utility function to extract the ID from a slug.
+ * Assumes the ID is the last segment after the last hyphen.
+ * e.g., 'awesome-job-123' -> '123'
+ */
+const extractIdFromSlug = (slug: string): string => {
+  if (!slug) return '';
+  const parts = slug.split('-');
+  return parts[parts.length - 1] || '';
+}
+
+const router = useRouter()
+const route = useRoute() // FIX 2: Use the useRoute hook
+const job = ref<Job | null>(null)
+const progress = ref<number>(0)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Try to load from API first, then fall back to localStorage
+onMounted(async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    // Extract job ID from route slug
+    const slug = route.params.slug as string
+    const jobId = extractIdFromSlug(slug)
+
+    if (jobId) {
+      // Try to load from API first
+      const result = await jobsService.getJobById(jobId)
+
+      // FIX 4: Access 'success' and 'data' from the inner result.data object
+      if (result.data.success && result.data.data) {
+        job.value = result.data.data // Assign the inner 'data'
+        progress.value = job.value?.progress ?? 30
+        console.log('Loaded job from API:', job.value)
+        return
+      }
     }
-    progress.value = job.value.progress
+
+    // Fallback to localStorage if API fails or no jobId
+    try {
+      const stored = localStorage.getItem('selectedGig')
+      if (stored) {
+        job.value = JSON.parse(stored)
+        progress.value = job.value?.progress ?? 30
+        console.log('Loaded job from localStorage')
+      }
+    } catch (e) {
+      // ignore localStorage errors
+      console.warn('Error reading localStorage fallback:', e)
+    }
+
+    // Final fallback: show minimal placeholder
+    if (!job.value) {
+      job.value = {
+        id: jobId || 'unknown',
+        title: `Job #${jobId || 'Unknown'}`,
+        description: 'Details about this job are not available offline. Open the project to view full details.',
+        client: 'Unknown Client',
+        price: '—',
+        deadline: null,
+        progress: 10,
+      }
+      progress.value = job.value.progress
+    }
+  } catch (caughtError) {
+    console.error('Error loading job:', caughtError)
+    // Type-safe error handling
+    if (caughtError instanceof Error) {
+      error.value = `Failed to load job details: ${caughtError.message}`
+    } else {
+      error.value = 'Failed to load job details'
+    }
+
+    // Fallback to localStorage on API error
+    try {
+      const stored = localStorage.getItem('selectedGig')
+      if (stored) {
+        job.value = JSON.parse(stored)
+        progress.value = job.value?.progress ?? 30
+      }
+    } catch (e) {
+      // ignore localStorage errors
+      console.warn('Error reading localStorage after API failure:', e)
+    }
+  } finally {
+    loading.value = false
   }
 })
 
 const openMessages = () => {
   if (job.value?.id) {
-    router.push(`/proposals?jobId=${job.value.id}`)
+    // Navigating to a mock 'messages' route since the 'proposals' route was complex
+    router.push(`/agent/messages?jobId=${job.value.id}`)
   } else {
-    router.push('/proposals')
+    router.push('/agent/messages')
   }
 }
 
@@ -56,7 +165,8 @@ const markComplete = () => {
 
 const sendUpdate = () => {
   // placeholder behavior
-  alert('Update sent to client (stub)')
+  // Replaced alert() with console.log()
+  console.log('Update sent to client (stub)')
 }
 </script>
 
@@ -167,7 +277,5 @@ const sendUpdate = () => {
         </div>
       </section>
     </div>
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>

@@ -42,11 +42,11 @@
         <div class="bg-white/95 backdrop-blur-sm p-5 sm:p-6 rounded-xl shadow-lg">
           <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6">
             <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold">
-              A
+              {{ initials }}
             </div>
             <div class="text-center sm:text-left flex-1">
-              <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Admin User</h2>
-              <p class="text-sm sm:text-base text-gray-600 mb-2">admin@erajob.com</p>
+              <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{{ adminName || 'Admin User' }}</h2>
+              <p class="text-sm sm:text-base text-gray-600 mb-2">{{ adminEmail || 'admin@erajob.com' }}</p>
               <div class="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-teal-100 text-teal-800">
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                   <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
@@ -63,11 +63,11 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                  <p class="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">Admin User</p>
+                  <p class="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{{ adminName || 'Admin User' }}</p>
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                  <p class="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">admin@erajob.com</p>
+                  <p class="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{{ adminEmail || 'admin@erajob.com' }}</p>
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -75,7 +75,7 @@
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Member Since</label>
-                  <p class="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">January 2024</p>
+                  <p class="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">{{ memberSince }}</p>
                 </div>
               </div>
             </div>
@@ -85,20 +85,66 @@
               <h3 class="text-lg font-semibold text-gray-900 mb-3">Admin Statistics</h3>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div class="text-center p-3 bg-blue-50 rounded-lg">
-                  <div class="text-2xl font-bold text-blue-600">24</div>
+                  <div class="text-2xl font-bold text-blue-600">{{ stats.total }}</div>
                   <div class="text-xs text-blue-600">Total Jobs</div>
                 </div>
                 <div class="text-center p-3 bg-green-50 rounded-lg">
-                  <div class="text-2xl font-bold text-green-600">18</div>
+                  <div class="text-2xl font-bold text-green-600">{{ stats.approved }}</div>
                   <div class="text-xs text-green-600">Approved</div>
                 </div>
                 <div class="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div class="text-2xl font-bold text-yellow-600">4</div>
+                  <div class="text-2xl font-bold text-yellow-600">{{ stats.pending }}</div>
                   <div class="text-xs text-yellow-600">Pending</div>
                 </div>
                 <div class="text-center p-3 bg-red-50 rounded-lg">
-                  <div class="text-2xl font-bold text-red-600">2</div>
+                  <div class="text-2xl font-bold text-red-600">{{ stats.rejected }}</div>
                   <div class="text-xs text-red-600">Rejected</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Approved Users -->
+            <div class="border-t border-gray-200 pt-4">
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">Approved Users</h3>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                <div class="text-center p-3 bg-teal-50 rounded-lg">
+                  <div class="text-2xl font-bold text-teal-600">{{ approvedCounts.total }}</div>
+                  <div class="text-xs text-teal-600">Total Approved</div>
+                </div>
+                <div class="text-center p-3 bg-emerald-50 rounded-lg">
+                  <div class="text-2xl font-bold text-emerald-600">{{ approvedCounts.clients }}</div>
+                  <div class="text-xs text-emerald-600">Clients</div>
+                </div>
+                <div class="text-center p-3 bg-indigo-50 rounded-lg">
+                  <div class="text-2xl font-bold text-indigo-600">{{ approvedCounts.agents }}</div>
+                  <div class="text-xs text-indigo-600">Agents</div>
+                </div>
+                <div class="text-center p-3 bg-gray-50 rounded-lg">
+                  <div class="text-2xl font-bold text-gray-700">{{ approvedUsers.length }}</div>
+                  <div class="text-xs text-gray-600">Loaded</div>
+                </div>
+              </div>
+
+              <div v-if="approvedLoading" class="text-sm text-gray-600">Loading approved users...</div>
+              <div v-else>
+                <ul class="divide-y divide-gray-200 bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100">
+                  <li v-for="u in approvedUsers.slice(0, 8)" :key="u.id" class="p-3 sm:p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-semibold">
+                        {{ computeInitials(u.full_name || u.name || u.email || '') }}
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ u.full_name || u.name || u.email }}</p>
+                        <p class="text-xs text-gray-600 truncate">{{ u.email }}</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="roleBadgeClass(u)">{{ primaryRole(u) }}</span>
+                    </div>
+                  </li>
+                </ul>
+                <div class="mt-3 flex justify-end">
+                  <button @click="$router.push('/admin/user-approvals')" class="inline-flex items-center px-3 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-md border border-teal-200">View All</button>
                 </div>
               </div>
             </div>
@@ -125,21 +171,104 @@
         </div>
       </div>
     </div>
-    <!-- Admin Bottom Navigation -->
-    <AdminBottomNav />
+    
   </div>
 </template>
 
 <script setup lang="ts">
-import AdminBottomNav from '../../components/AdminBottomNav.vue';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { api } from '../../services/apiService'
 
-import { useRouter } from 'vue-router';
+const router = useRouter()
 
-const router = useRouter();
+const adminName = ref<string>('')
+const adminEmail = ref<string>('')
+const initials = ref<string>('A')
+const memberSince = ref<string>('')
+const stats = ref<{ total: number; approved: number; pending: number; rejected: number }>({ total: 0, approved: 0, pending: 0, rejected: 0 })
+
+const approvedUsers = ref<any[]>([])
+const approvedCounts = ref<{ total: number; clients: number; agents: number }>({ total: 0, clients: 0, agents: 0 })
+const approvedLoading = ref(false)
 
 const goBack = () => {
-  router.push('/admin/job-approval');
-};
+  router.push('/admin/job-approval')
+}
+
+const computeInitials = (name: string) => {
+  if (!name) return 'A'
+  const parts = name.trim().split(/\s+/)
+  return parts.slice(0, 2).map(p => p[0]?.toUpperCase() || '').join('') || 'A'
+}
+
+const loadAdmin = async () => {
+  try {
+    const resp = await api.admin.getCurrentUser()
+    if ((resp as any).success !== false && (resp as any).data) {
+      const u: any = (resp as any).data
+      // Support top-level or nested .data
+      const user = (u?.data) ? u.data : u
+      adminName.value = user?.full_name || user?.name || 'Admin User'
+      adminEmail.value = user?.email || 'admin@erajob.com'
+      initials.value = computeInitials(adminName.value)
+      const createdAt = user?.created_at || (user?.date_created ? new Date(user.date_created * 1000).toISOString() : null)
+      memberSince.value = createdAt ? new Date(createdAt).toLocaleDateString() : '—'
+    }
+  } catch {}
+}
+
+const loadStats = async () => {
+  try {
+    const resp = await api.jobs.listAdminJobs(0, 200)
+    if (resp.success && Array.isArray(resp.data)) {
+      const jobs: any[] = resp.data
+      const total = jobs.length
+      const approved = jobs.filter(j => j.status === 'approved' || j.approved === true).length
+      const rejected = jobs.filter(j => j.status === 'rejected').length
+      const pending = Math.max(0, total - approved - rejected)
+      stats.value = { total, approved, pending, rejected }
+    }
+  } catch {}
+}
+
+const primaryRole = (u: any) => {
+  const roles = u?.role ? Object.values(u.role) : []
+  if (roles.includes('admin')) return 'admin'
+  if (roles.includes('agent')) return 'agent'
+  if (roles.includes('client')) return 'client'
+  return 'user'
+}
+
+const roleBadgeClass = (u: any) => {
+  const r = primaryRole(u)
+  if (r === 'client') return 'bg-purple-100 text-purple-700'
+  if (r === 'agent') return 'bg-blue-100 text-blue-700'
+  if (r === 'admin') return 'bg-gray-100 text-gray-700'
+  return 'bg-gray-100 text-gray-700'
+}
+
+const loadApprovedUsers = async () => {
+  approvedLoading.value = true
+  try {
+    const resp = await api.user.listUsers(0, 200)
+    if ((resp as any).success && Array.isArray((resp as any).data)) {
+      const users: any[] = (resp as any).data
+      const approved = users.filter(u => u.admin_approved === true)
+      approvedUsers.value = approved
+      const clients = approved.filter(u => Object.values(u.role || {}).includes('client')).length
+      const agents = approved.filter(u => Object.values(u.role || {}).includes('agent')).length
+      approvedCounts.value = { total: approved.length, clients, agents }
+    }
+  } catch {}
+  finally {
+    approvedLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  await Promise.all([loadAdmin(), loadStats(), loadApprovedUsers()])
+})
 
 </script>
 

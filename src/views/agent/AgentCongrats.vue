@@ -1,6 +1,111 @@
-
 <script setup lang="ts">
-// No job data needed anymore
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import authService from '../../services/authService'
+import type { SignupData } from '../../types/api/auth'
+
+const router = useRouter()
+const isSubmitting = ref(false)
+const errorMessage = ref('')
+
+const finishSignup = async () => {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  errorMessage.value = ''
+
+  try {
+    const basic = JSON.parse(localStorage.getItem('signupBasicData') || '{}')
+    const welcome = JSON.parse(localStorage.getItem('agentWelcomeData') || '{}')
+    const services: string[] = JSON.parse(localStorage.getItem('selectedAgentServices') || '[]')
+
+    if (!basic?.email || !basic?.password || !basic?.firstName || !basic?.lastName) {
+      errorMessage.value = 'Missing signup information. Please restart the signup.'
+      return
+    }
+
+    // Transform welcome data to match API schema and types
+    const toolsArray = typeof welcome?.tools === 'string'
+      ? welcome.tools.split(',').map((s: string) => s.trim()).filter((s: string) => !!s).slice(0, 3)
+      : []
+    // Certificates: accept array from welcome.certificates or parse comma-separated certificateUrls
+    let certUrls: string[] = []
+    if (Array.isArray(welcome?.certificates)) {
+      certUrls = (welcome.certificates as string[]).map((s: string) => String(s).trim()).filter(Boolean)
+    } else if (typeof welcome?.certificateUrls === 'string') {
+      certUrls = welcome.certificateUrls.split(',').map((s: string) => s.trim()).filter(Boolean)
+    }
+    // If still empty, try to use any available link to satisfy backend non-empty requirement
+    if (!certUrls.length) {
+      const fallbacks = [welcome?.portfolioLink, welcome?.videoUrl, welcome?.personalityUrl]
+        .map((s: any) => (typeof s === 'string' ? s.trim() : ''))
+        .filter(Boolean)
+      certUrls = fallbacks.slice(0, 1)
+    }
+
+    // Normalize enums
+    const allowedExpertise = [
+      'Web Devlopment',
+      'Mobile Development',
+      'UI/UX Design',
+      'Content Writing',
+      'Digital Marketing',
+      'Data Analysis',
+      'Other'
+    ]
+    const selectedExpertise = typeof welcome?.primaryExpertise === 'string' && allowedExpertise.includes(welcome.primaryExpertise)
+      ? welcome.primaryExpertise
+      : 'Other'
+    const hoursNum = Number(welcome?.hoursPerWeek)
+    const normalizedHours = hoursNum === 80 || hoursNum === 160 ? hoursNum : 80
+
+    // Guard: backend requires at least one certificate_url
+    if (!certUrls.length) {
+      errorMessage.value = 'Please provide at least one certificate link (or portfolio/video/personality link).'
+      isSubmitting.value = false
+      return
+    }
+
+    const payload: any = {
+      email: basic.email,
+      password: basic.password,
+      role: 'agent',
+      full_name: `${basic.firstName} ${basic.lastName}`.trim(),
+      phone_number: basic?.phone || welcome?.phoneNumber || '',
+      certificate_url: certUrls,
+      video_url: welcome?.videoUrl || '',
+      personality_url: welcome?.personalityUrl || '',
+      primary_area_of_expertise: selectedExpertise,
+      years_of_experience: Number(welcome?.yearsOfExperience || 0),
+      three_most_commonly_used_tools_or_platforms: toolsArray,
+      available_hours_agent_can_commit: normalizedHours,
+      time_zone: welcome?.timezone || 'UTC+00:00',
+      portfolio_link: welcome?.portfolioLink || '',
+      is_agent_open_to_calls_and_video_meetings: Boolean(welcome?.openToCalls),
+      does_agent_have_working_computer: Boolean(welcome?.hasComputer),
+      does_agent_have_stable_internet: Boolean(welcome?.hasInternet),
+      is_agent_comfortable_with_time_tracking_tools: Boolean(welcome?.comfortableWithTracking)
+    }
+
+    const resp = await authService.signup(payload as SignupData)
+    if (!resp.success) {
+      errorMessage.value = resp.error || 'Signup failed. Please try again.'
+      return
+    }
+
+    // Optionally clear stored data after success
+    try {
+      localStorage.removeItem('signupBasicData')
+      localStorage.removeItem('agentWelcomeData')
+      localStorage.removeItem('selectedAgentServices')
+    } catch {}
+
+    router.push('/agent/welcome-back')
+  } catch (e: any) {
+    errorMessage.value = e?.response?.data?.detail || e?.message || 'Unexpected error.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -34,9 +139,12 @@
           <p>We look forward to working with you!</p>
         </div>
 
-        <router-link to="/agent/welcome-back" class="btn-pressable mt-6 sm:mt-8 inline-flex items-center justify-center rounded-full bg-brand-teal px-6 sm:px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 w-full sm:w-auto">
-          Okay
-        </router-link>
+        <div v-if="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {{ errorMessage }}
+        </div>
+        <button @click="finishSignup" :disabled="isSubmitting" class="btn-pressable mt-6 sm:mt-8 inline-flex items-center justify-center rounded-full bg-brand-teal px-6 sm:px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed">
+          {{ isSubmitting ? 'Finishing...' : 'Finish Sign Up' }}
+        </button>
       </div>
     </div>
   </div>

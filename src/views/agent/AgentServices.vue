@@ -1,17 +1,5 @@
 <template>
-  <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center overflow-hidden">
-    <!-- Animated decorative circles -->
-    <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
-    <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
-    <div class="absolute top-1/2 left-1/2 h-64 w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float" />
-    
-    <!-- Floating particles -->
-    <div class="absolute top-16 left-16 w-2 h-2 sm:top-20 sm:left-20 bg-white/20 rounded-full animate-float-delayed-1" />
-    <div class="absolute top-32 right-24 w-1 h-1 sm:top-40 sm:right-32 bg-white/30 rounded-full animate-float-delayed-2" />
-    <div class="absolute bottom-24 left-32 w-1.5 h-1.5 sm:bottom-32 sm:left-40 bg-white/25 rounded-full animate-float-delayed-3" />
-    <div class="absolute bottom-16 right-16 w-2.5 h-2.5 sm:bottom-20 sm:right-20 bg-white/15 rounded-full animate-float-delayed-4" />
-
-  <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center overflow-hidden">
+  <div class="relative min-h-screen overflow-hidden">
     <!-- Animated decorative circles -->
     <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
     <div class="absolute bottom-0 left-0 h-24 w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse" />
@@ -82,11 +70,10 @@
       </div>
     </div>
   </div>
-  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   PencilSquareIcon,
@@ -103,6 +90,7 @@ import {
   BriefcaseIcon
 } from '@heroicons/vue/24/outline'
 import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
+import { mapAgentServiceTitlesToEnums } from '../../utils/serviceMapping'
 
 const router = useRouter()
 const categories = [
@@ -126,51 +114,63 @@ const categories = [
 
 const selectedCategories = ref<any[]>([])
 
-// Load previously selected categories if available
+// Load previously selected services (stored as enum strings) and reconstruct UI selection
 onMounted(() => {
   try {
-    const savedCategories = localStorage.getItem('selectedAgentServices')
-    if (savedCategories) {
-      selectedCategories.value = JSON.parse(savedCategories)
+    const saved = JSON.parse(localStorage.getItem('selectedAgentServices') || '[]')
+    if (Array.isArray(saved) && saved.length) {
+      const reverseMap: Record<string, string> = {
+        'Digital Marketing': 'Digital Marketing',
+        'Content Writing': 'Editor',
+        'Web Devlopment': 'Program & Tech',
+        'Other': 'Graphic Design'
+      }
+      const titles = saved.map((s: string) => reverseMap[s] || 'Graphic Design')
+      selectedCategories.value = categories.filter(c => titles.includes(c.title))
     }
   } catch (error) {
     console.error('Error loading saved categories:', error)
   }
 })
 
+// Autosave mapped enums as user selects/deselects
+watch(selectedCategories, (val) => {
+  try {
+    const titles = val.map((cat: any) => cat.title as string)
+    const selectedServices = mapAgentServiceTitlesToEnums(titles)
+    localStorage.setItem('selectedAgentServices', JSON.stringify(selectedServices))
+  } catch (e) {
+    console.error('Error autosaving services:', e)
+  }
+}, { deep: true })
+
 const goNext = async () => {
   try {
     if (selectedCategories.value.length >= 3) {
-      // Store selected categories in localStorage or state management
+      // Store mapped enum services as strings for API compatibility
       try {
-        localStorage.setItem('selectedAgentServices', JSON.stringify(selectedCategories.value))
+        const titles = selectedCategories.value.map((cat: any) => cat.title as string)
+        const selectedServices = mapAgentServiceTitlesToEnums(titles)
+        localStorage.setItem('selectedAgentServices', JSON.stringify(selectedServices))
       } catch (storageError) {
         console.error('LocalStorage error:', storageError)
         // Continue even if localStorage fails
       }
       
-      // Check if this is a sign-up flow
-      let userInfo
-      try {
-        userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError)
-        userInfo = {}
-      }
-      
-      const isSignUpFlow = userInfo.signUpTime
-      
+      // Check if this is a sign-up flow (use signupBasicData for consistency with guard)
+      const isSignUpFlow = !!localStorage.getItem('signupBasicData')
+
       // Use setTimeout to prevent potential async issues
       setTimeout(() => {
         try {
           if (isSignUpFlow) {
-            // For sign-up flow: go to additional details page
-            router.push('/agent/additional').catch((navError) => {
+            // For sign-up flow: proceed to final Congrats step
+            router.push('/agent/congrats').catch((navError) => {
               console.error('Navigation error:', navError)
             })
           } else {
-            // For sign-in flow: go to congrats
-            router.push('/agent/congrats').catch((navError) => {
+            // For returning users, take them to additional details page
+            router.push('/agent/additional').catch((navError) => {
               console.error('Navigation error:', navError)
             })
           }

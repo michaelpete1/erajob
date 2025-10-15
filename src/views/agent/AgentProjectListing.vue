@@ -113,7 +113,30 @@
       </div>
 
       <div class="mt-6 sm:mt-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
+        <!-- Loading State -->
+        <div v-if="jobsLoading" class="flex justify-center py-8">
+          <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="jobsError" class="text-center py-8">
+          <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-sm mx-auto">
+            <span class="text-3xl sm:text-4xl mb-3 sm:mb-4 block">⚠️</span>
+            <h3 class="text-lg sm:text-xl font-bold text-brand-teal mb-2">Error Loading Jobs</h3>
+            <p class="text-sm sm:text-base text-gray-600">{{ jobsError }}</p>
+            <button 
+              @click="getAvailableJobs(paginationParams)" 
+              class="mt-4 bg-brand-teal text-white px-4 py-2 rounded-full text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
           
           <div 
             v-for="gig in filteredGigs" 
@@ -162,181 +185,140 @@
       </div>
 
   </div>
-  
-    <!-- Agent Bottom Navigation -->
-    <AgentBottomNav />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
-import BrandLogo from '../../components/BrandLogo.vue'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
-import { createGigSlug } from '../../utils/slugUtils'
+import { createGigSlug } from '@/utils/slugUtils'
+import { useJobs } from '@/composables/useJobs'
 
 const openMobileNav = ref(false)
 const activeTab = ref<'active' | 'browse'>('browse')
 const searchQuery = ref('')
-
-// Determine gig links based on flow type (navigate directly to agent summary)
-const router = useRouter()
-
-
-const goToLogWorkHours = (gig: any) => {
-  // Persist selected gig so destination pages can read it
-  try {
-    localStorage.setItem('selectedGig', JSON.stringify(gig))
-  } catch (e) {
-    // ignore storage errors
-  }
-  
-  // Navigate to the job overview page
-  const slug = createGigSlug(gig.title, gig.id)
-  router.push({ path: `/agent/job/${slug}` })
-}
-
-const goToGig = (gig: any) => {
-  // Persist selected gig so destination pages can read it
-  try {
-    localStorage.setItem('selectedGig', JSON.stringify(gig))
-  } catch (e) {
-    // ignore storage errors
-  }
-
-  if (activeTab.value === 'active') {
-    // Open the log work hours page for active jobs
-    router.push({ path: '/agent/logging-details' })
-  } else {
-    // browse -> go to detail page
-    const slug = createGigSlug(gig.title, gig.id)
-    router.push({ path: `/agent/gig/${slug}` })
-  }
-}
-
-const activeJobs = [
-  {
-    id: 1,
-    title: 'Content Writing Project',
-    description: 'Currently working on blog posts for TechCorp',
-    price: '14.00',
-    icon: '📝',
-    status: 'in_progress',
-    client: 'TechCorp',
-    deadline: '2024-01-15'
-  },
-  {
-    id: 2,
-    title: 'Social Media Management',
-    description: 'Managing social media accounts for FashionBrand',
-    price: '18.00',
-    icon: '📱',
-    status: 'in_progress',
-    client: 'FashionBrand',
-    deadline: '2024-01-20'
-  }
-]
-
-const browseGigs = [
-  {
-    id: 3,
-    title: 'Content Writing',
-    description: 'Create engaging blog posts, articles, and web content for various clients.',
-    price: '14.00',
-    icon: '📝',
-    category: 'writing',
-    keywords: ['writing', 'content', 'blog', 'articles', 'web content']
-  },
-  {
-    id: 4,
-    title: 'Graphic Design',
-    description: 'Design logos, social media graphics, and marketing materials for businesses.',
-    price: '13.50',
-    icon: '🎨',
-    category: 'design',
-    keywords: ['design', 'logo', 'graphics', 'social media', 'marketing']
-  },
-  {
-    id: 5,
-    title: 'Web Development',
-    description: 'Build and maintain websites using modern frameworks and technologies.',
-    price: '17.50',
-    icon: '💻',
-    category: 'development',
-    keywords: ['web', 'development', 'websites', 'programming', 'coding']
-  },
-  {
-    id: 6,
-    title: 'Data Entry',
-    description: 'Input and manage data accurately for various business operations.',
-    price: '13.00',
-    icon: '📊',
-    category: 'data',
-    keywords: ['data', 'entry', 'input', 'management', 'business']
-  },
-  {
-    id: 7,
-    title: 'Virtual Assistant',
-    description: 'Provide administrative support and manage tasks for busy professionals.',
-    price: '13.75',
-    icon: '🎯',
-    category: 'admin',
-    keywords: ['virtual', 'assistant', 'administrative', 'support', 'tasks']
-  },
-  {
-    id: 8,
-    title: 'Social Media Management',
-    description: 'Manage social media accounts and create engaging content for brands.',
-    price: '15.50',
-    icon: '📱',
-    category: 'marketing',
-    keywords: ['social', 'media', 'management', 'content', 'brands']
-  }
-]
-
 const selectedServices = ref<any[]>([])
 
-onMounted(() => {
+const router = useRouter()
+
+const {
+  jobs,
+  loading: jobsLoading,
+  error: jobsError,
+  getAvailableJobs
+} = useJobs()
+
+const paginationParams = { start: 0, stop: 10 }
+
+onMounted(async () => {
   const stored = localStorage.getItem('selectedAgentServices')
   if (stored) {
     selectedServices.value = JSON.parse(stored)
   }
+
+  await getAvailableJobs(paginationParams)
 })
 
-const filteredGigs = computed(() => {
-  if (activeTab.value === 'active') {
-    
-    return activeJobs
-  } else {
-    
-    
-    let result = browseGigs
-    
-    
-    if (selectedServices.value.length > 0) {
-      const serviceTitles = selectedServices.value.map(service => service.title.toLowerCase())
-      result = result.filter((gig: any) => 
-        serviceTitles.some((service: string) => 
-          gig.title.toLowerCase().includes(service) ||
-          gig.category.toLowerCase().includes(service) ||
-          gig.keywords.some((keyword: string) => keyword.toLowerCase().includes(service))
-        )
-      )
-    }
-    
-    
-    if (searchQuery.value.trim()) {
-      const query = searchQuery.value.toLowerCase().trim()
-      result = result.filter((gig: any) => 
-        gig.title.toLowerCase().includes(query) ||
-        gig.description.toLowerCase().includes(query) ||
-        gig.keywords.some((keyword: string) => keyword.toLowerCase().includes(query))
-      )
-    }
-    
-    return result
-  }
+watch(activeTab, async () => {
+  // Refresh jobs when switching tabs to ensure we have the latest data
+  await getAvailableJobs(paginationParams)
 })
+
+const getCategoryIcon = (category: string | undefined) => {
+  const normalized = (category || '').toLowerCase()
+  if (normalized.includes('writing')) return '📝'
+  if (normalized.includes('design')) return '🎨'
+  if (normalized.includes('marketing')) return '📱'
+  if (normalized.includes('data')) return '📊'
+  if (normalized.includes('mobile')) return '📱'
+  if (normalized.includes('admin')) return '🎯'
+  if (normalized.includes('web')) return '💻'
+  return '💼'
+}
+
+const parseKeywords = (skills: string | undefined) => {
+  if (!skills) return []
+  return skills.split(',').map(skill => skill.trim()).filter(Boolean)
+}
+
+const normalizedJobs = computed(() => {
+  return (jobs.value || []).map(job => {
+    const budget = job.budget ?? 0
+    return {
+      id: job.id || '',
+      title: job.project_title,
+      description: job.description,
+      price: (budget / 100).toFixed(2),
+      category: job.category,
+      icon: getCategoryIcon(job.category),
+      status: job.status,
+      keywords: parseKeywords(job.skills_needed),
+      raw: job
+    }
+  })
+})
+
+const isActiveStatus = (status?: string) => {
+  if (!status) return false
+  const value = status.toLowerCase()
+  return ['in_progress', 'active', 'assigned', 'accepted', 'ongoing'].some(flag => value.includes(flag))
+}
+
+const activeJobs = computed(() => normalizedJobs.value.filter(job => isActiveStatus(job.status)))
+const browseJobs = computed(() => normalizedJobs.value.filter(job => !isActiveStatus(job.status)))
+
+const filteredGigs = computed(() => {
+  const source = activeTab.value === 'active' ? activeJobs.value : browseJobs.value
+
+  let result = [...source]
+
+  if (selectedServices.value.length > 0) {
+    const serviceTitles = selectedServices.value.map(service => service.title.toLowerCase())
+    result = result.filter(job =>
+      serviceTitles.some(service =>
+        job.title.toLowerCase().includes(service) ||
+        (job.category || '').toLowerCase().includes(service) ||
+        job.keywords.some(keyword => keyword.toLowerCase().includes(service))
+      )
+    )
+  }
+
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    result = result.filter(job =>
+      job.title.toLowerCase().includes(query) ||
+      job.description.toLowerCase().includes(query) ||
+      job.keywords.some(keyword => keyword.toLowerCase().includes(query))
+    )
+  }
+
+  return result
+})
+
+const persistJob = (job: typeof normalizedJobs.value[number]) => {
+  try {
+    localStorage.setItem('selectedGig', JSON.stringify(job.raw))
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+const goToLogWorkHours = (gig: typeof normalizedJobs.value[number]) => {
+  persistJob(gig)
+  const slug = createGigSlug(gig.title, gig.id)
+  router.push({ path: `/agent/job/${slug}` })
+}
+
+const goToGig = (gig: typeof normalizedJobs.value[number]) => {
+  persistJob(gig)
+
+  if (activeTab.value === 'active') {
+    router.push({ path: '/agent/logging-details' })
+  } else {
+    const slug = createGigSlug(gig.title, gig.id)
+    router.push({ path: `/agent/gig/${slug}` })
+  }
+}
 </script>

@@ -76,6 +76,42 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const workDetails = ref<any>(null);
 const selectedGig = ref<any>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+// Work logs data with proper typing
+interface WorkLog {
+  id: string
+  title: string
+  hours: number
+  date: string
+  comment: string
+  files?: any[]
+  projectId?: string
+  gigId?: string
+  status: 'draft' | 'submitted' | 'approved'
+}
+
+// Simulate API call for submitting work log (replace with real API call)
+const submitWorkLogToAPI = async (logData: Omit<WorkLog, 'id' | 'status'>): Promise<{ success: boolean; data?: WorkLog; error?: string }> => {
+  // In a real implementation, this would call:
+  // const result = await workLogsService.createWorkLog(logData)
+
+  // For now, simulate successful API response
+  const mockApiResponse = {
+    success: true,
+    data: {
+      id: Date.now().toString(),
+      status: 'submitted' as const,
+      ...logData
+    }
+  }
+
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  return mockApiResponse
+}
 
 const formattedDate = computed(() => {
   if (!workDetails.value?.timestamp) return '';
@@ -96,18 +132,90 @@ onMounted(() => {
   }
 });
 
-const submitWork = () => {
-  // Here you would typically send the work log to your backend
-  console.log('Submitting work log:', workDetails.value);
-  
-  // Show success message (you could use a toast notification here)
-  alert('Work log submitted successfully!');
-  
-  // Clear the work details from localStorage
-  localStorage.removeItem('workDetails');
-  
-  // Navigate back to gigs listing
-  router.push('/agent/gigs-listing');
+const submitWork = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    if (!workDetails.value) {
+      error.value = 'No work details found to submit'
+      return
+    }
+
+    // Prepare work log data
+    const logData = {
+      title: workDetails.value.title || 'Work Session',
+      comment: workDetails.value.description || 'No description provided',
+      hours: workDetails.value.hours || 0,
+      date: workDetails.value.timestamp || new Date().toISOString(),
+      projectId: selectedGig.value?.id,
+      gigId: selectedGig.value?.id,
+      files: workDetails.value.files || []
+    }
+
+    // Try to submit to API first
+    try {
+      const result = await submitWorkLogToAPI(logData)
+
+      if (result.success && result.data) {
+        console.log('Work log submitted to API successfully:', result.data)
+
+        // Also save to localStorage as backup (optional)
+        try {
+          const existingLogs = JSON.parse(localStorage.getItem('workLogs') || '[]')
+          existingLogs.unshift(result.data)
+          localStorage.setItem('workLogs', JSON.stringify(existingLogs))
+        } catch (e) {
+          console.warn('Could not save to localStorage:', e)
+        }
+
+        // Clear the work details from localStorage
+        localStorage.removeItem('workDetails')
+
+        // Show success message and navigate
+        alert('Work log submitted successfully!')
+        router.push('/agent/gigs-listing')
+        return
+      }
+    } catch (apiError) {
+      console.error('API submission failed:', apiError)
+      error.value = 'Failed to submit to server. Saving locally...'
+    }
+
+    // Fallback to localStorage if API fails
+    try {
+      const logEntry = {
+        id: Date.now().toString(),
+        status: 'draft' as const,
+        ...logData
+      }
+
+      const existingLogs = JSON.parse(localStorage.getItem('workLogs') || '[]')
+      existingLogs.unshift(logEntry)
+      localStorage.setItem('workLogs', JSON.stringify(existingLogs))
+      console.log('Work log saved to localStorage')
+
+      // Clear the work details from localStorage
+      localStorage.removeItem('workDetails')
+
+      // Show success message and navigate
+      alert('Work log submitted successfully!')
+      router.push('/agent/gigs-listing')
+    } catch (localStorageError) {
+      console.error('Error saving log locally:', localStorageError)
+      error.value = 'Failed to save work log. Please try again.'
+    }
+  } catch (caughtError) {
+    console.error('Error in submitWork:', caughtError)
+    // Type-safe error handling
+    if (caughtError instanceof Error) {
+      error.value = `Failed to submit work log: ${caughtError.message}`
+    } else {
+      error.value = 'Failed to submit work log'
+    }
+  } finally {
+    loading.value = false
+  }
 };
 
 const goBack = () => {

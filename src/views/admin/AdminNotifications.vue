@@ -29,41 +29,54 @@
         </div>
       </header>
 
-      <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex gap-2 overflow-x-auto">
-            <button 
-              v-for="filter in filters" 
-              :key="filter.id"
-              @click="activeFilter = filter.id"
-              :class="[
-                'px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300 btn-pressable',
-                activeFilter === filter.id 
-                  ? 'bg-brand-teal text-white animate-pulse-subtle' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-              ]"
-            >
-              {{ filter.name }}
-              <span v-if="filter.count" class="ml-1 text-xs">({{ filter.count }})</span>
-            </button>
-          </div>
-          
-          <div class="flex items-center gap-2">
-            <label class="text-xs sm:text-sm text-gray-600">Sort by:</label>
-            <select 
-              v-model="sortBy" 
-              class="px-3 py-1 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="priority">Priority</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      
 
       <main>
-        <div v-if="filteredNotifications.length > 0">
+        <!-- Loading State -->
+        <div v-if="loading" class="text-center py-12 sm:py-16">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 bg-white/30 backdrop-blur-sm rounded-full animate-pulse" />
+          <h3 class="text-lg sm:text-xl font-semibold text-white mb-2">Loading notifications...</h3>
+        </div>
+        <!-- Verification Queue -->
+        <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm p-3 sm:p-4 mb-4" v-if="verificationAlerts.length">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800">Accounts awaiting verification</h2>
+            <button @click="goToUserApprovals" class="text-xs sm:text-sm text-brand-teal hover:underline">Open Approvals</button>
+          </div>
+          <div v-for="a in verificationAlerts" :key="a.id" class="mb-3 last:mb-0">
+            <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full bg-blue-400 flex items-center justify-center flex-shrink-0 text-white">👤</div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-blue-800 truncate">{{ a.title || 'New account requires verification' }}</p>
+                  <p class="text-xs text-blue-700 truncate">{{ a.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jobs awaiting approval -->
+        <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm p-3 sm:p-4 mb-4" v-if="jobApprovalAlerts.length">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800">Jobs awaiting approval</h2>
+            <button @click="goToJobApproval" class="text-xs sm:text-sm text-brand-teal hover:underline">Open Job Review</button>
+          </div>
+          <div v-for="a in jobApprovalAlerts" :key="a.id" class="mb-3 last:mb-0">
+            <div class="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-3">
+              <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0 text-white">📝</div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-amber-800 truncate">{{ a.title || 'New job submission pending' }}</p>
+                  <p class="text-xs text-amber-700 truncate">{{ a.description || 'Awaiting admin approval' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- All alerts fallback list -->
+        <div v-else-if="filteredNotifications.length > 0">
           <div v-for="(notification, index) in filteredNotifications" :key="notification.id" :class="`animate-stagger-${(index % 4) + 1}`" class="mb-4">
             <!-- Priority Notification -->
             <section 
@@ -216,15 +229,15 @@
         </div>
       </main>
     </div>
-    <!-- Admin Bottom Navigation -->
-    <AdminBottomNav />
+    
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import AdminBottomNav from '../../components/AdminBottomNav.vue';
+import { api } from '../../services/apiService';
+import type { AlertsOut } from '../../types/api/openapi';
 
 interface Notification {
   id: string;
@@ -244,59 +257,54 @@ interface Filter {
 
 const activeFilter = ref<string>('all');
 const sortBy = ref<string>('newest');
-const notifications = ref<Notification[]>([
-  {
-    id: '1',
-    type: 'priority',
-    title: 'New Job Approval Required',
-    description: 'A new job submission from Matt Barrie requires your approval. The job is for "Create a Social Media Banner for a Fitness Brand" with a rate of $68/hr.',
-    time: '2 hours ago',
-    actions: ['Review', 'Approve'],
+const notifications = ref<Notification[]>([]);
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Map API AlertsOut to UI Notification
+function mapAlertToNotification(a: AlertsOut): Notification {
+  // Derive type from priority/alert_type
+  const type: Notification['type'] = a.priority === 'very_high' || a.priority === 'high'
+    ? 'priority'
+    : a.alert_type === 'agent_completion_update'
+      ? 'success'
+      : 'info'
+
+  const ts = a.date_created ? new Date(a.date_created * 1000) : new Date()
+  return {
+    id: (a.id as string) || Math.random().toString(36).slice(2),
+    type,
+    title: a.alert_title || 'Notification',
+    description: a.alert_description || '',
+    time: ts.toLocaleString(),
+    actions: [a.alert_primary_action, a.alert_secondary_action].filter(Boolean) as string[],
     read: false
-  },
-  {
-    id: '2',
-    type: 'info',
-    title: 'System Update Scheduled',
-    description: 'A system maintenance update is scheduled for tonight at 2:00 AM. The system will be unavailable for approximately 2 hours.',
-    time: '5 hours ago',
-    actions: ['Details'],
-    read: false
-  },
-  {
-    id: '3',
-    type: 'success',
-    title: 'Job Approved Successfully',
-    description: 'The job "Complete Freelancer Application UI/UX Revamp" by Jenny Wilson has been approved and is now live on the platform.',
-    time: '1 day ago',
-    actions: ['View Job'],
-    read: true
-  },
-  {
-    id: '4',
-    type: 'priority',
-    title: 'Agent Verification Pending',
-    description: 'New agent Sarah Johnson has completed the onboarding process and requires verification before they can start accepting jobs.',
-    time: '1 day ago',
-    actions: ['Verify', 'Review Profile'],
-    read: false
-  },
-  {
-    id: '5',
-    type: 'info',
-    title: 'Monthly Report Available',
-    description: 'Your monthly admin report is now available. This includes job approval statistics, agent performance metrics, and platform usage data.',
-    time: '2 days ago',
-    actions: ['Download Report'],
-    read: true
   }
-]);
+}
+
+async function fetchNotifications() {
+  loading.value = true
+  error.value = null
+  try {
+    const res = await api.alerts.getAlerts('admin')
+    if (res.success && res.data) {
+      notifications.value = res.data.map(mapAlertToNotification)
+      updateFilterCounts()
+    } else {
+      error.value = res.error || 'Failed to fetch notifications'
+    }
+  } catch (e: any) {
+    error.value = e.message || 'Failed to fetch notifications'
+  } finally {
+    loading.value = false
+  }
+}
 
 const filters = ref<Filter[]>([
-  { id: 'all', name: 'All', count: 5 },
-  { id: 'priority', name: 'Priority', count: 2 },
-  { id: 'unread', name: 'Unread', count: 3 },
-  { id: 'system', name: 'System', count: 2 }
+  { id: 'all', name: 'All', count: 0 },
+  { id: 'priority', name: 'Priority', count: 0 },
+  { id: 'unread', name: 'Unread', count: 0 },
+  { id: 'system', name: 'System', count: 0 }
 ]);
 
 const filteredNotifications = computed(() => {
@@ -330,6 +338,21 @@ const filteredNotifications = computed(() => {
   }
 
   return filtered;
+});
+
+// Queues for admin: accounts verification and job approvals
+const verificationAlerts = computed(() => {
+  return notifications.value.filter((n) => {
+    const t = `${n.title} ${n.description}`.toLowerCase();
+    return t.includes('agent') || t.includes('client') || t.includes('verify') || t.includes('verification');
+  });
+});
+
+const jobApprovalAlerts = computed(() => {
+  return notifications.value.filter((n) => {
+    const t = `${n.title} ${n.description}`.toLowerCase();
+    return t.includes('job') || t.includes('approval') || t.includes('pending');
+  });
 });
 
 const markAllAsRead = () => {
@@ -380,13 +403,23 @@ const updateFilterCounts = () => {
   ];
 };
 
-// Initialize filter counts
-updateFilterCounts();
+// Initialize
+onMounted(() => {
+  fetchNotifications()
+})
+
+watch([notifications, activeFilter, sortBy], () => {
+  updateFilterCounts()
+})
 
 const router = useRouter();
 
 const goToJobApproval = () => {
   router.push('/admin/job-approval');
+};
+
+const goToUserApprovals = () => {
+  router.push('/admin/user-approvals');
 };
 </script>
 

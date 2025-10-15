@@ -103,6 +103,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import authService from '@/services/authService'
 
 const email = ref('')
 const password = ref('')
@@ -111,43 +112,129 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const router = useRouter()
 
-// Mock admin credentials - in a real app, this would be handled by a backend
-const ADMIN_CREDENTIALS = {
-  email: 'admin@erajob.com',
-  password: 'admin123'
-}
-
-function onSubmit() {
+async function onSubmit() {
   // Reset error message
   errorMessage.value = ''
+
+  // Basic validation
+  if (!email.value || !password.value) {
+    errorMessage.value = 'Please enter both email and password'
+    return
+  }
+
   isLoading.value = true
-  
-  // Simulate API call delay
-  setTimeout(() => {
-    // Validate admin credentials
-    if (email.value === ADMIN_CREDENTIALS.email && password.value === ADMIN_CREDENTIALS.password) {
-      // Set admin authentication data
-      localStorage.setItem('userToken', 'admin-token-' + Date.now())
+
+  try {
+    const response = await authService.login({
+      email: email.value,
+      password: password.value,
+      role: 'admin'
+    })
+
+    if (response.success) {
+      // Store admin flag for authorization checks in the frontend
       localStorage.setItem('userRole', 'admin')
-      localStorage.setItem('userInfo', JSON.stringify({
-        email: email.value,
-        role: 'admin',
-        loginTime: new Date().toISOString(),
-        adminAccess: true
-      }))
-      
-      // Redirect to admin job approval page
-      router.push('/admin/job-approval')
+      localStorage.setItem('isAdmin', 'true')
+
+      // Allow localStorage writes to settle, then debug log current storage
+      await Promise.resolve()
+      console.log('Admin storage after login:', {
+        userRole: localStorage.getItem('userRole'),
+        access_token: !!localStorage.getItem('access_token'),
+        refresh_token: !!localStorage.getItem('refresh_token'),
+      })
+
+      // Navigate to the admin dashboard (replace to avoid back to sign-in)
+      router.replace('/admin/job-approval')
     } else {
-      // Show error message
-      errorMessage.value = 'Invalid admin credentials. Please try again.'
+      errorMessage.value = response.error || 'Login failed. Please try again.'
     }
-    
+  } catch (err: any) {
+    console.error('Admin login error:', err)
+    errorMessage.value = err.response?.data?.detail || 'An error occurred during login. Please try again.'
+  } finally {
     isLoading.value = false
-  }, 1000)
+  }
 }
 </script>
 
 <style scoped>
 /* Scoped styles can be added here */
+.btn-pressable {
+    transition: all 0.15s ease-in-out;
+}
+.btn-pressable:active {
+    transform: scale(0.98);
+    box-shadow: none;
+}
+
+@keyframes pulse-slow {
+    0%, 100% {
+        transform: scale(1) translate(25%, -25%);
+        opacity: 0.15;
+    }
+    50% {
+        transform: scale(1.05) translate(25%, -25%);
+        opacity: 0.25;
+    }
+}
+@keyframes pulse-slow-reverse {
+    0%, 100% {
+        transform: scale(1) translate(-25%, 25%);
+        opacity: 0.15;
+    }
+    50% {
+        transform: scale(1.05) translate(-25%, 25%);
+        opacity: 0.25;
+    }
+}
+@keyframes float {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+    50% { transform: translate(-50%, -50%) translateY(-5px); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
+.animate-fade-up-delay-1 { animation: fade-up 0.5s ease-out 0.1s forwards; opacity: 0; }
+.animate-fade-up-delay-2 { animation: fade-up 0.5s ease-out 0.2s forwards; opacity: 0; }
+.animate-fade-up-delay-3 { animation: fade-up 0.5s ease-out 0.3s forwards; opacity: 0; }
+.animate-fade-up-delay-4 { animation: fade-up 0.5s ease-out 0.4s forwards; opacity: 0; }
+
+@keyframes bounce-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.animate-bounce-in { animation: bounce-in 0.6s ease-out forwards; }
+
+@keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-left { animation: slide-in-left 0.4s ease-out 0.3s forwards; opacity: 0; }
+
+@keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right { animation: slide-in-right 0.4s ease-out 0.35s forwards; opacity: 0; }
+
+
+.animate-pulse-slow { animation: pulse-slow 8s infinite ease-in-out; }
+.animate-pulse-slow-reverse { animation: pulse-slow-reverse 8s infinite ease-in-out; }
+.animate-float { animation: float 6s infinite ease-in-out; }
+
+.animate-float-delayed-1 { animation: float 7s infinite ease-in-out 0.5s; }
+.animate-float-delayed-2 { animation: float 8s infinite ease-in-out 1s; }
+.animate-float-delayed-3 { animation: float 5s infinite ease-in-out 1.5s; }
+.animate-float-delayed-4 { animation: float 9s infinite ease-in-out 2s; }
+
+/* Custom brand color definition for Tailwind JIT compilation */
+.from-brand-teal { --tw-gradient-from: #14B8A6; }
+.via-teal-600 { --tw-gradient-via: #0D9488; }
+.to-teal-700 { --tw-gradient-to: #0F766E; }
+.text-brand-teal { color: #14B8A6; }
 </style>

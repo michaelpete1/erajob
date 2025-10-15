@@ -1,4 +1,4 @@
-// src/examples/apiUsageExamples.ts
+  // src/examples/apiUsageExamples.ts
 // This file demonstrates the proper way to use the API functions and handle state
 
 import { ref, onMounted, reactive, onUnmounted } from 'vue'
@@ -74,11 +74,11 @@ export function useJobManagementExample() {
   // Job creation form
   const jobForm = ref<JobsBase>({
     project_title: '',
-    category: 'Web Devlopment',
+    category: 'Web Development',
     budget: 1000,
     description: '',
     requirement: '',
-    skills_needed: 'Web Devlopment',
+    skills_needed: 'Web Development',
     timeline: {
       start_date: Date.now(),
       deadline: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days from now
@@ -94,11 +94,11 @@ export function useJobManagementExample() {
       // Reset form
       jobForm.value = {
         project_title: '',
-        category: 'Web Devlopment',
+        category: 'Web Development',
         budget: 1000,
         description: '',
         requirement: '',
-        skills_needed: 'Web Devlopment',
+        skills_needed: 'Web Development',
         timeline: {
           start_date: Date.now(),
           deadline: Date.now() + (30 * 24 * 60 * 60 * 1000)

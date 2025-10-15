@@ -7,12 +7,13 @@ import {
   ApiError,
   handleApiResponse 
 } from '../services/apiService'
-import type { 
-  UserBase, 
-  UserLogin, 
+import type {
+  UserBase,
+  UserLogin,
   JobsBase,
-  UserOut, 
-  JobsOut
+  UserOut,
+  JobsOut,
+  ServiceResponse
 } from '../services/apiService'
 
 // Types for state management
@@ -51,13 +52,14 @@ export function useApi() {
   // Utility function for API calls with loading states
   const callApi = async <T>(
     state: ApiState<T>,
-    apiCall: () => Promise<T>,
+    apiCall: () => Promise<ServiceResponse<T>>,
     errorMessage: string = 'API call failed'
   ): Promise<T | null> => {
     try {
       state.loading = true
       state.error = null
-      const result = await apiCall()
+      const response = await apiCall()
+      const result = handleApiResponse(response)
       state.data = result
       return result
     } catch (error) {
@@ -75,8 +77,8 @@ export function useApi() {
     // User signup
     signup: async (userData: UserBase) => {
       const state = createState<UserOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.user.signup(userData))
+      const result = await callApi(state, () =>
+        api.user.signup(userData)
       )
 
       if (result) {
@@ -98,11 +100,11 @@ export function useApi() {
     // User login
     login: async (credentials: UserLogin, role: 'client' | 'agent' = 'client') => {
       const state = createState<UserOut>()
-      
+
       // Choose the appropriate login endpoint based on role
       const loginApi = role === 'agent' ? api.agent.login : api.client.login
-      const result = await callApi(state, () => 
-        handleApiResponse(loginApi(credentials))
+      const result = await callApi(state, () =>
+        loginApi(credentials)
       )
 
       if (result) {
@@ -129,8 +131,8 @@ export function useApi() {
       }
 
       const state = createState<UserOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.user.refreshToken({ refresh_token: refreshToken }))
+      const result = await callApi(state, () =>
+        api.user.refreshToken({ refresh_token: refreshToken })
       )
 
       if (result) {
@@ -167,8 +169,8 @@ export function useApi() {
     // Get current user profile
     getCurrentUser: async () => {
       const state = createState<UserOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.user.getCurrentUser())
+      const result = await callApi(state, () =>
+        api.user.getCurrentUser()
       )
 
       if (result) {
@@ -181,8 +183,8 @@ export function useApi() {
     // Update client profile
     updateClientProfile: async (clientData: any) => {
       const state = createState<UserOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.client.updateClientProfile(clientData))
+      const result = await callApi(state, () =>
+        api.client.updateProfile(clientData)
       )
 
       if (result) {
@@ -195,8 +197,8 @@ export function useApi() {
     // Update agent profile
     updateAgentProfile: async (agentData: any) => {
       const state = createState<UserOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.agent.updateAgentProfile(agentData))
+      const result = await callApi(state, () =>
+        api.agent.updateProfile(agentData)
       )
 
       if (result) {
@@ -212,8 +214,8 @@ export function useApi() {
     // Create new job
     createJob: async (jobData: JobsBase) => {
       const state = createState<JobsOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.jobs.createJob(jobData))
+      const result = await callApi(state, () =>
+        api.jobs.createJob(jobData)
       )
       return { result, state }
     },
@@ -221,8 +223,8 @@ export function useApi() {
     // Get job by ID
     getJob: async (id: string) => {
       const state = createState<JobsOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.jobs.getJob(id))
+      const result = await callApi(state, () =>
+        api.jobs.getJob(id)
       )
       return { result, state }
     },
@@ -230,8 +232,8 @@ export function useApi() {
     // Get my jobs (admin)
     getMyJobs: async () => {
       const state = createState<JobsOut>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.jobs.getMyJobs())
+      const result = await callApi(state, () =>
+        api.jobs.getMyJobs()
       )
       return { result, state }
     },
@@ -239,20 +241,20 @@ export function useApi() {
     // List jobs with pagination
     listJobs: async (start: number, stop: number, type: 'admin' | 'client' | 'agent' = 'admin') => {
       const state = createState<JobsOut[]>()
-      
+
       let apiCall
       switch (type) {
         case 'admin':
-          apiCall = () => handleApiResponse(api.jobs.listAdminJobs(start, stop))
+          apiCall = () => api.jobs.listAdminJobs(start, stop)
           break
         case 'client':
-          apiCall = () => handleApiResponse(api.jobs.listClientJobs(start, stop))
+          apiCall = () => api.jobs.listClientJobs(start, stop)
           break
         case 'agent':
-          apiCall = () => handleApiResponse(api.jobs.listAgentAvailableJobs(start, stop))
+          apiCall = () => api.jobs.listAgentAvailableJobs(start, stop)
           break
         default:
-          apiCall = () => handleApiResponse(api.jobs.listAdminJobs(start, stop))
+          apiCall = () => api.jobs.listAdminJobs(start, stop)
       }
 
       const result = await callApi(state, apiCall)
@@ -265,8 +267,8 @@ export function useApi() {
     // List users with pagination
     listUsers: async (start: number, stop: number) => {
       const state = createState<UserOut[]>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.user.listUsers(start, stop))
+      const result = await callApi(state, () =>
+        api.user.listUsers(start, stop)
       )
       return { result, state }
     },
@@ -274,8 +276,8 @@ export function useApi() {
     // Delete user account
     deleteAccount: async () => {
       const state = createState<null>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.user.deleteAccount())
+      const result = await callApi(state, () =>
+        api.user.deleteAccount()
       )
 
       if (result !== null) {
@@ -290,8 +292,8 @@ export function useApi() {
   const health = {
     check: async () => {
       const state = createState<null>()
-      const result = await callApi(state, () => 
-        handleApiResponse(api.health.checkHealth())
+      const result = await callApi(state, () =>
+        api.health.check()
       )
       return { result, state }
     }

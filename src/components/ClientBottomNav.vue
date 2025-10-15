@@ -14,11 +14,11 @@
 
         <!-- Proposals Button -->
         <router-link 
-          to="/proposals" 
-          :class="navItemClass('/proposals')"
+          to="/client/proposals" 
+          :class="navItemClass('/client/proposals')"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
-          <DocumentTextIcon :class="iconClass('/proposals')" />
+          <DocumentTextIcon :class="iconClass('/client/proposals')" />
           <span class="text-xs mt-1">Proposals</span>
         </router-link>
 
@@ -85,7 +85,8 @@ const showPlusButton = computed(() => {
     '/client/recommended-agents'
   ]
   
-  return clientProjectPages.some(page => route.path.startsWith(page) || route.path === page)
+  // Uses startsWith to match nested routes under the primary paths
+  return clientProjectPages.some(page => route.path.startsWith(page))
 })
 
 // Handle plus button click
@@ -95,7 +96,8 @@ function handlePlusClick() {
 
 // Navigation item classes
 function navItemClass(path: string) {
-  const isActive = route.path === path
+  // Use startsWith to handle nested routes (e.g., /client/settings/profile)
+  const isActive = route.path.startsWith(path)
   return [
     'transition-colors',
     'duration-200',
@@ -107,7 +109,8 @@ function navItemClass(path: string) {
 
 // Icon classes
 function iconClass(path: string) {
-  const isActive = route.path === path
+  // Use startsWith to handle nested routes
+  const isActive = route.path.startsWith(path)
   return [
     'w-6',
     'h-6',

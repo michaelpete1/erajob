@@ -113,34 +113,62 @@
       </div>
 
       <div class="mt-6 sm:mt-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 max-w-6xl mx-auto">
+        <!-- Loading State -->
+        <div v-if="jobsLoading" class="flex justify-center py-8">
+          <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="jobsError" class="text-center py-8">
+          <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-sm mx-auto">
+            <span class="text-3xl sm:text-4xl mb-3 sm:mb-4 block">⚠️</span>
+            <h3 class="text-lg sm:text-xl font-bold text-brand-teal mb-2">Error Loading Jobs</h3>
+            <p class="text-sm sm:text-base text-gray-600">{{ jobsError }}</p>
+            <button 
+              @click="getAvailableJobs(paginationParams)" 
+              class="mt-4 bg-brand-teal text-white px-4 py-2 rounded-full text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+
+        <!-- Results Grid -->
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 max-w-6xl mx-auto">
           
-          <div 
-            v-for="gig in filteredGigs" 
-            :key="gig.id"
+            <div 
+            v-for="job in filteredGigs" 
+            :key="job.id || ''"
             class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 block cursor-pointer"
-            @click="activeTab === 'active' ? goToLogWorkHours(gig) : null"
+            @click="goToGig(job)"
           >
             <div class="block">
               <div class="flex items-center mb-3 sm:mb-4 gap-3">
-                <span class="text-2xl sm:text-3xl flex-shrink-0">{{ gig.icon }}</span>
-                <h3 class="text-lg sm:text-xl font-bold text-brand-teal break-words flex-1 min-w-0">{{ gig.title }}</h3>
+                <span class="text-2xl sm:text-3xl flex-shrink-0">
+                  {{ getCategoryIcon(job.category) }}
+                </span>
+                <h3 class="text-lg sm:text-xl font-bold text-brand-teal break-words flex-1 min-w-0">
+                  {{ job.project_title }}
+                </h3>
               </div>
-              <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 break-words leading-relaxed">{{ gig.description }}</p>
+              <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 break-words leading-relaxed">
+                {{ job.description }}
+              </p>
               <div class="flex items-center justify-between mb-3 sm:mb-4">
-                <span class="text-xl sm:text-2xl font-bold text-brand-teal whitespace-nowrap">${{ gig.price }}</span>
-                <span class="text-xs sm:text-sm text-gray-500 whitespace-nowrap">per hour</span>
+                <span class="text-xl sm:text-2xl font-bold text-brand-teal whitespace-nowrap">${{ job.budget }}</span>
+                <span class="text-xs sm:text-sm text-gray-500 whitespace-nowrap">budget</span>
               </div>
 
               <div>
-                <button @click.stop="goToGig(gig)" class="w-full bg-brand-teal text-white py-2.5 sm:py-3 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base font-medium min-h-[44px] touch-manipulation">
-                  {{ activeTab === 'browse' ? 'View Details' : 'Log Work' }}
+                <button @click.stop="goToGig(job)" class="w-full bg-brand-teal text-white py-2.5 sm:py-3 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base font-medium min-h-[44px] touch-manipulation">
+                  View Details
                 </button>
               </div>
             </div>
-          </div>
-      
-      <!-- No results message -->
+          </div>      <!-- No results message -->
       <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-8 sm:py-12">
         <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-sm mx-auto">
           <span class="text-3xl sm:text-4xl mb-3 sm:mb-4 block">🔍</span>
@@ -166,12 +194,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import BrandLogo from '../../components/BrandLogo.vue'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
-import { createGigSlug } from '../../utils/slugUtils'
+import { createGigSlug } from '@/utils/slugUtils'
+import { useJobs } from '@/composables/useJobs'
 
 const openMobileNav = ref(false)
 const activeTab = ref<'active' | 'browse'>('browse')
@@ -181,23 +210,38 @@ const searchQuery = ref('')
 const router = useRouter()
 
 
-const goToLogWorkHours = (gig: any) => {
-  // Persist selected gig so destination pages can read it
+const goToLogWorkHours = (job: any) => {
+  // Persist selected job so destination pages can read it
   try {
-    localStorage.setItem('selectedGig', JSON.stringify(gig))
+    localStorage.setItem('selectedGig', JSON.stringify(job))
   } catch (e) {
     // ignore storage errors
   }
   
   // Navigate to the job overview page
-  const slug = createGigSlug(gig.title, gig.id)
+  const slug = createGigSlug(job.project_title, job.id || '')
   router.push({ path: `/agent/job/${slug}` })
 }
 
-const goToGig = (gig: any) => {
-  // Persist selected gig so destination pages can read it
+const getCategoryIcon = (category: string | { name: string }) => {
+  const categoryName = typeof category === 'string' ? category : category.name
+  const iconMap: Record<string, string> = {
+    'writing': '📝',
+    'design': '🎨',
+    'development': '💻',
+    'data': '📊',
+    'admin': '🎯',
+    'marketing': '📱',
+    'default': '💼'
+  }
+  
+  return iconMap[categoryName.toLowerCase()] || iconMap.default
+}
+
+const goToGig = (job: any) => {
+  // Persist selected job so destination pages can read it
   try {
-    localStorage.setItem('selectedGig', JSON.stringify(gig))
+    localStorage.setItem('selectedGig', JSON.stringify(job))
   } catch (e) {
     // ignore storage errors
   }
@@ -207,90 +251,35 @@ const goToGig = (gig: any) => {
     router.push({ path: '/agent/logging-details' })
   } else {
     // browse -> go to detail page
-    const slug = createGigSlug(gig.title, gig.id)
+    const slug = createGigSlug(job.project_title, job.id || '')
     router.push({ path: `/agent/gig/${slug}` })
   }
 }
 
-const activeJobs = [
-  {
-    id: 1,
-    title: 'Content Writing Project',
-    description: 'Currently working on blog posts for TechCorp',
-    price: '14.00',
-    icon: '📝',
-    status: 'in_progress',
-    client: 'TechCorp',
-    deadline: '2024-01-15'
-  },
-  {
-    id: 2,
-    title: 'Social Media Management',
-    description: 'Managing social media accounts for FashionBrand',
-    price: '18.00',
-    icon: '📱',
-    status: 'in_progress',
-    client: 'FashionBrand',
-    deadline: '2024-01-20'
-  }
-]
+const { 
+  jobs, 
+  loading: jobsLoading, 
+  error: jobsError,
+  getAvailableJobs, 
+  hasMore,
+  loadMoreJobs 
+} = useJobs()
 
-const browseGigs = [
-  {
-    id: 3,
-    title: 'Content Writing',
-    description: 'Create engaging blog posts, articles, and web content for various clients.',
-    price: '14.00',
-    icon: '📝',
-    category: 'writing',
-    keywords: ['writing', 'content', 'blog', 'articles', 'web content']
-  },
-  {
-    id: 4,
-    title: 'Graphic Design',
-    description: 'Design logos, social media graphics, and marketing materials for businesses.',
-    price: '13.50',
-    icon: '🎨',
-    category: 'design',
-    keywords: ['design', 'logo', 'graphics', 'social media', 'marketing']
-  },
-  {
-    id: 5,
-    title: 'Web Development',
-    description: 'Build and maintain websites using modern frameworks and technologies.',
-    price: '17.50',
-    icon: '💻',
-    category: 'development',
-    keywords: ['web', 'development', 'websites', 'programming', 'coding']
-  },
-  {
-    id: 6,
-    title: 'Data Entry',
-    description: 'Input and manage data accurately for various business operations.',
-    price: '13.00',
-    icon: '📊',
-    category: 'data',
-    keywords: ['data', 'entry', 'input', 'management', 'business']
-  },
-  {
-    id: 7,
-    title: 'Virtual Assistant',
-    description: 'Provide administrative support and manage tasks for busy professionals.',
-    price: '13.75',
-    icon: '🎯',
-    category: 'admin',
-    keywords: ['virtual', 'assistant', 'administrative', 'support', 'tasks']
-  },
-  {
-    id: 8,
-    title: 'Social Media Management',
-    description: 'Manage social media accounts and create engaging content for brands.',
-    price: '15.50',
-    icon: '📱',
-    category: 'marketing',
-    keywords: ['social', 'media', 'management', 'content', 'brands']
-  }
-]
+// Default pagination parameters
+const paginationParams = {
+  start: 0,
+  stop: 10
+}
+
+// Load jobs when component mounts
+onMounted(async () => {
+  await getAvailableJobs(paginationParams)
+})
+
+// Watch tab changes to load appropriate jobs
+watch(activeTab, async () => {
+  await getAvailableJobs(paginationParams)
+})
 
 const selectedServices = ref<any[]>([])
 
@@ -302,36 +291,31 @@ onMounted(() => {
 })
 
 const filteredGigs = computed(() => {
-  if (activeTab.value === 'active') {
-    
-    return activeJobs
-  } else {
-    
-    let result = browseGigs
-    
-    
-    if (selectedServices.value.length > 0) {
-      const serviceTitles = selectedServices.value.map(service => service.title.toLowerCase())
-      result = result.filter((gig: any) => 
-        serviceTitles.some((service: string) => 
-          gig.title.toLowerCase().includes(service) ||
-          gig.category.toLowerCase().includes(service) ||
-          gig.keywords.some((keyword: string) => keyword.toLowerCase().includes(service))
-        )
-      )
-    }
-    
-    
-    if (searchQuery.value.trim()) {
-      const query = searchQuery.value.toLowerCase().trim()
-      result = result.filter((gig: any) => 
-        gig.title.toLowerCase().includes(query) ||
-        gig.description.toLowerCase().includes(query) ||
-        gig.keywords.some((keyword: string) => keyword.toLowerCase().includes(query))
-      )
-    }
-    
-    return result
+  if (!jobs.value) return []
+  
+  let result = jobs.value
+  
+  // Filter by search query if present
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    result = result.filter(job => 
+      job.project_title.toLowerCase().includes(query) ||
+      job.description.toLowerCase().includes(query) ||
+      (typeof job.category === 'string' ? job.category.toLowerCase().includes(query) : false)
+    )
   }
+  
+  // Filter by selected services if any are selected
+  if (selectedServices.value.length > 0) {
+    const serviceTitles = selectedServices.value.map(service => service.title.toLowerCase())
+    result = result.filter(job => 
+      serviceTitles.some(service => 
+        job.project_title.toLowerCase().includes(service) ||
+        (typeof job.category === 'string' ? job.category.toLowerCase().includes(service) : false)
+      )
+    )
+  }
+  
+  return result
 })
 </script>

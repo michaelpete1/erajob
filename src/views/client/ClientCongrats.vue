@@ -1,3 +1,78 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import authService from '../../services/authService'
+import type { SignupData } from '../../types/api/auth'
+
+const router = useRouter()
+const isSubmitting = ref(false)
+const errorMessage = ref('')
+
+const finishSignup = async () => {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
+  errorMessage.value = ''
+
+  try {
+    const basic = JSON.parse(localStorage.getItem('signupBasicData') || '{}')
+    const welcome = JSON.parse(localStorage.getItem('clientWelcomeData') || '{}')
+    const services: string[] = JSON.parse(localStorage.getItem('selectedClientServices') || '[]')
+
+    if (!basic?.email || !basic?.password) {
+      errorMessage.value = 'Missing signup information. Please restart the signup.'
+      return
+    }
+
+    const payload: SignupData = {
+      email: basic.email,
+      password: basic.password,
+      role: 'client',
+      full_name: welcome?.fullName || `${basic.firstName || ''} ${basic.lastName || ''}`.trim(),
+      phone_number: welcome?.phone || '',
+      certificate_url: Array.isArray(welcome?.certificates) ? welcome.certificates : [],
+      video_url: welcome?.shortVideo || '',
+      personality_url: welcome?.personalityTest || '',
+      company_name: welcome?.companyName || '',
+      company_email: welcome?.companyEmail || '',
+      company_address: welcome?.companyAddress || '',
+      company_website: welcome?.companyWebsite || '',
+      // Required enums with defaults if missing
+      client_reason_for_signing_up: welcome?.clientReason || 'Just hire me someone',
+      client_need_agent_work_hours_to_be: 'both',
+      primary_area_of_expertise: welcome?.primaryAreaOfExpertise || 'Other',
+      time_zone: welcome?.timezone || 'UTC+00:00',
+      portfolio_link: welcome?.urlLink || '',
+      // Booleans in prepareSignupData are derived from 'yes' string; default to 'no' if empty
+      is_agent_open_to_calls_and_video_meetings: welcome?.openToCalls || 'no',
+      does_agent_have_working_computer: welcome?.hasWorkingComputer || 'no',
+      does_agent_have_stable_internet: welcome?.hasStableInternet || 'no',
+      is_agent_comfortable_with_time_tracking_tools: welcome?.comfortableWithTimeTracking || 'no',
+      three_most_commonly_used_tools_or_platforms: [],
+      available_hours_agent_can_commit: '',
+      services: Array.isArray(services) ? services : []
+    }
+
+    const resp = await authService.signup(payload)
+    if (!resp.success) {
+      errorMessage.value = resp.error || 'Signup failed. Please try again.'
+      return
+    }
+
+    try {
+      localStorage.removeItem('signupBasicData')
+      localStorage.removeItem('clientWelcomeData')
+      localStorage.removeItem('selectedClientServices')
+    } catch {}
+
+    router.push('/client/projects')
+  } catch (e: any) {
+    errorMessage.value = e?.response?.data?.detail || e?.message || 'Unexpected error.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+</script>
+
 <template>
   <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 flex items-center justify-center overflow-hidden">
     <div class="absolute top-0 right-0 h-32 w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow" />
@@ -44,13 +119,14 @@
         <p>We're excited to help you build your dream team!</p>
       </div>
 
-      <router-link to="/agent/welcome-back" class="btn-pressable mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4">
-        Next
-      </router-link>
+      <div v-if="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+        {{ errorMessage }}
+      </div>
+      <button @click="finishSignup" :disabled="isSubmitting" class="btn-pressable mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 disabled:opacity-60 disabled:cursor-not-allowed">
+        {{ isSubmitting ? 'Finishing...' : 'Finish Sign Up' }}
+      </button>
       </div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-</script>

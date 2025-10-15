@@ -10,6 +10,15 @@
         </button>
         <h1 class="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight ml-1 sm:ml-2">Settings</h1>
       </div>
+      <router-link
+        :to="{ name: 'client-dashboard' }"
+        class="inline-flex items-center gap-2 bg-white text-teal-600 px-3 py-2 rounded-full text-sm font-semibold shadow hover:shadow-md hover:bg-gray-100 transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <span>Go to Dashboard</span>
+      </router-link>
     </header>
 
     <main class="px-3 sm:px-4 md:px-6 py-4 sm:py-6 pb-24 sm:pb-28 max-w-4xl mx-auto">
@@ -246,6 +255,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import userService from '../../services/userService'
 
 const router = useRouter()
 
@@ -253,8 +263,8 @@ const router = useRouter()
 const showAccountSettings = ref(false)
 
 // User data
-const userName = ref('John Doe')
-const userEmail = ref('john.doe@example.com')
+const userName = ref('')
+const userEmail = ref('')
 
 // User profile data for account settings
 const userProfile = ref({
@@ -353,7 +363,10 @@ const handleSignOut = () => {
   if (confirm('Are you sure you want to sign out?')) {
     // Clear user data from localStorage
     localStorage.removeItem('userRole')
-    localStorage.removeItem('userToken')
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('userName')
+    localStorage.removeItem('userEmail')
     
     // Navigate to sign in page
     router.push('/sign-in')
@@ -400,6 +413,24 @@ onMounted(() => {
   } catch (error) {
     console.error('Error loading profile:', error)
   }
+
+  // Fetch from API to ensure we show the actual signed-in user's name/email
+  ;(async () => {
+    try {
+      const res = await userService.getMyProfile()
+      const d = res?.data?.data
+      if (d) {
+        if (d.full_name) userName.value = d.full_name
+        if (d.email) userEmail.value = d.email
+        if (!userProfile.value.name && d.full_name) userProfile.value.name = d.full_name
+        if (!userProfile.value.email && d.email) userProfile.value.email = d.email
+        localStorage.setItem('userName', userName.value)
+        localStorage.setItem('userEmail', userEmail.value)
+      }
+    } catch (e) {
+      // Non-blocking if API fails; keep local values
+    }
+  })()
   
   // Add click outside listener
   document.addEventListener('click', handleClickOutside)

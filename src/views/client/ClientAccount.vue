@@ -147,6 +147,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiService } from '../../services/api'
 
 const router = useRouter()
 
@@ -213,5 +214,43 @@ onMounted(() => {
   } catch (error) {
     console.error('Error loading profile:', error)
   }
+
+  // Fetch real client profile from API
+  fetchClientProfile()
 })
+
+async function fetchClientProfile() {
+  try {
+    const resp = await apiService.getClientProfile()
+    if (resp.success && resp.data) {
+      const payload = resp.data
+      const data = (payload && typeof payload === 'object') ? (payload.data || payload) : null
+      if (data) {
+        // Map fields from API
+        const fullName = data.full_name || data.name || ''
+        const email = data.email || ''
+        const phone = data.phone_number || ''
+        const created = data.date_created
+
+        if (fullName) userName.value = fullName
+        if (email) userEmail.value = email
+        userProfile.value = {
+          ...userProfile.value,
+          name: fullName || userProfile.value.name,
+          email: email || userProfile.value.email,
+          phone: phone || userProfile.value.phone,
+        }
+
+        if (typeof created === 'number' && !Number.isNaN(created)) {
+          const createdDate = new Date(created * 1000)
+          memberSince.value = createdDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+        }
+      }
+    } else if (!resp.success) {
+      console.warn('Failed to fetch client profile:', resp.error)
+    }
+  } catch (e) {
+    console.error('Error fetching client profile:', e)
+  }
+}
 </script>

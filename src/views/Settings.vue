@@ -158,16 +158,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-// This page uses role-based navigation from App.vue
+import { agentsService } from '@/services/agentsService'
 
-const userName = ref<string>('John Doe')
-const userEmail = ref<string>('john.doe@example.com')
+const router = useRouter()
+
+const userName = ref<string>('')
+const userEmail = ref<string>('')
 const currentLanguage = ref<string>('English')
 const showLanguageDropdown = ref<boolean>(false)
 const languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese', 'Korean', 'Portuguese', 'Italian', 'Russian']
-const router = useRouter()
+const loading = ref(false)
+const saving = ref(false)
+const error = ref<string | null>(null)
 
 const userInitials = computed(() => {
+  if (!userName.value) return 'AG'
   return userName.value
     .split(' ')
     .map(name => name.charAt(0).toUpperCase())
@@ -175,14 +180,69 @@ const userInitials = computed(() => {
     .substring(0, 2)
 })
 
+const loadUserProfile = async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    const result = await agentsService.getCurrentAgent()
+    if (result.success && result.data) {
+      const profile = result.data
+      userName.value = profile.full_name || profile.company_name || 'Agent'
+      userEmail.value = profile.email || ''
+      if (profile.time_zone) {
+        currentLanguage.value = profile.time_zone
+      }
+    } else {
+      error.value = result.error || 'Failed to load agent profile'
+    }
+  } catch (caughtError) {
+    console.error('Error loading agent profile:', caughtError)
+    error.value = 'Failed to load agent profile'
+  } finally {
+    loading.value = false
+  }
+}
+
+const saveUserProfile = async () => {
+  saving.value = true
+  error.value = null
+
+  try {
+    const currentAgent = agentsService.getAgentState().currentAgent
+    if (!currentAgent || !currentAgent.id) {
+      throw new Error('No agent profile to update')
+    }
+
+    const payload = {
+      id: currentAgent.id,
+      full_name: userName.value,
+      email: userEmail.value,
+      time_zone: currentLanguage.value
+    }
+
+    console.warn('Update profile not implemented for agents; payload prepared:', payload)
+    alert('Profile updates are not yet wired to the backend. Data was prepared in console.')
+  } catch (caughtError) {
+    console.error('Error preparing profile update:', caughtError)
+    error.value = 'Failed to update profile'
+  } finally {
+    saving.value = false
+  }
+}
+
+const saveLanguagePreference = async (language: string) => {
+  currentLanguage.value = language
+  showLanguageDropdown.value = false
+  console.warn('Language update API not implemented. Stored locally only.')
+}
+
 const toggleLanguageDropdown = () => {
   showLanguageDropdown.value = !showLanguageDropdown.value
 }
 
 const selectLanguage = (language: string) => {
-  currentLanguage.value = language
-  showLanguageDropdown.value = false
-  alert(`🌐 Language changed to: ${language}`)
+  saveLanguagePreference(language)
 }
 
 const closeDropdown = (event: MouseEvent) => {
@@ -194,6 +254,7 @@ const closeDropdown = (event: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', closeDropdown)
+  loadUserProfile()
 })
 
 onUnmounted(() => {

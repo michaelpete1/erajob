@@ -54,7 +54,7 @@
             class="btn-pressable mt-6 sm:mt-8 lg:mt-10 inline-flex items-center justify-center rounded-full bg-brand-teal px-6 sm:px-8 lg:px-10 py-3 sm:py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4 w-full sm:w-auto min-w-[120px] sm:min-w-[140px]"
           >
             <span class="flex items-center gap-2">
-              Next
+              Go to Jobs
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

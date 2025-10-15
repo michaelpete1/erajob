@@ -93,11 +93,11 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-            <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Active Projects Yet</h3>
-            <p class="text-gray-600 text-sm sm:text-base max-w-md mx-auto">
-              You don't have any active projects with assigned agents. Start by browsing available projects or create a new one to get started.
-            </p>
-          </div>
+              <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Active Projects Yet</h3>
+              <p class="text-gray-600 text-sm sm:text-base max-w-md mx-auto">
+                You don't have any active projects with assigned agents. Start by browsing available projects or create a new one to get started.
+              </p>
+            </div>
           <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <button 
               @click="activeTab = 'pending'"
@@ -189,13 +189,14 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useJobs } from '../../composables/useJobs'
-import type { JobOut } from '../../types/api'
+import type { JobOut, JobCategory } from '../../types/api'
 
 const router = useRouter()
 const activeTab = ref<'active' | 'pending'>('pending')
-const { getClientJobs, getAllJobs, loading, error } = useJobs()
+const { getClientJobs, getAllJobs, loading } = useJobs()
+const error = ref<string | null>(null)
 
-const formatDate = (timestamp: number | null) => {
+const formatDate = (timestamp: number | null | undefined) => {
   if (!timestamp) return 'N/A'
   const date = new Date(timestamp * 1000)
   const now = new Date()
@@ -217,36 +218,86 @@ const formatDate = (timestamp: number | null) => {
   }
 }
 
-const activeProjects = ref<JobOut[]>([])
-const browseProjects = ref<JobOut[]>([])
+// Define a more flexible project type that matches the actual data structure
+interface Project extends Omit<JobOut, 'category' | 'timeline'> {
+  id: string
+  project_title: string
+  category: string | JobCategory
+  budget: number
+  description: string
+  date_created: number
+  timeline: {
+    start_date: number
+    deadline: number
+  }
+  agents?: Array<{
+    id: string
+    name: string
+    avatar?: string
+  }>
+}
+
+const activeProjects = ref<Project[]>([])
+const browseProjects = ref<Project[]>([])
 
 const fetchActiveProjects = async () => {
   try {
-    const result = await getClientJobs()
-    if (result.success && result.data) {
-      activeProjects.value = result.data
-    }
+    // Get the client ID from your auth state or use a default value
+    const clientId = 'current' // Replace with actual client ID from your auth state
+    const response = await getClientJobs(clientId, 0, 10)
+    // Transform the response to match our Project type
+    const projects = Array.isArray(response)
+      ? response.map(project => ({
+          ...project,
+          // Ensure category is properly typed
+          category: project.category as string || 'Other',
+          // Ensure timeline has required fields
+          timeline: project.timeline || { deadline: 0, start_date: 0 },
+          // Ensure agents array exists
+          agents: project.agents || [],
+          // Ensure date_created is a number
+          date_created: typeof project.date_created === 'number' ? project.date_created : Date.now() / 1000
+        }))
+      : []
+    activeProjects.value = projects as Project[]
   } catch (err) {
     console.error('Error fetching active projects:', err)
+    error.value = 'Failed to load active projects'
   }
 }
 
 const fetchBrowseProjects = async () => {
   try {
-    const result = await getAllJobs()
-    if (result.success && result.data) {
-      browseProjects.value = result.data
-    }
+    const response = await getAllJobs({
+      start: 0,
+      stop: 10
+    })
+    // Transform the response to match our Project type
+    const projects = Array.isArray(response)
+      ? response.map(project => ({
+          ...project,
+          // Ensure category is properly typed
+          category: project.category as string || 'Other',
+          // Ensure timeline has required fields
+          timeline: project.timeline || { deadline: 0, start_date: 0 },
+          // Ensure agents array exists
+          agents: project.agents || [],
+          // Ensure date_created is a number
+          date_created: typeof project.date_created === 'number' ? project.date_created : Date.now() / 1000
+        }))
+      : []
+    browseProjects.value = projects as Project[]
   } catch (err) {
     console.error('Error fetching browse projects:', err)
+    error.value = 'Failed to load available projects'
   }
 }
 
-const fetchProjects = async () => {
+const fetchProjects = () => {
   if (activeTab.value === 'active') {
-    await fetchActiveProjects()
+    fetchActiveProjects()
   } else {
-    await fetchBrowseProjects()
+    fetchBrowseProjects()
   }
 }
 
@@ -254,19 +305,13 @@ const fetchProjects = async () => {
 watch(activeTab, fetchProjects)
 
 // Fetch initial data
-onMounted(fetchProjects)
+onMounted(() => {
+  fetchProjects()
+})
 
-
-const goToProject = (project: any) => {
-  try {
-    localStorage.setItem('selectedProject', JSON.stringify(project))
-  } catch (e) {
-  }
-  
-  if (project.assignedTime && project.agents) {
-    router.push('/client/work-log')
-  } else {
-    router.push(`/client/jobs/${project.id}`)
+const goToProject = (project: Project) => {
+  if (project && project.id) {
+    router.push(`/client/project/${project.id}`)
   }
 }
 

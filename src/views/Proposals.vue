@@ -54,8 +54,24 @@
     </header>
     
     <main class="p-4 pb-24">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-teal"></div>
+      </div>
+
+      <!-- Error State -->
+      <div v-if="error && !loading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-red-700 font-medium">{{ error }}</p>
+        </div>
+      </div>
+
+      <!-- Content (only show when not loading and no error) -->
+      <div v-if="!loading && !error">
       <!-- Filter Tabs -->
-      <div class="flex border-b border-gray-200 mb-4">
         <button 
           v-for="tab in tabs" 
           :key="tab.id"
@@ -143,7 +159,7 @@
       </div>
 
       <!-- Empty State -->
-      <div v-if="filteredProposals.length === 0" class="text-center py-12">
+      <div v-if="!loading && !error && filteredProposals.length === 0" class="text-center py-12">
         <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -163,6 +179,45 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
+// Simulate API service for proposals
+const proposalsService = {
+  async getProposals(filters?: { status?: string; jobId?: string }): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    // In a real implementation, this would call:
+    // const result = await api.get('/proposals', { params: filters })
+
+    // For now, simulate API response with filtered data
+    const mockApiResponse = {
+      success: true,
+      data: proposals.value.filter(p => {
+        if (filters?.status && p.status !== filters.status) return false
+        if (filters?.jobId && p.jobId !== filters.jobId) return false
+        return true
+      })
+    }
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800))
+
+    return mockApiResponse
+  },
+
+  async getJobs(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    // In a real implementation, this would call:
+    // const result = await api.get('/jobs')
+
+    // For now, simulate API response
+    const mockApiResponse = {
+      success: true,
+      data: jobs.value
+    }
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    return mockApiResponse
+  }
+}
+
 const router = useRouter()
 const route = useRoute()
 
@@ -170,67 +225,69 @@ const route = useRoute()
 const searchQuery = ref('')
 const activeTab = ref('all')
 const currentJobId = ref<string>('')
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Data
+const proposals = ref<any[]>([])
+const jobs = ref<any[]>([])
 
 // Tabs for filtering proposals
 const tabs = computed(() => [
   { id: 'all', label: 'All Proposals', count: proposals.value.length },
-  { id: 'pending', label: 'Pending', count: proposals.value.filter((p: Proposal) => p.status === 'pending').length },
-  { id: 'accepted', label: 'Accepted', count: proposals.value.filter((p: Proposal) => p.status === 'accepted').length },
-  { id: 'rejected', label: 'Rejected', count: proposals.value.filter((p: Proposal) => p.status === 'rejected').length },
-  { id: 'submitted', label: 'Submitted', count: proposals.value.filter((p: Proposal) => p.status === 'submitted').length }
+  { id: 'pending', label: 'Pending', count: proposals.value.filter((p: any) => p.status === 'pending').length },
+  { id: 'accepted', label: 'Accepted', count: proposals.value.filter((p: any) => p.status === 'accepted').length },
+  { id: 'rejected', label: 'Rejected', count: proposals.value.filter((p: any) => p.status === 'rejected').length },
+  { id: 'submitted', label: 'Submitted', count: proposals.value.filter((p: any) => p.status === 'submitted').length }
 ])
+
+// Load proposals and jobs data
+async function loadProposals() {
+  loading.value = true
+  error.value = null
+
+  try {
+    // Load jobs first
+    const jobsResult = await proposalsService.getJobs()
+    if (jobsResult.success && jobsResult.data) {
+      jobs.value = jobsResult.data
+    }
+
+    // Load proposals with filters
+    const filters: any = {}
+    if (activeTab.value !== 'all') {
+      filters.status = activeTab.value
+    }
+    if (currentJobId.value) {
+      filters.jobId = currentJobId.value
+    }
+
+    const proposalsResult = await proposalsService.getProposals(filters)
+    if (proposalsResult.success && proposalsResult.data) {
+      proposals.value = proposalsResult.data
+    } else {
+      error.value = proposalsResult.error || 'Failed to load proposals'
+    }
+  } catch (caughtError) {
+    console.error('Error loading proposals:', caughtError)
+    error.value = 'Failed to load proposals'
+  } finally {
+    loading.value = false
+  }
+}
 
 // Watch for route changes to update the job ID filter
 watch(() => route.query.jobId, (newJobId) => {
   currentJobId.value = Array.isArray(newJobId) ? newJobId[0] || '' : newJobId || ''
   // Update the active tab to 'all' when job ID changes
   activeTab.value = 'all'
+  loadProposals() // Reload proposals when job filter changes
 }, { immediate: true })
 
-// Types
-interface Job {
-  id: string
-  title: string
-  client: string
-}
-
-interface Proposal {
-  id: string
-  jobId: string
-  projectName: string
-  clientName: string
-  status: string
-  budget: number
-  description: string
-  submittedDate: string
-  clientAvatar: string
-  lastUpdated?: string
-  attachments?: number
-}
-
-// Mock job data (in a real app, this would come from an API)
-const jobs = ref<Job[]>([
-  {
-    id: '1',
-    title: 'E-commerce Website Development',
-    client: 'Acme Corp'
-  },
-  {
-    id: '2',
-    title: 'Mobile App UI/UX Design',
-    client: 'TechStart Inc'
-  },
-  {
-    id: '3',
-    title: 'Content Management System',
-    client: 'FreshStart Co'
-  },
-  {
-    id: '4',
-    title: 'SEO Optimization',
-    client: 'Organic Growth'
-  }
-])
+// Load data on mount
+onMounted(() => {
+  loadProposals()
+})
 
 // Get job title by ID
 const getJobTitle = (jobId: string) => {
@@ -238,72 +295,16 @@ const getJobTitle = (jobId: string) => {
   return job ? `${job.title} (${job.client})` : 'Unknown Job'
 }
 
-// Mock proposal data
-const proposals = ref<Proposal[]>([
-  {
-    id: '1',
-    jobId: '1',
-    projectName: 'E-commerce Website Development',
-    clientName: 'Sarah Johnson',
-    status: 'accepted',
-    budget: 4500,
-    description: 'Complete e-commerce website with product catalog, cart, and payment integration. Includes responsive design and admin dashboard.',
-    submittedDate: '2023-06-15',
-    clientAvatar: 'https://picsum.photos/seed/sarah/100/100.jpg',
-    lastUpdated: '2023-06-20T14:30:00Z',
-    attachments: 3
-  },
-  {
-    id: '2',
-    jobId: '1',
-    projectName: 'Mobile App UI/UX Design',
-    clientName: 'Mike Chen',
-    status: 'pending',
-    budget: 2800,
-    description: 'Modern and intuitive UI/UX design for a fitness tracking mobile application. Includes 20+ screens and design system.',
-    submittedDate: '2023-06-18',
-    clientAvatar: 'https://picsum.photos/seed/mike/100/100.jpg',
-    lastUpdated: '2023-06-19T09:15:00Z',
-    attachments: 1
-  },
-  {
-    id: '3',
-    jobId: '2',
-    projectName: 'Content Management System',
-    clientName: 'Emily Rodriguez',
-    status: 'submitted',
-    budget: 6200,
-    description: 'Custom CMS development with user roles, media library, and content scheduling. Built with modern web technologies.',
-    submittedDate: '2023-06-20',
-    clientAvatar: 'https://picsum.photos/seed/emily/100/100.jpg',
-    lastUpdated: '2023-06-20T16:45:00Z',
-    attachments: 2
-  },
-  {
-    id: '4',
-    jobId: '3',
-    projectName: 'SEO Optimization',
-    clientName: 'David Kim',
-    status: 'rejected',
-    budget: 1500,
-    description: 'Comprehensive SEO optimization for existing website including keyword research, on-page optimization, and performance improvements.',
-    submittedDate: '2023-06-10',
-    clientAvatar: 'https://picsum.photos/seed/david/100/100.jpg',
-    lastUpdated: '2023-06-15T11:20:00Z',
-    attachments: 1
-  }
-])
-
 const filteredProposals = computed(() => {
-  return proposals.value.filter((p: Proposal) => {
+  return proposals.value.filter((p: any) => {
     const searchLower = searchQuery.value.toLowerCase()
-    const matchesSearch = searchQuery.value === '' || 
-      p.projectName.toLowerCase().includes(searchLower) || 
-      p.clientName.toLowerCase().includes(searchLower) || 
+    const matchesSearch = searchQuery.value === '' ||
+      p.projectName.toLowerCase().includes(searchLower) ||
+      p.clientName.toLowerCase().includes(searchLower) ||
       p.description.toLowerCase().includes(searchLower)
     const matchesStatus = activeTab.value === 'all' || p.status === activeTab.value
     const matchesJob = !currentJobId.value || p.jobId === currentJobId.value
-    
+
     return matchesSearch && matchesStatus && matchesJob
   })
 })
@@ -323,7 +324,7 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString(undefined, options)
 }
 
-const viewProposal = (proposal: Proposal) => {
+const viewProposal = (proposal: any) => {
   // Navigate to proposal detail view
   router.push(`/proposals/${proposal.id}`)
 }
@@ -332,21 +333,6 @@ const createNewProposal = () => {
   // Navigate to create proposal form
   router.push('/proposals/new')
 }
-
-// Initialize with some mock data if no data in localStorage
-onMounted(() => {
-  const savedProposals = localStorage.getItem('proposals')
-  if (savedProposals) {
-    try {
-      const parsed = JSON.parse(savedProposals)
-      if (Array.isArray(parsed)) {
-        proposals.value = parsed
-      }
-    } catch (e) {
-      console.error('Error parsing saved proposals:', e)
-    }
-  }
-})
 </script>
 
 <style scoped>

@@ -1,354 +1,557 @@
-// src/services/apiService.ts
-import { apiClient } from './api'
+import axios from 'axios'
+import type { AxiosInstance, AxiosResponse } from 'axios'
 
-// Type definitions based on OpenAPI schema
-export interface UserBase {
-  email: string
-  password: string
-  role: 'client' | 'agent'
-}
+// Base URL for the API
+const API_BASE_URL = 'https://eba-jobs.getxoxo.space'
 
-export interface UserLogin {
-  email: string
-  password: string
-}
-
-export interface ForgotPasswordRequest {
-  email: string
-}
-
-export interface ResetPasswordRequest {
-  token: string
-  new_password: string
-}
-
-export interface UserRefresh {
-  refresh_token: string
-}
-
-export interface UserOut {
-  email: string
-  password: string
-  role: Record<string, any>
-  id?: string | null
-  date_created?: number | null
-  last_updated?: number | null
-  refresh_token?: string | null
-  access_token?: string | null
-}
-
-export interface JobTimeline {
-  start_date: number
-  deadline: number
-}
-
-export type JobCategories = 
-  | 'Web Devlopment'
-  | 'Mobile Development'
-  | 'UI/UX Design'
-  | 'Content Writing'
-  | 'Digital Marketing'
-  | 'Data Analysis'
-  | 'Other'
-
-export type Skills = 
-  | 'Web Devlopment'
-  | 'Mobile Development'
-  | 'UI/UX Design'
-  | 'Content Writing'
-  | 'Digital Marketing'
-  | 'Data Analysis'
-  | 'Other'
-
-export interface JobsBase {
-  project_title: string
-  category: JobCategories
-  budget: number
-  description: string
-  requirement: string
-  skills_needed: Skills
-  timeline: JobTimeline
-}
-
-export interface JobsOut extends JobsBase {
-  id?: string | null
-  date_created?: number | null
-  last_updated?: number | null
-}
-
-export interface APIResponse<T> {
-  status_code: number
-  data: T | null
-  detail: string
-}
-
-export interface ValidationError {
-  loc: (string | number)[]
-  msg: string
-  type: string
-}
-
-export interface HTTPValidationError {
-  detail: ValidationError[]
-}
-
-// Health and Root endpoints
-export const healthApi = {
-  checkHealth: async (): Promise<APIResponse<null>> => {
-    const response = await apiClient.get<APIResponse<null>>('/health')
-    return response.data
+// Create axios instance
+const apiClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
   },
+})
 
-  getRoot: async (): Promise<APIResponse<null>> => {
-    const response = await apiClient.get<APIResponse<null>>('/')
-    return response.data
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token') || localStorage.getItem('user-token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// Response interceptor: try role-aware token refresh once on 401. Do NOT logout on non-401 errors.
+apiClient.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  async (error) => {
+    const originalRequest = error.config as any
+    const status = error.response?.status
+
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+      try {
+        const role = localStorage.getItem('userRole') || ''
+        const refreshToken = localStorage.getItem('refresh_token') || ''
+        if (!refreshToken) throw new Error('No refresh token')
+
+        // Attempt appropriate refresh
+        let refreshed = null as null | AxiosResponse
+        // Prefer role; fallback to request URL inference
+        const isAdminRequest = role === 'admin' || (originalRequest?.url?.toString()?.includes('/v1/admins/'))
+        const expiredAccess = localStorage.getItem('access_token') || ''
+        const authHeader = expiredAccess ? { Authorization: `Bearer ${expiredAccess}` } : {}
+        if (isAdminRequest) {
+          refreshed = await apiClient.post('/v1/admins/refresh', { refresh_token: refreshToken }, { headers: { ...authHeader } })
+        } else {
+          // default to users refresh for client/agent flows
+          refreshed = await apiClient.post('/v1/users/refresh', { refresh_token: refreshToken }, { headers: { ...authHeader } })
+        }
+
+        const data = refreshed?.data?.data
+        const newAccess = data?.access_token
+        const newRefresh = data?.refresh_token
+        if (!newAccess) throw new Error('Refresh did not return access token')
+
+        localStorage.setItem('access_token', newAccess)
+        if (newRefresh) localStorage.setItem('refresh_token', newRefresh)
+
+        // Update auth header and retry
+        originalRequest.headers = originalRequest.headers || {}
+        originalRequest.headers['Authorization'] = `Bearer ${newAccess}`
+        return apiClient(originalRequest)
+      } catch (refreshErr) {
+        // fall through to logout
+      }
+      // After a failed refresh, perform logout/redirect
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('user-token')
+      localStorage.removeItem('userInfo')
+      localStorage.removeItem('userRole')
+      const isAdminPath = window.location.pathname.startsWith('/admin')
+      const target = isAdminPath ? '/admin/sign-in' : '/sign-in'
+      if (window.location.pathname !== target) {
+        window.location.href = target
+      }
+      return Promise.reject(error)
+    }
+
+    // For non-401 errors (e.g., 403 Forbidden), do not clear auth; bubble error up
+    return Promise.reject(error)
+  }
+)
+
+// Import types from centralized location
+import type {
+  EJApiResponse,
+  UserBase,
+  UserLogin,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  UserRefresh,
+  UserOut,
+  JobTimeline,
+  JobCategories,
+  Skills,
+  JobsBase,
+  JobsOut,
+  AlertsOut,
+  ValidationError,
+  HTTPValidationError,
+  ServiceResponse
+} from '../types/api/openapi'
+
+// API Service class
+class ApiService {
+  // Health endpoints
+  async checkHealth(): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<null>>('/health')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Health check failed' }
+    }
+  }
+
+  async getRoot(): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<null>>('/')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Root endpoint failed' }
+    }
+  }
+
+  // Authentication endpoints
+  async signup(userData: UserBase): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/users/signup', userData)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Signup failed' }
+    }
+  }
+
+  async login(credentials: UserLogin): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/users/login', credentials)
+      if (response.data.data?.access_token) {
+        localStorage.setItem('access_token', response.data.data.access_token)
+        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+      }
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Login failed' }
+    }
+  }
+
+  async refreshToken(refreshData: UserRefresh): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/users/refresh', refreshData)
+      if (response.data.data?.access_token) {
+        localStorage.setItem('access_token', response.data.data.access_token)
+        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+      }
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Token refresh failed' }
+    }
+  }
+
+  // Admin token refresh
+  async adminRefreshToken(refreshData: UserRefresh): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/admins/refresh', refreshData)
+      if (response.data.data?.access_token) {
+        localStorage.setItem('access_token', response.data.data.access_token)
+        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+      }
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Admin token refresh failed' }
+    }
+  }
+
+  async getCurrentUser(): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<UserOut>>('/v1/users/me')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get user' }
+    }
+  }
+
+  async listUsers(start: number, stop: number): Promise<ServiceResponse<UserOut[]>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<UserOut[]>>(`/v1/users/${start}/${stop}`)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to list users' }
+    }
+  }
+
+  async deleteAccount(): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.delete<EJApiResponse<null>>('/v1/users/account')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to delete account' }
+    }
+  }
+
+  async forgotPassword(request: ForgotPasswordRequest): Promise<ServiceResponse<{ message: string }>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<{ message: string }>>('/v1/users/forgot-password', request)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Forgot password failed' }
+    }
+  }
+
+  async resetPassword(request: ResetPasswordRequest): Promise<ServiceResponse<{ message: string }>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<{ message: string }>>('/v1/users/reset-password', request)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Reset password failed' }
+    }
+  }
+
+  // Admin endpoints
+  async adminLogin(credentials: UserLogin): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/admins/login', credentials)
+      if (response.data.data?.access_token) {
+        localStorage.setItem('access_token', response.data.data.access_token)
+        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        localStorage.setItem('userRole', 'admin')
+      }
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Admin login failed' }
+    }
+  }
+
+  async getCurrentAdmin(): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<UserOut>>('/v1/admins/me')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get admin' }
+    }
+  }
+
+  async updateAdminProfile(adminData: any): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.put<EJApiResponse<UserOut>>('/v1/admins/me', adminData)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to update admin profile' }
+    }
+  }
+
+  // Agent endpoints
+  async agentLogin(credentials: UserLogin): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/agents/login', credentials)
+      if (response.data.data?.access_token) {
+        localStorage.setItem('access_token', response.data.data.access_token)
+        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        localStorage.setItem('userRole', 'agent')
+      }
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Agent login failed' }
+    }
+  }
+
+  async getCurrentAgent(): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<UserOut>>('/v1/agents/me')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get agent' }
+    }
+  }
+
+  async updateAgentProfile(agentData: any): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.put<EJApiResponse<UserOut>>('/v1/agents/me', agentData)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to update agent profile' }
+    }
+  }
+
+  // Client endpoints
+  async clientLogin(credentials: UserLogin): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/clients/login', credentials)
+      if (response.data.data?.access_token) {
+        localStorage.setItem('access_token', response.data.data.access_token)
+        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        localStorage.setItem('userRole', 'client')
+      }
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Client login failed' }
+    }
+  }
+
+  async getCurrentClient(): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<UserOut>>('/v1/clients/me')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get client' }
+    }
+  }
+
+  async updateClientProfile(clientData: any): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.put<EJApiResponse<UserOut>>('/v1/clients/me', clientData)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to update client profile' }
+    }
+  }
+
+  // Jobs endpoints
+  async createJob(jobData: JobsBase): Promise<ServiceResponse<JobsOut>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<JobsOut>>('/v1/jobss/', jobData)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to create job' }
+    }
+  }
+
+  async getJob(id: string): Promise<ServiceResponse<JobsOut>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<JobsOut>>('/v1/jobss/me', { params: { id } })
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get job' }
+    }
+  }
+
+  async getMyJobs(): Promise<ServiceResponse<JobsOut>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<JobsOut>>('/v1/jobss/me')
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get my jobs' }
+    }
+  }
+
+  async listAdminJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>(`/v1/jobss/admin/${start}/${stop}`)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to list admin jobs' }
+    }
+  }
+
+  async listClientJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>(`/v1/jobss/client/${start}/${stop}`)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to list client jobs' }
+    }
+  }
+
+  async listAgentAvailableJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>(`/v1/jobss/agent/available/${start}/${stop}`)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to list available jobs' }
+    }
+  }
+
+  // Alerts endpoints
+  async getAlerts(userType: 'client' | 'agent' | 'admin'): Promise<ServiceResponse<AlertsOut[]>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<AlertsOut[]>>(`/v1/alertss/${userType}`)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get alerts' }
+    }
+  }
+
+  async getAlert(id: string, userType: 'client' | 'agent' | 'admin'): Promise<ServiceResponse<AlertsOut>> {
+    try {
+      const response = await apiClient.get<EJApiResponse<AlertsOut>>(`/v1/alertss/${userType}/me`, { params: { id } })
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to get alert' }
+    }
+  }
+
+  // User approval endpoints (admin only)
+  async approveUser(userId: string): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.patch<EJApiResponse<null>>(`/v1/users/${userId}/approve`, {})
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to approve user' }
+    }
+  }
+
+  async rejectUser(userId: string, reason?: string): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<null>>(`/v1/users/reject/${userId}`, { reason })
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to reject user' }
+    }
+  }
+
+  // Job approval endpoints (admin only)
+  async approveJob(
+    jobId: string,
+    options?: { adminApproved?: boolean; chargesPercent?: number; taxPercent?: number }
+  ): Promise<ServiceResponse<null>> {
+    try {
+      const body = {
+        admin_approved: options?.adminApproved ?? true,
+        break_down: {
+          Charges: options?.chargesPercent ?? 10,
+          Tax: options?.taxPercent ?? 7,
+        },
+      }
+      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobss/approve/${jobId}`, body)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to approve job' }
+    }
+  }
+
+  async rejectJob(jobId: string, reason?: string): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobs/reject/${jobId}`, { reason })
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to reject job' }
+    }
   }
 }
 
-// User Authentication APIs
-export const userApi = {
-  // User signup
-  signup: async (userData: UserBase): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.post<APIResponse<UserOut>>('/v1/users/signup', userData)
-    return response.data
-  },
-
-  // User login
-  login: async (credentials: UserLogin): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.post<APIResponse<UserOut>>('/v1/users/login', credentials)
-    return response.data
-  },
-
-  // Refresh user tokens
-  refreshToken: async (refreshData: UserRefresh): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.post<APIResponse<UserOut>>('/v1/users/refesh', refreshData)
-    return response.data
-  },
-
-  // Get current user info
-  getCurrentUser: async (): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.get<APIResponse<UserOut>>('/v1/users/me')
-    return response.data
-  },
-
-  // List users (paginated)
-  listUsers: async (start: number, stop: number): Promise<APIResponse<UserOut[]>> => {
-    const response = await apiClient.get<APIResponse<UserOut[]>>(`/v1/users/${start}/${stop}`)
-    return response.data
-  },
-
-  // Delete user account
-  deleteAccount: async (): Promise<APIResponse<null>> => {
-    const response = await apiClient.delete<APIResponse<null>>('/v1/users/account')
-    return response.data
-  },
-
-  // Forgot password
-  forgotPassword: async (request: ForgotPasswordRequest): Promise<APIResponse<{ message: string }>> => {
-    const response = await apiClient.post<APIResponse<{ message: string }>>('/v1/users/forgot-password', request)
-    return response.data
-  },
-
-  // Reset password
-  resetPassword: async (request: ResetPasswordRequest): Promise<APIResponse<{ message: string }>> => {
-    const response = await apiClient.post<APIResponse<{ message: string }>>('/v1/users/reset-password', request)
-    return response.data
-  }
-}
-
-// Agent-specific APIs
-export const agentApi = {
-  // Agent login
-  login: async (credentials: UserLogin): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.post<APIResponse<UserOut>>('/v1/agents/login', credentials)
-    return response.data
-  },
-
-  // Get current agent info
-  getCurrentAgent: async (): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.get<APIResponse<UserOut>>('/v1/agents/me')
-    return response.data
-  },
-
-  // Update agent profile
-  updateAgentProfile: async (agentData: any): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.put<APIResponse<UserOut>>('/v1/agents/me', agentData)
-    return response.data
-  }
-}
-
-// Client-specific APIs
-export const clientApi = {
-  // Client login
-  login: async (credentials: UserLogin): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.post<APIResponse<UserOut>>('/v1/clients/login', credentials)
-    return response.data
-  },
-
-  // Get current client info
-  getCurrentClient: async (): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.get<APIResponse<UserOut>>('/v1/clients/me')
-    return response.data
-  },
-
-  // Update client profile
-  updateClientProfile: async (clientData: any): Promise<APIResponse<UserOut>> => {
-    const response = await apiClient.put<APIResponse<UserOut>>('/v1/clients/me', clientData)
-    return response.data
-  }
-}
-
-// Jobs-specific APIs
-export const jobsApi = {
-  // Create new job (requires client token)
-  createJob: async (jobData: JobsBase): Promise<APIResponse<JobsOut>> => {
-    const response = await apiClient.post<APIResponse<JobsOut>>('/v1/jobs/', jobData)
-    return response.data
-  },
-
-  // Get specific job (requires admin token)
-  getJob: async (id: string): Promise<APIResponse<JobsOut>> => {
-    const response = await apiClient.get<APIResponse<JobsOut>>('/v1/jobs/me', {
-      params: { id }
-    })
-    return response.data
-  },
-
-  // Get current user's jobs (requires admin token)
-  getMyJobs: async (): Promise<APIResponse<JobsOut>> => {
-    const response = await apiClient.get<APIResponse<JobsOut>>('/v1/jobs/me')
-    return response.data
-  },
-
-  // List jobs admin can see (requires admin token)
-  listAdminJobs: async (start: number, stop: number): Promise<APIResponse<JobsOut[]>> => {
-    const response = await apiClient.get<APIResponse<JobsOut[]>>(`/v1/jobs/admin/${start}/${stop}`)
-    return response.data
-  },
-
-  // List jobs client created (requires client token)
-  listClientJobs: async (start: number, stop: number): Promise<APIResponse<JobsOut[]>> => {
-    const response = await apiClient.get<APIResponse<JobsOut[]>>(`/v1/jobs/client/${start}/${stop}`)
-    return response.data
-  },
-
-  // List jobs agent qualifies for (requires agent token)
-  listAgentAvailableJobs: async (start: number, stop: number): Promise<APIResponse<JobsOut[]>> => {
-    const response = await apiClient.get<APIResponse<JobsOut[]>>(`/v1/jobs/agent/available/${start}/${stop}`)
-    return response.data
-  }
-}
-
-// Error handling utilities
+// Custom error class for API errors
 export class ApiError extends Error {
-  public statusCode?: number
-  public data?: any
-
   constructor(
     message: string,
-    statusCode?: number,
-    data?: any
+    public status?: number,
+    public data?: any
   ) {
     super(message)
     this.name = 'ApiError'
-    this.statusCode = statusCode
-    this.data = data
   }
 }
 
-// Response wrapper for better error handling
-export async function handleApiResponse<T>(apiCall: Promise<APIResponse<T>>): Promise<T> {
-  try {
-    const response = await apiCall
-    if (response.status_code >= 200 && response.status_code < 300) {
-      if (response.data === null) {
-        throw new ApiError('API returned null data', response.status_code)
-      }
-      return response.data
-    } else {
-      throw new ApiError(response.detail || 'API request failed', response.status_code, response.data)
-    }
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error
-    }
-    if (error instanceof Error) {
-      throw new ApiError(error.message)
-    }
-    throw new ApiError('Unknown API error occurred')
+// Response handler utility
+export function handleApiResponse<T>(response: ServiceResponse<T>): T {
+  if (response.success) {
+    return response.data as T
+  } else {
+    throw new ApiError(response.error || 'API request failed')
   }
 }
 
-// Authentication state management
-export class AuthManager {
-  private static instance: AuthManager
-
-  static getInstance(): AuthManager {
-    if (!AuthManager.instance) {
-      AuthManager.instance = new AuthManager()
-    }
-    return AuthManager.instance
-  }
-
-  // Store authentication data
-  storeAuthData(userData: UserOut): void {
-    if (userData.access_token) {
-      localStorage.setItem('erajob_auth_token', userData.access_token)
-    }
-    if (userData.refresh_token) {
-      localStorage.setItem('refresh_token', userData.refresh_token)
-    }
-    if (userData.role) {
-      localStorage.setItem('userRole', JSON.stringify(userData.role))
-    }
-    if (userData.id) {
-      localStorage.setItem('userId', userData.id)
-    }
-  }
-
-  // Clear authentication data
-  clearAuthData(): void {
-    localStorage.removeItem('erajob_auth_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('userId')
-  }
-
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem('erajob_auth_token')
-  }
-
-  // Get current user role
-  getUserRole(): string | null {
-    const roleData = localStorage.getItem('userRole')
-    if (roleData) {
-      try {
-        const role = JSON.parse(roleData)
-        return typeof role === 'string' ? role : role.type || role
-      } catch {
-        return roleData
-      }
-    }
-    return null
-  }
-
-  // Get user ID
-  getUserId(): string | null {
-    return localStorage.getItem('userId')
-  }
-}
-
-export const authManager = AuthManager.getInstance()
-
-// Export all APIs for easy import
+// API object structure for composable compatibility
 export const api = {
-  health: healthApi,
-  user: userApi,
-  agent: agentApi,
-  client: clientApi,
-  jobs: jobsApi,
-  auth: authManager,
-  handleResponse: handleApiResponse,
-  ApiError
+  user: {
+    signup: (userData: UserBase) => apiService.signup(userData),
+    login: (credentials: UserLogin) => apiService.login(credentials),
+    refreshToken: (refreshData: UserRefresh) => apiService.refreshToken(refreshData),
+    getCurrentUser: () => apiService.getCurrentUser(),
+    listUsers: (start: number, stop: number) => apiService.listUsers(start, stop),
+    deleteAccount: () => apiService.deleteAccount(),
+    forgotPassword: (request: ForgotPasswordRequest) => apiService.forgotPassword(request),
+    resetPassword: (request: ResetPasswordRequest) => apiService.resetPassword(request),
+    approveUser: (userId: string) => apiService.approveUser(userId),
+    rejectUser: (userId: string, reason?: string) => apiService.rejectUser(userId, reason)
+  },
+  admin: {
+    login: (credentials: UserLogin) => apiService.adminLogin(credentials),
+    getCurrentUser: () => apiService.getCurrentAdmin(),
+    updateProfile: (adminData: any) => apiService.updateAdminProfile(adminData)
+  },
+  agent: {
+    login: (credentials: UserLogin) => apiService.agentLogin(credentials),
+    getCurrentUser: () => apiService.getCurrentAgent(),
+    updateProfile: (agentData: any) => apiService.updateAgentProfile(agentData)
+  },
+  client: {
+    login: (credentials: UserLogin) => apiService.clientLogin(credentials),
+    getCurrentUser: () => apiService.getCurrentClient(),
+    updateProfile: (clientData: any) => apiService.updateClientProfile(clientData)
+  },
+  jobs: {
+    createJob: (jobData: JobsBase) => apiService.createJob(jobData),
+    getJob: (id: string) => apiService.getJob(id),
+    getMyJobs: () => apiService.getMyJobs(),
+    listAdminJobs: (start: number, stop: number) => apiService.listAdminJobs(start, stop),
+    listClientJobs: (start: number, stop: number) => apiService.listClientJobs(start, stop),
+    listAgentAvailableJobs: (start: number, stop: number) => apiService.listAgentAvailableJobs(start, stop),
+    approveJob: (jobId: string) => apiService.approveJob(jobId),
+    rejectJob: (jobId: string, reason?: string) => apiService.rejectJob(jobId, reason)
+  },
+  alerts: {
+    getAlerts: (userType: 'client' | 'agent' | 'admin') => apiService.getAlerts(userType),
+    getAlert: (id: string, userType: 'client' | 'agent' | 'admin') => apiService.getAlert(id, userType)
+  },
+  health: {
+    check: () => apiService.checkHealth()
+  },
+  auth: {
+    storeAuthData: (userData: UserOut) => {
+      if (userData.access_token) {
+        localStorage.setItem('access_token', userData.access_token)
+        localStorage.setItem('refresh_token', userData.refresh_token || '')
+        localStorage.setItem('userInfo', JSON.stringify(userData))
+        localStorage.setItem('userRole', String(userData.role) || 'client')
+      }
+    },
+    clearAuthData: () => {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('user-token')
+      localStorage.removeItem('userInfo')
+      localStorage.removeItem('userRole')
+    }
+  }
 }
+
+// Export singleton instance
+export const apiService = new ApiService()
+
+// Export axios instance for direct use if needed
+export { apiClient }
+
+// Re-export types for convenience
+export type {
+  EJApiResponse,
+  UserBase,
+  UserLogin,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  UserRefresh,
+  UserOut,
+  JobTimeline,
+  JobCategories,
+  Skills,
+  JobsBase,
+  JobsOut,
+  AlertsOut,
+  ValidationError,
+  HTTPValidationError,
+  ServiceResponse
+} from '../types/api/openapi'

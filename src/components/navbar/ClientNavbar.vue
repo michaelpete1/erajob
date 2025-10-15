@@ -2,7 +2,10 @@
   <nav class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm shadow-sm z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between min-h-[64px]">
-        <!-- Logo/Brand Removed -->
+        <!-- Logo/Brand placeholder (assuming it's elsewhere or removed intentionally) -->
+        <div class="md:hidden">
+          <span class="text-lg font-bold text-gray-800">Client Portal</span>
+        </div>
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-1 flex-1 justify-center px-4">
@@ -14,12 +17,13 @@
             <span>Projects</span>
           </router-link>
           
+          <!-- FIX: Scoped to /client/proposals -->
           <router-link 
-            :to="'/proposals'" 
-            :class="navLinkClass('/proposals')"
+            :to="'/client/proposals'" 
+            :class="navLinkClass('/client/proposals')"
             class="flex items-center space-x-2"
           >
-            <DocumentTextIcon :class="navIconClass('/proposals')" />
+            <DocumentTextIcon :class="navIconClass('/client/proposals')" />
             <span>Proposals</span>
           </router-link>
           
@@ -45,7 +49,8 @@
             :to="'/client/settings'" 
             :class="navLinkClass('/client/settings')"
           >
-            <Cog6ToothIcon :class="['w-6 h-6', navIconClass('/client/settings').filter(c => !c.includes('w-') && !c.includes('h-')).join(' ')]" />
+            <!-- NOTE: Removed array filter logic for simplicity, relying on navIconClass for sizing -->
+            <Cog6ToothIcon :class="navIconClass('/client/settings')" />
             <span>Settings</span>
           </router-link>
         </div>
@@ -66,7 +71,7 @@
         <div class="md:hidden">
           <button 
             @click="toggleMobileMenu" 
-            class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-teal"
+            class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-teal min-h-[44px] min-w-[44px] touch-manipulation"
             aria-expanded="false"
           >
             <span class="sr-only">Open main menu</span>
@@ -97,6 +102,15 @@
           <span>Projects</span>
         </router-link>
         
+        <!-- NEW: Added Proposals to Mobile Menu and Scoped -->
+        <router-link 
+          :to="'/client/proposals'" 
+          :class="mobileNavLinkClass('/client/proposals')"
+          @click="closeMobileMenu"
+        >
+          <DocumentTextIcon :class="mobileNavIconClass('/client/proposals')" />
+          <span>Proposals</span>
+        </router-link>
         
         <router-link 
           :to="'/client/projects/create'" 
@@ -123,7 +137,7 @@
           :class="mobileNavLinkClass('/client/settings')"
           @click="closeMobileMenu"
         >
-          <Cog6ToothIcon :class="['w-6 h-6', mobileNavIconClass('/client/settings').filter(c => !c.includes('w-') && !c.includes('h-')).join(' ')]" />
+          <Cog6ToothIcon :class="mobileNavIconClass('/client/settings')" />
           <span>Settings</span>
         </router-link>
 
@@ -164,6 +178,7 @@ const userRole = ref<string>('')
 const mobileMenuOpen = ref<boolean>(false)
 
 onMounted(() => {
+  // NOTE: This assumes userRole is correctly managed in App.vue based on localStorage
   userRole.value = localStorage.getItem('userRole') || ''
 })
 
@@ -184,7 +199,8 @@ function closeMobileMenu() {
 }
 
 function navLinkClass(path: string) {
-  const isActive = route.path === path
+  // FIX: Use startsWith to handle nested routes (e.g., /client/settings/profile)
+  const isActive = route.path.startsWith(path)
   return [
     'flex',
     'items-center',
@@ -196,6 +212,10 @@ function navLinkClass(path: string) {
     'font-medium',
     'transition-colors',
     'duration-200',
+    'whitespace-nowrap',
+    'min-h-[40px]',
+    'touch-manipulation',
+    'flex-shrink-0',
     isActive 
       ? 'bg-brand-teal/10 text-brand-teal' 
       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -203,7 +223,7 @@ function navLinkClass(path: string) {
 }
 
 function navIconClass(path: string) {
-  const isActive = route.path === path
+  const isActive = route.path.startsWith(path)
   return [
     'h-5',
     'w-5',
@@ -212,7 +232,7 @@ function navIconClass(path: string) {
 }
 
 function mobileNavLinkClass(path: string) {
-  const isActive = route.path === path
+  const isActive = route.path.startsWith(path)
   return [
     'flex',
     'items-center',
@@ -224,6 +244,9 @@ function mobileNavLinkClass(path: string) {
     'font-medium',
     'transition-colors',
     'duration-200',
+    'whitespace-nowrap',
+    'min-h-[48px]',
+    'touch-manipulation',
     isActive 
       ? 'bg-brand-teal/10 text-brand-teal' 
       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -231,7 +254,7 @@ function mobileNavLinkClass(path: string) {
 }
 
 function mobileNavIconClass(path: string) {
-  const isActive = route.path === path
+  const isActive = route.path.startsWith(path)
   return [
     'h-6',
     'w-6',

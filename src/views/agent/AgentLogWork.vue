@@ -160,21 +160,109 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
-const workLogs = ref<any[]>([])
+// Work logs data with proper typing
+interface WorkLog {
+  id: string
+  title: string
+  hours: number
+  date: string
+  comment: string
+  files?: any[]
+  projectId?: string
+  gigId?: string
+  status: 'draft' | 'submitted' | 'approved'
+}
 
-// Load work logs from localStorage
-onMounted(() => {
+// Reactive data
+const workLogs = ref<WorkLog[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Computed properties
+const totalHours = computed(() => {
+  return workLogs.value.reduce((total, log) => total + log.hours, 0)
+})
+// Load work logs from API or localStorage
+onMounted(async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    // Try to load from API first (in a real implementation)
+    // For now, we'll simulate API call with localStorage fallback
+    await loadWorkLogsFromAPI()
+
+    if (workLogs.value.length === 0) {
+      // Fallback to localStorage if API returns empty
+      loadWorkLogsFromLocalStorage()
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to load work logs'
+    console.error('Error loading work logs:', errorMessage)
+    error.value = errorMessage
+
+    // Fallback to localStorage on error
+    loadWorkLogsFromLocalStorage()
+  } finally {
+    loading.value = false
+  }
+})
+
+// Simulate API call for work logs (replace with real API call)
+const loadWorkLogsFromAPI = async () => {
+  // In a real implementation, this would call:
+  // const result = await workLogsService.getMyWorkLogs()
+
+  // For now, simulate successful API response
+  const mockApiResponse = [
+    {
+      id: '1',
+      title: 'Content Writing for TechCorp',
+      hours: 8,
+      date: '2024-01-15',
+      comment: 'Completed blog post about React best practices',
+      projectId: 'proj_1',
+      gigId: 'gig_1',
+      status: 'submitted' as const,
+      files: []
+    },
+    {
+      id: '2',
+      title: 'UI Design for Mobile App',
+      hours: 6,
+      date: '2024-01-14',
+      comment: 'Created wireframes and mockups for user dashboard',
+      projectId: 'proj_2',
+      gigId: 'gig_2',
+      status: 'approved' as const,
+      files: [
+        { name: 'wireframes.png', data: 'mock-image-data' },
+        { name: 'mockups.jpg', data: 'mock-image-data-2' }
+      ]
+    }
+  ]
+
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  workLogs.value = mockApiResponse
+  console.log('Loaded work logs from API simulation')
+}
+
+// Fallback to localStorage
+const loadWorkLogsFromLocalStorage = () => {
   try {
     const logs = localStorage.getItem('workLogs')
     if (logs) {
       workLogs.value = JSON.parse(logs)
+      console.log('Loaded work logs from localStorage')
     }
   } catch (e) {
-    console.error('Error loading work logs:', e)
+    console.error('Error loading work logs from localStorage:', e)
   }
-})
+}
 
 // Get all images from all work logs
 const getAllImages = () => {

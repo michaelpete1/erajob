@@ -33,7 +33,24 @@ const routes: RouteRecordRaw[] = [
   { path: '/client/profile', name: 'client-profile', component: () => import('../views/client/ClientProfile.vue') },
   // Agent flow
   { path: '/agent/welcome', name: 'agent-welcome', component: () => import('../views/agent/AgentWelcome.vue') },
-  { path: '/agent/services', name: 'agent-services', component: () => import('../views/agent/AgentServices.vue') },
+  {
+    path: '/agent/services',
+    name: 'agent-services',
+    component: () => import('../views/agent/AgentServices.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  {
+    path: '/agent/congrats',
+    name: 'agent-congratulations',
+    component: () => import('../views/agent/AgentCongrats.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  {
+    path: '/client-dashboard',
+    name: 'client-dashboard',
+    component: () => import('../views/client/ClientDashboard.vue'),
+    meta: { requiresAuth: true, role: 'client' }
+  },
   { path: '/agent/additional', name: 'agent-additional', component: () => import('../views/agent/AgentAdditional.vue') },
   { path: '/agent/explore-gigs', name: 'agent-explore-gigs', component: () => import('../views/agent/AgentExploreGigs.vue') },
   { path: '/agent/gigs-listing', name: 'agent-gigs-listing', component: () => import('../views/agent/AgentProjectListing.vue') },
@@ -52,11 +69,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/agent/proposals', name: 'agent-proposals', component: () => import('../views/Proposals.vue') },
   // removed duplicate/placeholder logging routes; use /agent/logs
   // Admin flow
-  { path: '/admin/job-approval', name: 'admin-job-approval', component: () => import('../views/admin/AdminJobApproval.vue') },
-  { path: '/admin/notifications', name: 'admin-notifications', component: () => import('../views/admin/AdminNotifications.vue') },
-  { path: '/admin/profile', name: 'admin-profile', component: () => import('../views/admin/AdminProfile.vue') },
-  { path: '/admin/job/:id', name: 'admin-job-details', component: () => import('../views/admin/AdminJobDetails.vue') },
-  { path: '/admin/job/:id/reject', name: 'admin-job-rejection', component: () => import('../views/admin/AdminJobRejection.vue') },
+  { path: '/admin/job-approval', name: 'admin-job-approval', component: () => import('../views/admin/AdminJobApproval.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/notifications', name: 'admin-notifications', component: () => import('../views/admin/AdminNotifications.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/profile', name: 'admin-profile', component: () => import('../views/admin/AdminProfile.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/job/:id', name: 'admin-job-details', component: () => import('../views/admin/AdminJobDetails.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/job/:id/reject', name: 'admin-job-rejection', component: () => import('../views/admin/AdminJobRejection.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/user-approvals', name: 'admin-user-approvals', component: () => import('../views/admin/AdminUserApprovals.vue'), meta: { requiresAuth: true, role: 'admin' } },
   // Utility pages
   { path: '/notifications', name: 'notifications', component: () => import('../views/Notifications.vue') },
   { 
@@ -80,42 +98,69 @@ const routes: RouteRecordRaw[] = [
   { path: '/profile-settings', name: 'profile-settings', component: () => import('../views/ProfileSettings.vue') },
   { path: '/terms-and-conditions', name: 'terms-and-conditions', component: () => import('../views/TermsAndConditions.vue') },
 ]
-
 const router = createRouter({
   history: createWebHistory(),
   routes,
 })
 
-// Navigation guard to check authentication and user role
 router.beforeEach(async (to, _from, next) => {
-  // For testing purposes - bypass authentication
-  console.log('Testing mode: Bypassing authentication check')
-  const userRole = to.path.startsWith('/client') ? 'client' : to.path.startsWith('/agent') ? 'agent' : 'admin'
-  
-  // For testing purposes - page arrays removed (unused)
-  
-  // Auth pages that don't require authentication
   const authPages = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/role-select', '/admin/sign-in']
-  
-  // Public pages that don't require authentication
   const publicPages = ['/', '/terms-and-conditions']
-  
-  // Skip auth check for auth pages and public pages
-  if (authPages.includes(to.path) || publicPages.some(page => to.path.startsWith(page))) {
+
+  // Always allow exact public pages (so '/' shows the homepage)
+  const isPublic = publicPages.includes(to.path)
+  const isAuthPage = authPages.includes(to.path)
+  if (isPublic) {
     next()
     return
   }
-  
-  // For testing purposes - skip authentication redirect
-  console.log('Testing mode: Skipping authentication redirect')
-  
-  // For testing purposes - skip role-based access checks
-  console.log('Testing mode: Skipping role-based access checks')
-  console.log('Accessing route:', to.path, 'with role:', userRole)
-  
-  // For testing purposes - skip role select redirect
-  console.log('Testing mode: Skipping role select redirect')
-  
+
+  const token = localStorage.getItem('access_token')
+  const role = localStorage.getItem('userRole') || ''
+
+  // Allow signup flow pages for unauthenticated users if basic signup data exists
+  const hasSignupData = !!localStorage.getItem('signupBasicData')
+  const signupPages = ['/client/welcome', '/client/services', '/client/congrats', '/agent/welcome', '/agent/services', '/agent/congrats', '/agent/welcome-back']
+  if (!token && hasSignupData && signupPages.includes(to.path)) {
+    next()
+    return
+  }
+
+  // If already authenticated, prevent going to sign-in pages; send to role home
+  if (token && authPages.includes(to.path)) {
+    if (role === 'admin') return next('/admin/job-approval')
+    if (role === 'client') return next({ name: 'client-dashboard' })
+    if (role === 'agent') return next({ name: 'agent-services' })
+    return next('/')
+  }
+
+  if (!token) {
+    if (isAuthPage) {
+      next()
+      return
+    }
+    // Redirect to the appropriate sign-in based on the target area, avoiding same-path redirects
+    if (to.path.startsWith('/admin')) {
+      if (to.path !== '/admin/sign-in') next('/admin/sign-in')
+      else next()
+    } else {
+      if (to.path !== '/sign-in') next('/sign-in')
+      else next()
+    }
+    return
+  }
+
+  const requiredRole = (to.meta as any)?.role as string | undefined
+  if (requiredRole && role !== requiredRole) {
+    // Role mismatch; keep user inside their current role area instead of signing out
+    if (role === 'admin') return next('/admin/job-approval')
+    if (role === 'client') return next({ name: 'client-dashboard' })
+    if (role === 'agent') return next({ name: 'agent-services' })
+    // Fallback
+    next('/sign-in')
+    return
+  }
+
   next()
 })
 

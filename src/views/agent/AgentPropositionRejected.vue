@@ -10,49 +10,70 @@
     <div class="absolute bottom-20 right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4" />
 
     <div class="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden animate-fade-up text-center p-8">
-      <!-- Rejection Icon -->
-      <div class="mb-6">
-        <div class="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-          <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+
+      <!-- Error State -->
+      <div v-if="error && !loading" class="text-center py-12">
+        <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Proposal</h3>
+        <p class="text-gray-500">{{ error }}</p>
       </div>
 
-      <!-- Rejection Message -->
-      <h1 class="text-2xl font-bold text-gray-800 mb-4">Your Proposition Was Rejected</h1>
-      
-      <p class="text-gray-600 mb-6">
-        We're sorry, but the client has decided not to move forward with your proposition at this time. Don't be discouraged - keep applying for other opportunities!
-      </p>
-
-      <!-- Job Details -->
-      <div v-if="gigDetails" class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-        <h3 class="font-semibold text-red-600 mb-2">Job Details</h3>
-        <p class="font-medium text-gray-800">{{ gigDetails.title }}</p>
-        <p class="text-sm text-gray-600">Budget: ${{ gigDetails.price }}/hr</p>
-        <p class="text-sm text-gray-600">Client: {{ gigDetails.client }}</p>
+      <!-- Loading State -->
+      <div v-if="loading" class="text-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+        <p class="text-gray-600">Loading proposal details...</p>
       </div>
 
-      <!-- Rejection Reasons -->
-      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
-        <h3 class="font-semibold text-yellow-800 mb-2">Possible Reasons</h3>
-        <ul class="text-sm text-yellow-700 space-y-1">
-          <li>• Not relevant to the topic</li>
-          <li>• Lacks clarity or detail</li>
-          <li>• Contains inaccurate information</li>
-          <li>• Not actionable / no value added</li>
-        </ul>
-      </div>
+      <!-- Rejection Content (only show when loaded and no error) -->
+      <div v-if="gigDetails && !loading && !error">
+        <!-- Rejection Icon -->
+        <div class="mb-6">
+          <div class="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </div>
+        </div>
 
-      <!-- Action Buttons -->
-      <div class="space-y-3">
-        <button @click="findMoreJobs" class="w-full bg-brand-teal text-white py-3 rounded-full font-semibold hover:bg-teal-600 transition-colors duration-200">
-          Find More Jobs
-        </button>
-        <button @click="improveProposition" class="w-full bg-gray-100 text-gray-700 py-3 rounded-full font-semibold hover:bg-gray-200 transition-colors duration-200">
-          Improve Your Proposition
-        </button>
+        <!-- Rejection Message -->
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Your Proposition Was Rejected</h1>
+
+        <p class="text-gray-600 mb-6">
+          We're sorry, but the client has decided not to move forward with your proposition at this time. Don't be discouraged - keep applying for other opportunities!
+        </p>
+
+        <!-- Job Details -->
+        <div v-if="gigDetails" class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+          <h3 class="font-semibold text-red-600 mb-2">Job Details</h3>
+          <p class="font-medium text-gray-800">{{ gigDetails.title }}</p>
+          <p class="text-sm text-gray-600">Budget: ${{ gigDetails.price }}/hr</p>
+          <p class="text-sm text-gray-600">Client: {{ gigDetails.client }}</p>
+        </div>
+
+        <!-- Rejection Reasons -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+          <h3 class="font-semibold text-yellow-800 mb-2">Possible Reasons</h3>
+          <ul class="text-sm text-yellow-700 space-y-1">
+            <li>• Not relevant to the topic</li>
+            <li>• Lacks clarity or detail</li>
+            <li>• Contains inaccurate information</li>
+            <li>• Not actionable / no value added</li>
+          </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+          <button @click="findMoreJobs" class="w-full bg-brand-teal text-white py-3 rounded-full font-semibold hover:bg-teal-600 transition-colors duration-200">
+            Find More Jobs
+          </button>
+          <button @click="improveProposition" class="w-full bg-gray-100 text-gray-700 py-3 rounded-full font-semibold hover:bg-gray-200 transition-colors duration-200">
+            Improve Your Proposition
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -60,20 +81,83 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { jobsService } from '../../services/jobsService'
 
 const router = useRouter()
-const gigDetails = ref<any>(null)
+const route = useRoute()
 
-onMounted(() => {
-  // Retrieve gig details from localStorage
-  try {
-    const stored = localStorage.getItem('selectedGig')
-    if (stored) {
-      gigDetails.value = JSON.parse(stored)
+const gigDetails = ref<any>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Simulate API call for updating proposal status
+const updateProposalStatus = async (proposalId: string, status: 'accepted' | 'rejected'): Promise<{ success: boolean; data?: any; error?: string }> => {
+  // In a real implementation, this would call:
+  // const result = await proposalsService.updateProposalStatus(proposalId, status)
+
+  // For now, simulate successful API response
+  const mockApiResponse = {
+    success: true,
+    data: {
+      id: proposalId,
+      status: status,
+      updatedAt: new Date().toISOString()
     }
-  } catch (e) {
-    // ignore storage errors
+  }
+
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  return mockApiResponse
+}
+
+// Load gig data and update proposal status
+onMounted(async () => {
+  loading.value = true
+  error.value = null
+
+  try {
+    // Get proposal ID from route or localStorage
+    const proposalId = route.params.id as string || localStorage.getItem('currentProposalId')
+
+    if (proposalId) {
+      // Update proposal status to rejected
+      const statusResult = await updateProposalStatus(proposalId, 'rejected')
+
+      if (statusResult.success) {
+        console.log('Proposal status updated to rejected')
+      }
+    }
+
+    // Load gig details from API or localStorage
+    try {
+      const stored = localStorage.getItem('selectedGig')
+      if (stored) {
+        gigDetails.value = JSON.parse(stored)
+        console.log('Loaded gig details from localStorage')
+      }
+    } catch (e) {
+      console.error('Error loading gig details from localStorage:', e)
+    }
+
+    // If no gig details in localStorage, try to fetch from API using proposal ID
+    if (!gigDetails.value && proposalId) {
+      try {
+        const jobResult = await jobsService.getJobById(proposalId)
+        if (jobResult.success && jobResult.data) {
+          gigDetails.value = jobResult.data
+          console.log('Loaded gig details from API')
+        }
+      } catch (apiError) {
+        console.error('Error loading gig details from API:', apiError)
+      }
+    }
+  } catch (caughtError) {
+    console.error('Error in onMounted:', caughtError)
+    error.value = 'Failed to load proposal details'
+  } finally {
+    loading.value = false
   }
 })
 

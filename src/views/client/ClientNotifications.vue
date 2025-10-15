@@ -61,262 +61,287 @@
     </div>
 
     <main class="px-3 sm:px-4 md:px-6 py-4 sm:py-6 pb-24 sm:pb-28 max-w-4xl mx-auto">
-      <!-- Notifications List -->
-      <div v-if="filteredNotifications.length > 0">
-        <div v-for="notification in filteredNotifications" :key="notification.id" class="mb-4 sm:mb-6">
-          <!-- Priority Notification -->
-          <section 
-            v-if="notification.type === 'priority'" 
-            class="bg-red-50 border-l-4 border-red-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-          >
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-400 flex items-center justify-center flex-shrink-0">
-                <span class="text-white text-lg sm:text-xl">🔥</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between mb-1 sm:mb-2">
-                  <p class="text-xs sm:text-sm text-red-600 font-semibold">{{ notification.time }}</p>
-                  <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
-                <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
-                <div class="flex flex-wrap gap-2 sm:gap-3">
-                  <button 
-                    v-for="action in notification.actions" 
-                    :key="action"
-                    @click="handleNotificationAction(notification.id, action)"
-                    :class="[
-                      'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 touch-manipulation',
-                      action === 'Accept' ? 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
-                    ]"
-                  >
-                    {{ action }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
+      
 
-          <!-- Project Update Notification -->
-          <section 
-            v-else-if="notification.type === 'project'" 
-            class="bg-blue-50 border-l-4 border-blue-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-          >
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-400 flex items-center justify-center flex-shrink-0">
-                <span class="text-white text-lg sm:text-xl">📋</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between mb-1 sm:mb-2">
-                  <p class="text-xs sm:text-sm text-blue-600 font-semibold">{{ notification.time }}</p>
-                  <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
-                <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
-                <div class="flex flex-wrap gap-2 sm:gap-3">
-                  <button 
-                    v-for="action in notification.actions" 
-                    :key="action"
-                    @click="handleNotificationAction(notification.id, action)"
-                    class="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 touch-manipulation"
-                  >
-                    {{ action }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Agent Response Notification -->
-          <section 
-            v-else-if="notification.type === 'agent'" 
-            class="bg-green-50 border-l-4 border-green-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-          >
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-400 flex items-center justify-center flex-shrink-0">
-                <span class="text-white text-lg sm:text-xl">👤</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between mb-1 sm:mb-2">
-                  <p class="text-xs sm:text-sm text-green-600 font-semibold">{{ notification.time }}</p>
-                  <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
-                <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
-                <div class="flex flex-wrap gap-2 sm:gap-3">
-                  <button 
-                    v-for="action in notification.actions" 
-                    :key="action"
-                    @click="handleNotificationAction(notification.id, action)"
-                    class="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-green-600 active:bg-green-700 transition-all duration-200 touch-manipulation"
-                  >
-                    {{ action }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- General Notification -->
-          <section 
-            v-else 
-            class="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-          >
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                <span class="text-white text-lg sm:text-xl">📢</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between mb-1 sm:mb-2">
-                  <p class="text-xs sm:text-sm text-gray-500 font-semibold">{{ notification.time }}</p>
-                  <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
-                <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                <p class="text-sm text-gray-700">{{ notification.description }}</p>
-              </div>
-            </div>
-          </section>
-        </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
       </div>
 
-      <!-- Empty State -->
-      <div v-else class="text-center py-12 sm:py-16">
-        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 bg-gray-200 rounded-full flex items-center justify-center">
-          <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+      <!-- Error State -->
+      <div v-if="error && !loading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
+          <p class="text-red-700 font-medium">{{ error }}</p>
         </div>
-        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">No notifications</h3>
-        <p class="text-sm sm:text-base text-gray-500 max-w-md mx-auto">You're all caught up! Check back later for new updates about your projects and agents.</p>
       </div>
+
+      <!-- Notifications Content (only show when not loading and no error) -->
+      <div v-if="!loading && !error">
+        <!-- Notifications List -->
+        <div v-if="filteredNotifications.length > 0">
+          <div v-for="notification in filteredNotifications" :key="notification.id" class="mb-4 sm:mb-6">
+            <!-- Priority Notification -->
+            <section
+              v-if="notification.type === 'priority'"
+              class="bg-red-50 border-l-4 border-red-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">🔥</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-red-600 font-semibold">{{ formatDate(notification.created_at) }}</p>
+                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                      v-for="action in notification.actions"
+                      :key="action"
+                      @click="handleNotificationActionClick(notification.id, action)"
+                      :class="[
+                        'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 touch-manipulation',
+                        action === 'Review' ? 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                      ]"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Project Update Notification -->
+            <section
+              v-else-if="notification.type === 'project'"
+              class="bg-blue-50 border-l-4 border-blue-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">📋</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-blue-600 font-semibold">{{ formatDate(notification.created_at) }}</p>
+                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                      v-for="action in notification.actions"
+                      :key="action"
+                      @click="handleNotificationActionClick(notification.id, action)"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 touch-manipulation"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Agent Response Notification -->
+            <section
+              v-else-if="notification.type === 'agent'"
+              class="bg-green-50 border-l-4 border-green-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">👤</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-green-600 font-semibold">{{ formatDate(notification.created_at) }}</p>
+                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                      v-for="action in notification.actions"
+                      :key="action"
+                      @click="handleNotificationActionClick(notification.id, action)"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-green-600 active:bg-green-700 transition-all duration-200 touch-manipulation"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- General Notification -->
+            <section
+              v-else
+              class="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">📢</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-gray-500 font-semibold">{{ formatDate(notification.created_at) }}</p>
+                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700">{{ notification.description }}</p>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else class="text-center py-12 sm:py-16">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 bg-gray-200 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">No notifications</h3>
+          <p class="text-sm sm:text-base text-gray-500 max-w-md mx-auto">You're all caught up! Check back later for new updates about your projects and agents.</p>
+        </div>
+      </div>
+      
     </main>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { useNotifications } from '../../composables/useNotifications'
+
+// Utility to format date
+function formatDate(timestamp: number | string): string {
+  const date = new Date(Number(timestamp))
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 // Filter and sort state
 const activeFilter = ref('all')
 const sortBy = ref('newest')
 
+const { notifications, loading, error, getNotifications, markAsRead, markAllAsRead, deleteNotification, handleNotificationAction } = useNotifications()
+
 // Filters
 const filters = ref([
-  { id: 'all', name: 'All', count: 12 },
-  { id: 'priority', name: 'Priority', count: 2 },
-  { id: 'project', name: 'Projects', count: 5 },
-  { id: 'agent', name: 'Agents', count: 3 },
-  { id: 'general', name: 'General', count: 2 }
+  { id: 'all', name: 'All', count: 0 },
+  { id: 'priority', name: 'Priority', count: 0 },
+  { id: 'project', name: 'Projects', count: 0 },
+  { id: 'agent', name: 'Agents', count: 0 },
+  { id: 'general', name: 'General', count: 0 }
 ])
 
-// Mock notifications data
-const notifications = ref([
-  {
-    id: 1,
-    type: 'priority',
-    title: 'Urgent: Project Deadline Approaching',
-    description: 'Your UI/UX Revamp project deadline is in 2 days. Please review the final submissions from your agents.',
-    time: '2 hours ago',
-    actions: ['Review', 'Dismiss']
-  },
-  {
-    id: 2,
-    type: 'project',
-    title: 'New Agent Applied to Your Project',
-    description: 'Sarah Johnson has applied to work on your E-commerce Development project.',
-    time: '5 hours ago',
-    actions: ['View Profile', 'Message']
-  },
-  {
-    id: 3,
-    type: 'agent',
-    title: 'Agent Completed Milestone',
-    description: 'Jenny Wilson has completed the initial design phase for your UI/UX Revamp project.',
-    time: '1 day ago',
-    actions: ['Review Work', 'Approve']
-  },
-  {
-    id: 4,
-    type: 'general',
-    title: 'Welcome to EraJob!',
-    description: 'Thank you for joining our platform. Start by creating your first project or exploring available agents.',
-    time: '3 days ago',
-    actions: []
-  },
-  {
-    id: 5,
-    type: 'project',
-    title: 'Project Update Required',
-    description: 'Please provide feedback on the latest deliverables for your Mobile App Development project.',
-    time: '1 week ago',
-    actions: ['Provide Feedback', 'View Details']
+// Update filter counts based on notifications data
+const updateFilterCounts = () => {
+  if (notifications.value.length === 0) return
+
+  const counts = {
+    all: notifications.value.length,
+    priority: notifications.value.filter(n => n.type === 'priority').length,
+    project: notifications.value.filter(n => n.type === 'project').length,
+    agent: notifications.value.filter(n => n.type === 'agent').length,
+    general: notifications.value.filter(n => n.type === 'general').length
   }
-])
+
+  filters.value.forEach(filter => {
+    filter.count = counts[filter.id as keyof typeof counts] || 0
+  })
+}
 
 // Computed filtered notifications
 const filteredNotifications = computed(() => {
-  let filtered = notifications.value
-  
+  if (notifications.value.length === 0) return []
+
+  let filtered = [...notifications.value]
+
   // Apply filter
   if (activeFilter.value !== 'all') {
     filtered = filtered.filter(notification => notification.type === activeFilter.value)
   }
-  
+
   // Apply sorting
   filtered.sort((a, b) => {
     if (sortBy.value === 'newest') {
-      return new Date(b.time) - new Date(a.time)
+      return b.created_at - a.created_at
     } else if (sortBy.value === 'oldest') {
-      return new Date(a.time) - new Date(b.time)
+      return a.created_at - b.created_at
     } else if (sortBy.value === 'priority') {
       const priorityOrder = { priority: 0, project: 1, agent: 2, general: 3 }
       return priorityOrder[a.type] - priorityOrder[b.type]
     }
     return 0
   })
-  
+
   return filtered
 })
 
 // Methods
-const markAllAsRead = () => {
-  console.log('Marking all notifications as read')
-  // In a real app, this would update the backend
-  alert('All notifications marked as read!')
+const handleMarkAllAsRead = async () => {
+  const result = await markAllAsRead()
+  if (result.success) {
+    // Update filter counts after marking all as read
+    updateFilterCounts()
+  }
 }
 
-const removeNotification = (id) => {
-  notifications.value = notifications.value.filter(notification => notification.id !== id)
-  console.log('Removed notification:', id)
+const handleRemoveNotification = async (id) => {
+  const result = await deleteNotification(id)
+  if (result.success) {
+    // Update filter counts after deletion
+    updateFilterCounts()
+  }
 }
 
-const handleNotificationAction = (notificationId, action) => {
-  console.log('Handling action:', action, 'for notification:', notificationId)
-  // In a real app, this would handle different actions
-  alert(`Action "${action}" executed for notification ${notificationId}`)
+const handleNotificationActionClick = async (notificationId, action) => {
+  const result = await handleNotificationAction(notificationId, action)
+  if (result.success) {
+    // Update filter counts after action
+    updateFilterCounts()
+  }
 }
 
 // Load notifications on mount
-onMounted(() => {
-  console.log('ClientNotifications component mounted')
-  // In a real app, this would fetch notifications from the backend
+onMounted(async () => {
+  try {
+    await getNotifications()
+    updateFilterCounts()
+  } catch (error) {
+    console.error('Error loading notifications:', error)
+  }
 })
+
+// Watch for notifications changes to update filter counts
+watch(notifications, updateFilterCounts, { immediate: true })
 </script>
 
 <style scoped>

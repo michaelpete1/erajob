@@ -2,16 +2,15 @@
 import { ref, onErrorCaptured, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AgentNavbar from './components/AgentNavbar.vue'
-import ClientNavbar from './components/ClientNavbar.vue'
+import ClientNavbar from './components/navbar/ClientNavbar.vue'
 import ClientBottomNav from './components/ClientBottomNav.vue'
-import AgentBottomNav from './components/AgentBottomNavUpdated.vue'
 import AdminBottomNav from './components/AdminBottomNav.vue'
 
 const routeError = ref<string | null>(null)
 const userRole = ref<string>('')
 const currentRoute = useRoute()
 
-// Check if current route is an authentication page or signup process page
+
 const isAuthPage = computed(() => {
   const authRoutes = [
     '/', 
@@ -85,20 +84,46 @@ onMounted(() => {
   // Listen for storage changes to update role reactively
   window.addEventListener('storage', updateUserRole)
 })
-
-// Function to update user role
+// In App.vue
 function updateUserRole() {
-  const storedRole = localStorage.getItem('userRole')
-  console.log('Debug - stored userRole from localStorage:', storedRole)
-  userRole.value = storedRole || ''
-  console.log('Debug - userRole.value set to:', userRole.value)
-  console.log('Debug - should show ClientNavbar:', shouldShowNavbar.value && userRole.value === 'client')
-  console.log('Debug - should show AgentNavbar:', shouldShowNavbar.value && userRole.value === 'agent')
-  console.log('Debug - isAuthPage:', isAuthPage.value)
-  console.log('Debug - shouldShowNavbar:', shouldShowNavbar.value)
-  console.log('Debug - current route:', currentRoute.path)
-}
+  // Clear any existing role
+  userRole.value = '';
 
+  // Check authentication status
+  const isAuthenticated = !!localStorage.getItem('access_token');
+
+  if (!isAuthenticated) {
+    // If not authenticated, clear any existing role and redirect to login
+    localStorage.removeItem('userRole');
+    return;
+  }
+
+  // Get role from localStorage (set during login)
+  const storedRole = localStorage.getItem('userRole');
+
+  if (storedRole && ['client', 'agent', 'admin'].includes(storedRole)) {
+    userRole.value = storedRole;
+  } else {
+    // If no valid role is found, log the user out for security
+    console.warn('No valid role found, logging out...');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('userRole');
+    window.location.href = '/sign-in';
+  }
+
+  // Ensure role is consistent with route
+  if (userRole.value === 'client' && window.location.pathname.startsWith('/agent')) {
+    // Redirect to client dashboard if trying to access agent routes as client
+    window.location.href = '/client/dashboard';
+  } else if (userRole.value === 'agent' && window.location.pathname.startsWith('/client')) {
+    // Redirect to agent dashboard if trying to access client routes as agent
+    window.location.href = '/agent/dashboard';
+  } else if (userRole.value === 'admin' && !window.location.pathname.startsWith('/admin')) {
+    // Redirect to admin dashboard if trying to access non-admin routes as admin
+    window.location.href = '/admin/job-approval';
+  }
+}
 // Cleanup event listener
 onUnmounted(() => {
   window.removeEventListener('storage', updateUserRole)
@@ -132,7 +157,6 @@ function reloadApp() {
     
     <!-- Role-specific Bottom Navigation (Mobile Only) -->
     <ClientBottomNav v-if="shouldShowNavbar && userRole === 'client'" />
-    <AgentBottomNav v-if="shouldShowNavbar && userRole === 'agent'" />
     <AdminBottomNav v-if="shouldShowNavbar && userRole === 'admin'" />
     <template v-if="!routeError">
       <router-view v-slot="{ Component }">

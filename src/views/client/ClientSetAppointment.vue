@@ -280,7 +280,7 @@ const isCalendarDateSelected = (day) => {
   return selectedCalendarDate.value === day.date
 }
 
-const setAppointment = () => {
+const setAppointment = async () => {
   if (!isFormValid.value) return
   
   const appointmentData = {
@@ -293,15 +293,45 @@ const setAppointment = () => {
     createdAt: new Date().toISOString()
   }
   
-  // Save to localStorage
+  // Simulate API call for appointment scheduling
+const scheduleAppointment = async (appointmentData) => {
+  // In a real implementation, this would call:
+  // const result = await appointmentsService.scheduleAppointment(appointmentData)
+
+  // For now, simulate successful API response
+  const mockApiResponse = {
+    success: true,
+    data: {
+      id: Date.now().toString(),
+      status: 'scheduled',
+      scheduledAt: new Date().toISOString(),
+      ...appointmentData
+    }
+  }
+
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000))
+
+  return mockApiResponse
+}
+
   try {
-    const existingAppointments = JSON.parse(localStorage.getItem('savedAppointments') || '[]')
-    existingAppointments.push(appointmentData)
-    localStorage.setItem('savedAppointments', JSON.stringify(existingAppointments))
-    
-    // Show success message (you could use a toast notification here)
-    alert('Appointment set successfully!')
-    
+    const response = await scheduleAppointment(appointmentData)
+    if (response.success) {
+      // Save to localStorage
+      const existingAppointments = JSON.parse(localStorage.getItem('savedAppointments') || '[]')
+      existingAppointments.push(response.data)
+      localStorage.setItem('savedAppointments', JSON.stringify(existingAppointments))
+      
+      // Show success message (you could use a toast notification here)
+      alert('Appointment set successfully!')
+      
+      // Navigate back to agent profile
+      router.push(`/client/agent/${agent.value.id}`)
+    } else {
+      console.error('Error scheduling appointment:', response.error)
+      alert('Error scheduling appointment. Please try again.')
+    }
     // Navigate back to agent profile
     router.push(`/client/agent/${agent.value.id}`)
   } catch (error) {

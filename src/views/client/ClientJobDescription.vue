@@ -28,7 +28,7 @@
       <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm mb-4 sm:mb-6">
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 mb-4">
           <div class="flex-1 min-w-0">
-            <h2 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mb-2 sm:mb-3 leading-tight">{{ job.title }}</h2>
+            <h2 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mb-2 sm:mb-3 leading-tight">{{ job.project_title }}</h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
               <div class="flex items-center gap-1.5 sm:gap-2">
                 <span class="text-base sm:text-lg">💰</span>
@@ -259,146 +259,154 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { jobsService } from '../../services/jobsService'
+
+interface Agent {
+  id: string
+  name: string
+  title: string
+  company: string
+  location: string
+  rating: number
+  completionRate: number
+  skills: Array<{ name: string }>
+  availability: {
+    type: string
+    hours: string
+  }
+  status: string
+  rate: number
+}
 
 const route = useRoute()
+const router = useRouter()
 
-// Job data
+// Recommended agents data
+const recommendedAgents = ref<Agent[]>([])
+
+// Job data with proper typing
 const job = ref({
-  id: 0,
-  title: '',
-  category: '',
-  budget: '',
+  id: '',
+  project_title: 'Loading...',
+  category: 'Loading...',
+  budget: '0',
   type: 'Remote',
-  postedTime: '',
-  proposals: '',
-  description: '',
-  requirements: [] as string[]
+  postedTime: 'Loading...',
+  proposals: '0',
+  description: 'Loading job description...',
+  requirements: ['Loading requirements...'],
+  skills_needed: '',
+  deadline: 0,
+  status: 'open'
 })
 
-// Recommended agents data - standardized with ClientAgentProfile.vue structure
-const recommendedAgents = ref([
-  {
-    id: 1,
-    name: 'Alex Johnson',
-    title: 'Senior UI/UX Designer',
-    company: 'Design Studio Pro',
-    location: 'California, USA',
-    timeAgo: '25 minutes ago',
-    status: 'Ongoing',
-    rate: '15K',
-    rating: 5,
-    completionRate: 98,
-    availability: {
-      type: 'Full-time',
-      hours: '40+ hours/week',
-      responseTime: 'Within 2 hours'
-    },
-    skills: [
-      { name: 'UI Design', level: 'Expert' },
-      { name: 'UX Research', level: 'Advanced' },
-      { name: 'Figma', level: 'Expert' },
-      { name: 'Prototyping', level: 'Advanced' }
-    ],
-    experience: [
-      { title: 'Senior Designer', company: 'Design Studio Pro', period: '2021-Present', level: 'Senior' },
-      { title: 'UI Designer', company: 'Creative Agency', period: '2019-2021', level: 'Mid' }
-    ],
-    communication: {
-      email: 'alex.johnson@email.com',
-      phone: '+1 (555) 123-4567'
-    }
-  },
-  {
-    id: 2,
-    name: 'Sarah Chen',
-    title: 'Content Strategist',
-    company: 'Creative Solutions',
-    location: 'New York, USA',
-    timeAgo: '1 hour ago',
-    status: 'Complete',
-    rate: '12K',
-    rating: 4,
-    completionRate: 95,
-    availability: {
-      type: 'Part-time',
-      hours: '20-30 hours/week',
-      responseTime: 'Within 4 hours'
-    },
-    skills: [
-      { name: 'Content Strategy', level: 'Expert' },
-      { name: 'Copywriting', level: 'Advanced' },
-      { name: 'SEO', level: 'Advanced' },
-      { name: 'Analytics', level: 'Intermediate' }
-    ],
-    experience: [
-      { title: 'Content Strategist', company: 'Creative Solutions', period: '2020-Present', level: 'Senior' },
-      { title: 'Content Writer', company: 'Marketing Agency', period: '2018-2020', level: 'Mid' }
-    ],
-    communication: {
-      email: 'sarah.chen@email.com',
-      phone: '+1 (555) 987-6543'
-    }
-  },
-  {
-    id: 3,
-    name: 'Mike Rodriguez',
-    title: 'Full Stack Developer',
-    company: 'Tech Innovations',
-    location: 'Texas, USA',
-    timeAgo: '2 hours ago',
-    status: 'Ongoing',
-    rate: '18K',
-    rating: 5,
-    completionRate: 99,
-    availability: {
-      type: 'Full-time',
-      hours: '40+ hours/week',
-      responseTime: 'Within 1 hour'
-    },
-    skills: [
-      { name: 'JavaScript', level: 'Expert' },
-      { name: 'React', level: 'Expert' },
-      { name: 'Node.js', level: 'Advanced' },
-      { name: 'Python', level: 'Advanced' }
-    ],
-    experience: [
-      { title: 'Senior Developer', company: 'Tech Innovations', period: '2019-Present', level: 'Senior' },
-      { title: 'Developer', company: 'Startup Co', period: '2017-2019', level: 'Mid' }
-    ],
-    communication: {
-      email: 'mike.rodriguez@email.com',
-      phone: '+1 (555) 456-7890'
-    }
-  }
-])
+// Loading and error states
+const loading = ref(false)
+const error = ref<Error | null>(null)
 
-// Load job data from localStorage or based on route parameter
-onMounted(() => {
-  const jobId = route.params.id
-  
-  // Try to get job from localStorage first
-  const savedJob = localStorage.getItem('selectedProject')
-  if (savedJob) {
-    const parsedJob = JSON.parse(savedJob)
-    if (parsedJob.id === parseInt(jobId as string)) {
-      job.value = {
-        id: parsedJob.id,
-        title: parsedJob.title,
-        category: parsedJob.category,
-        budget: parsedJob.budget,
-        type: 'Remote',
-        postedTime: parsedJob.postedTime,
-        proposals: parsedJob.proposals || '0',
-        description: parsedJob.description || getDefaultDescription(parsedJob.title),
-        requirements: parsedJob.requirements || getDefaultRequirements(parsedJob.category)
+// Methods
+const goBack = () => {
+  router.back()
+}
+
+const applyForJob = () => {
+  // Navigate to job application page
+  router.push('/client/job-application')
+}
+onMounted(async () => {
+  const jobId = route.params.id as string
+
+  if (jobId) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const result = await jobsService.getJobById(jobId)
+
+      if (result.success && result.data) {
+        // Map API response to expected format
+        job.value = {
+          id: result.data.id || jobId,
+          project_title: result.data.title || 'Job Title',
+          category: result.data.category || 'Other',
+          budget: result.data.budget?.toString() || '0',
+          type: 'Remote', // Default value since API may not have this
+          postedTime: result.data.createdAt ? new Date(result.data.createdAt).toLocaleDateString() : 'Recently posted',
+          proposals: '0', // API doesn't have proposals count
+          description: result.data.description || 'No description available',
+          requirements: [result.data.description?.split('\n')[0] || 'Requirements not specified'],
+          skills_needed: Array.isArray(result.data.skills_needed) ? result.data.skills_needed.join(', ') : result.data.skills_needed || '',
+          deadline: result.data.timeline?.endDate ? new Date(result.data.timeline.endDate).getTime() : 0,
+          status: 'open' // Default status
+        }
+        console.log('Loaded job data from API:', result.data)
+      } else {
+        // Fallback to localStorage if API fails (for testing)
+        const savedJob = localStorage.getItem('selectedProject')
+        if (savedJob) {
+          const parsedJob = JSON.parse(savedJob)
+          if (parsedJob.id === parseInt(jobId as string)) {
+            job.value = {
+              id: parsedJob.id,
+              project_title: parsedJob.title,
+              category: parsedJob.category,
+              budget: parsedJob.budget,
+              type: 'Remote',
+              postedTime: parsedJob.postedTime,
+              proposals: parsedJob.proposals || '0',
+              description: parsedJob.description || getDefaultDescription(parsedJob.title),
+              requirements: parsedJob.requirements || getDefaultRequirements(parsedJob.category),
+              skills_needed: parsedJob.skills_needed || '',
+              deadline: parsedJob.deadline || 0,
+              status: parsedJob.status || 'open'
+            }
+            console.log('Loaded job data from localStorage:', parsedJob)
+            return
+          }
+        }
+
+        // Fallback to mock data if API and localStorage fail
+        loadMockJob(parseInt(jobId as string))
       }
-      return
+    } catch (err) {
+      console.error('Error loading job:', err)
+      error.value = err instanceof Error ? err : new Error('Failed to load job details')
+
+      // Fallback to localStorage on error
+      const savedJob = localStorage.getItem('selectedProject')
+      if (savedJob) {
+        const parsedJob = JSON.parse(savedJob)
+        if (parsedJob.id === parseInt(jobId as string)) {
+          job.value = {
+            id: parsedJob.id,
+            project_title: parsedJob.title,
+            category: parsedJob.category,
+            budget: parsedJob.budget,
+            type: 'Remote',
+            postedTime: parsedJob.postedTime,
+            proposals: parsedJob.proposals || '0',
+            description: parsedJob.description || getDefaultDescription(parsedJob.title),
+            requirements: parsedJob.requirements || getDefaultRequirements(parsedJob.category),
+            skills_needed: parsedJob.skills_needed || '',
+            deadline: parsedJob.deadline || 0,
+            status: parsedJob.status || 'open'
+          }
+          console.log('Loaded job data from localStorage after error:', parsedJob)
+          return
+        }
+      }
+
+      // Final fallback to mock data on error
+      loadMockJob(parseInt(jobId as string))
+    } finally {
+      loading.value = false
     }
+  } else {
+    const errorMessage = 'No job ID provided in route'
+    console.error(errorMessage)
+    error.value = new Error(errorMessage)
   }
-  
-  // Fallback to mock data based on job ID
-  loadMockJob(parseInt(jobId as string))
 })
 
 const getDefaultDescription = (title: string) => {
@@ -412,7 +420,7 @@ const getDefaultRequirements = (category: string) => {
     'Solid understanding of fundamental principles and best practices.',
     'Attention to detail and commitment to delivering high-quality work on time.'
   ]
-  
+
   if (category.includes('Design')) {
     return [
       'Proven experience in UI/UX design with a strong portfolio of web or mobile projects.',
@@ -421,7 +429,7 @@ const getDefaultRequirements = (category: string) => {
       'Attention to detail and commitment to delivering pixel-perfect designs on time.'
     ]
   }
-  
+
   if (category.includes('Writing')) {
     return [
       'Exceptional writing and editing skills with a strong command of grammar and style.',
@@ -430,7 +438,7 @@ const getDefaultRequirements = (category: string) => {
       'Strong time management skills and ability to meet deadlines consistently.'
     ]
   }
-  
+
   if (category.includes('Marketing')) {
     return [
       'Proven experience in digital marketing with a track record of successful campaigns.',
@@ -439,15 +447,15 @@ const getDefaultRequirements = (category: string) => {
       'Ability to analyze data and optimize campaigns for better performance.'
     ]
   }
-  
+
   return baseRequirements
 }
 
 const loadMockJob = (jobId: number) => {
   const mockJobs = {
     3: {
-      id: 3,
-      title: 'Mobile App Design for Startup',
+      id: '3',
+      project_title: 'Mobile App Design for Startup',
       category: 'UI/UX Design',
       budget: '3,500',
       type: 'Remote',
@@ -459,11 +467,14 @@ const loadMockJob = (jobId: number) => {
         'Proficiency in design tools such as Figma, Adobe XD, or Sketch.',
         'Solid understanding of mobile design patterns, typography, color theory, and accessibility.',
         'Attention to detail and commitment to delivering pixel-perfect designs on time.'
-      ]
+      ],
+      skills_needed: 'UI/UX Design, Figma, Mobile Design',
+      deadline: Math.floor(Date.now() / 1000) + (10 * 24 * 60 * 60), // 10 days from now
+      status: 'open'
     },
     4: {
-      id: 4,
-      title: 'Content Writing for Blog',
+      id: '4',
+      project_title: 'Content Writing for Blog',
       category: 'Writing',
       budget: '800',
       type: 'Remote',
@@ -475,11 +486,14 @@ const loadMockJob = (jobId: number) => {
         'Experience in creating engaging blog content for various industries.',
         'Ability to research and write on diverse topics with accuracy and creativity.',
         'Strong time management skills and ability to meet deadlines consistently.'
-      ]
+      ],
+      skills_needed: 'Content Writing, SEO, Research',
+      deadline: Math.floor(Date.now() / 1000) + (5 * 24 * 60 * 60), // 5 days from now
+      status: 'open'
     },
     5: {
-      id: 5,
-      title: 'Social Media Marketing Campaign',
+      id: '5',
+      project_title: 'Social Media Marketing Campaign',
       category: 'Marketing',
       budget: '1,200',
       type: 'Remote',
@@ -491,11 +505,15 @@ const loadMockJob = (jobId: number) => {
         'Proficiency in marketing analytics tools and major social media platforms.',
         'Strong understanding of content strategy, audience engagement, and community management.',
         'Ability to analyze campaign performance and optimize for better results.'
-      ]
+      ],
+      skills_needed: 'Social Media Marketing, Analytics, Content Strategy',
+      deadline: Math.floor(Date.now() / 1000) + (14 * 24 * 60 * 60), // 14 days from now
+      status: 'open'
     }
   }
-  
+
   job.value = mockJobs[jobId as keyof typeof mockJobs] || mockJobs[3]
+  console.log('Loaded job data from mock data:', job.value)
 }
 </script>
 

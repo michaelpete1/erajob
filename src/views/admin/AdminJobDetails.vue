@@ -256,15 +256,14 @@
       </div>
     </div>
     
-    <!-- Admin Bottom Navigation -->
-    <AdminBottomNav />
+    
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import AdminBottomNav from '../../components/AdminBottomNav.vue';
+ 
 
 const route = useRoute();
 const router = useRouter();

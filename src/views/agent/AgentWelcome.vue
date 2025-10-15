@@ -13,15 +13,54 @@
       <form class="space-y-4 bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xl animate-fade-up-delay-2">
         <div class="animate-slide-in-left">
           <input v-model="form.primaryExpertise" type="text" placeholder="What is your Primary area of expertise" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button v-for="opt in expertiseOptions" :key="opt" type="button" @click="form.primaryExpertise = opt" class="px-3 py-1 text-xs rounded-full border border-gray-200 hover:border-brand-teal hover:text-brand-teal transition">{{ opt }}</button>
+          </div>
         </div>
         <div class="animate-slide-in-right">
-          <input v-model="form.yearsOfExperience" type="text" placeholder="Years of Experience" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <input 
+            v-model="form.personalityUrl"
+            type="url"
+            placeholder="Or paste personality screenshot URL"
+            class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+        </div>
+        <div class="animate-slide-in-right">
+          <input v-model.number="form.yearsOfExperience" type="number" min="0" placeholder="Years of Experience" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button v-for="opt in yearsOptions" :key="opt" type="button" @click="form.yearsOfExperience = opt" class="px-3 py-1 text-xs rounded-full border border-gray-200 hover:border-brand-teal hover:text-brand-teal transition">{{ opt }}</button>
+          </div>
         </div>
         <div class="animate-slide-in-left">
           <input v-model="form.tools" type="text" placeholder="3 most used tools or platforms" class="w-full rounded-full border border-gray-200 px-4 sm:px-5 py-2.5 sm:py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button v-for="opt in toolsOptions" :key="opt" type="button" @click="form.tools = form.tools ? `${form.tools}, ${opt}` : opt" class="px-3 py-1 text-xs rounded-full border border-gray-200 hover:border-brand-teal hover:text-brand-teal transition">{{ opt }}</button>
+          </div>
         </div>
 
+        <div class="animate-slide-in-right">
+          <input 
+            v-model="form.phoneNumber"
+            type="tel"
+            placeholder="Phone Number"
+            class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+        </div>
+
+        <!-- Client Reason for Signing Up (enum required by API) -->
         <div class="space-y-2 animate-slide-in-right">
+          <label class="text-sm font-medium text-brand-teal">What do you need help with?</label>
+          <div class="grid grid-cols-1 gap-2">
+            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-teal-500 cursor-pointer">
+              <input type="radio" class="accent-teal-600" value="Just hire me someone" v-model="form.clientReason" />
+              <span class="text-sm text-gray-700">Just hire me someone</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-teal-500 cursor-pointer">
+              <input type="radio" class="accent-teal-600" value="Need assistance with hiring, training, onboarding and management for first month" v-model="form.clientReason" />
+              <span class="text-sm text-gray-700">Need assistance with hiring, training, onboarding and management for first month</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-2 animate-slide-in-left">
           <label class="text-sm font-medium text-brand-teal">Certifications</label>
           <div class="relative">
             <input 
@@ -47,30 +86,26 @@
               </div>
             </label>
           </div>
+          <div class="mt-2">
+            <input 
+              v-model="form.certificateUrls"
+              type="text"
+              placeholder="Or paste certificate URLs (comma-separated)"
+              class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+          </div>
         </div>
 
         <div class="animate-slide-in-left">
-          <select v-model="form.hoursPerWeek" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option value="" disabled selected>How many hours can you commit per week</option>
-            <option value="80 hours part time">80 hours part time</option>
-            <option value="160 hours part time">160 hours part time</option>
+          <select v-model.number="form.hoursPerWeek" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
+            <option :value="undefined" disabled selected>How many hours can you commit per week</option>
+            <option :value="80">80</option>
+            <option :value="160">160</option>
           </select>
         </div>
         <div class="animate-slide-in-right">
           <select v-model="form.timezone" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
             <option value="" disabled selected>Time Zone / Location</option>
-            <option value="EST (Eastern Time)">EST (Eastern Time)</option>
-            <option value="CST (Central Time)">CST (Central Time)</option>
-            <option value="MST (Mountain Time)">MST (Mountain Time)</option>
-            <option value="PST (Pacific Time)">PST (Pacific Time)</option>
-            <option value="GMT (Greenwich Mean Time)">GMT (Greenwich Mean Time)</option>
-            <option value="CET (Central European Time)">CET (Central European Time)</option>
-            <option value="EET (Eastern European Time)">EET (Eastern European Time)</option>
-            <option value="IST (India Standard Time)">IST (India Standard Time)</option>
-            <option value="CST (China Standard Time)">CST (China Standard Time)</option>
-            <option value="JST (Japan Standard Time)">JST (Japan Standard Time)</option>
-            <option value="AEST (Australian Eastern Time)">AEST (Australian Eastern Time)</option>
-            <option value="Other">Other</option>
+            <option v-for="tz in timezoneOptions" :key="tz.value" :value="tz.value">{{ tz.label }}</option>
           </select>
         </div>
         <div class="animate-slide-in-left">
@@ -143,34 +178,38 @@
         </div>
         <div class="animate-slide-in-right">
           <select v-model="form.openToCalls" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option value="" disabled selected>Are you open to calls or video meetings?</option>
-            <option value="yes">Yes, I am comfortable with calls</option>
-            <option value="no">No, I prefer asynchronous communication</option>
+            <option :value="undefined" disabled selected>Are you open to calls or video meetings?</option>
+            <option :value="true">Yes, I am comfortable with calls</option>
+            <option :value="false">No, I prefer asynchronous communication</option>
           </select>
         </div>
         <div class="animate-slide-in-left">
           <select v-model="form.hasComputer" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option value="" disabled selected>Do you have a working computer/laptop?</option>
-            <option value="yes">Yes, I have a working computer/laptop</option>
-            <option value="no">No, I don't have a working computer/laptop</option>
+            <option :value="undefined" disabled selected>Do you have a working computer/laptop?</option>
+            <option :value="true">Yes, I have a working computer/laptop</option>
+            <option :value="false">No, I don't have a working computer/laptop</option>
           </select>
         </div>
         <div class="animate-slide-in-right">
           <select v-model="form.hasInternet" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option value="" disabled selected>Do you have access to stable internet?</option>
-            <option value="yes">Yes, I have stable internet access</option>
-            <option value="no">No, I don't have stable internet access</option>
+            <option :value="undefined" disabled selected>Do you have access to stable internet?</option>
+            <option :value="true">Yes, I have stable internet access</option>
+            <option :value="false">No, I don't have stable internet access</option>
           </select>
         </div>
         <div class="animate-slide-in-left">
           <select v-model="form.comfortableWithTracking" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option value="" disabled selected>Are you comfortable using time-tracking tools?</option>
-            <option value="yes">Yes, I am comfortable with time-tracking</option>
-            <option value="no">No, I am not comfortable with time-tracking</option>
+            <option :value="undefined" disabled selected>Are you comfortable using time-tracking tools?</option>
+            <option :value="true">Yes, I am comfortable with time-tracking</option>
+            <option :value="false">No, I am not comfortable with time-tracking</option>
           </select>
         </div>
         <div class="animate-slide-in-right">
           <input v-model="form.videoUrl" type="url" placeholder="Submit your 1min video (URL)" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
+        </div>
+
+        <div class="animate-slide-in-left">
+          <input v-model="form.portfolioLink" type="url" placeholder="Portfolio link (URL)" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
 
         <div class="space-y-2 animate-slide-in-left">
@@ -216,8 +255,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, nextTick } from 'vue'
+import { reactive, ref, nextTick, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import authService, { type AgentWelcomeData } from '../../services/authService'
+import type { SignupData } from '../../types/api/auth'
 
 const router = useRouter()
 const isSubmitting = ref(false)
@@ -226,16 +267,21 @@ const projectsRef = ref<HTMLElement | null>(null)
 
 const form = reactive({
   primaryExpertise: '',
-  yearsOfExperience: '',
+  yearsOfExperience: 0 as number,
   tools: '',
-  hoursPerWeek: '',
+  phoneNumber: '',
+  hoursPerWeek: undefined as number | undefined,
   timezone: '',
   preferredProjects: [] as string[],
-  openToCalls: '',
-  hasComputer: '',
-  hasInternet: '',
-  comfortableWithTracking: '',
-  videoUrl: ''
+  clientReason: '' as string,
+  openToCalls: undefined as boolean | undefined,
+  hasComputer: undefined as boolean | undefined,
+  hasInternet: undefined as boolean | undefined,
+  comfortableWithTracking: undefined as boolean | undefined,
+  videoUrl: '',
+  portfolioLink: '',
+  certificateUrls: '',
+  personalityUrl: ''
 })
 
 const certificationsFiles = ref<File[]>([])
@@ -254,6 +300,64 @@ const projectOptions = [
   'Manufacturing & Operations', 'Logistics & Supply Chain', 'Other'
 ]
 
+const expertiseOptions = [
+  'Web Devlopment',
+  'Mobile Development',
+  'UI/UX Design',
+  'Content Writing',
+  'Digital Marketing',
+  'Data Analysis',
+  'Other'
+]
+
+const yearsOptions = [0,1,2,3,5,7,10,15]
+
+const toolsOptions = [
+  'Figma','Adobe Photoshop','Illustrator','VS Code','GitHub','Jira','Notion','Excel','Canva','Python','React','Node.js'
+]
+
+const timezoneOptions = [
+  { label: 'UTC-12:00', value: 'UTC-12:00' },
+  { label: 'UTC-11:00', value: 'UTC-11:00' },
+  { label: 'UTC-10:00', value: 'UTC-10:00' },
+  { label: 'UTC-09:30', value: 'UTC-09:30' },
+  { label: 'UTC-09:00', value: 'UTC-09:00' },
+  { label: 'UTC-08:00', value: 'UTC-08:00' },
+  { label: 'UTC-07:00', value: 'UTC-07:00' },
+  { label: 'UTC-06:00', value: 'UTC-06:00' },
+  { label: 'UTC-05:00', value: 'UTC-05:00' },
+  { label: 'UTC-04:30', value: 'UTC-04:30' },
+  { label: 'UTC-04:00', value: 'UTC-04:00' },
+  { label: 'UTC-03:30', value: 'UTC-03:30' },
+  { label: 'UTC-03:00', value: 'UTC-03:00' },
+  { label: 'UTC-02:00', value: 'UTC-02:00' },
+  { label: 'UTC-01:00', value: 'UTC-01:00' },
+  { label: 'UTC+00:00', value: 'UTC+00:00' },
+  { label: 'UTC+01:00', value: 'UTC+01:00' },
+  { label: 'UTC+02:00', value: 'UTC+02:00' },
+  { label: 'UTC+03:00', value: 'UTC+03:00' },
+  { label: 'UTC+03:30', value: 'UTC+03:30' },
+  { label: 'UTC+04:00', value: 'UTC+04:00' },
+  { label: 'UTC+05:00', value: 'UTC+05:00' },
+  { label: 'UTC+05:30', value: 'UTC+05:30' },
+  { label: 'UTC+05:45', value: 'UTC+05:45' },
+  { label: 'UTC+06:00', value: 'UTC+06:00' },
+  { label: 'UTC+06:30', value: 'UTC+06:30' },
+  { label: 'UTC+07:00', value: 'UTC+07:00' },
+  { label: 'UTC+08:00', value: 'UTC+08:00' },
+  { label: 'UTC+08:45', value: 'UTC+08:45' },
+  { label: 'UTC+09:00', value: 'UTC+09:00' },
+  { label: 'UTC+09:30', value: 'UTC+09:30' },
+  { label: 'UTC+10:00', value: 'UTC+10:00' },
+  { label: 'UTC+10:30', value: 'UTC+10:30' },
+  { label: 'UTC+11:00', value: 'UTC+11:00' },
+  { label: 'UTC+11:30', value: 'UTC+11:30' },
+  { label: 'UTC+12:00', value: 'UTC+12:00' },
+  { label: 'UTC+12:45', value: 'UTC+12:45' },
+  { label: 'UTC+13:00', value: 'UTC+13:00' },
+  { label: 'UTC+14:00', value: 'UTC+14:00' },
+]
+
 const handleCertificationsUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
@@ -266,6 +370,12 @@ const handleCertificationsUpload = (event: Event) => {
       alert(`Some files are too large. Maximum size is 10MB per file.`)
       certificationsFiles.value = certificationsFiles.value.filter(file => file.size <= maxSize)
     }
+    // Persist filenames
+    try {
+      const existing = JSON.parse(localStorage.getItem('agentWelcomeData') || '{}')
+      existing.certifications = certificationsFiles.value.map(f => f.name)
+      localStorage.setItem('agentWelcomeData', JSON.stringify(existing))
+    } catch {}
   }
 }
 
@@ -284,6 +394,12 @@ const handlePersonalityTestUpload = (event: Event) => {
     }
     
     personalityTestFile.value = file
+    // Persist filename
+    try {
+      const existing = JSON.parse(localStorage.getItem('agentWelcomeData') || '{}')
+      existing.personalityTest = personalityTestFile.value?.name
+      localStorage.setItem('agentWelcomeData', JSON.stringify(existing))
+    } catch {}
   }
 }
 
@@ -317,24 +433,38 @@ const onSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    // Simulate form submission - in a real app, this would be an API call
-    console.log('Agent welcome form submitted:', {
-      formData: form,
-      certifications: certificationsFiles.value.map(f => f.name),
-      personalityTest: personalityTestFile.value?.name
-    })
-    
-    // Save form data to localStorage
-    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-    userInfo.welcomeFormData = form
-    localStorage.setItem('userInfo', JSON.stringify(userInfo))
-    
-    // Navigate to next page
-    await router.push('/agent/services')
+    const basicData = JSON.parse(localStorage.getItem('signupBasicData') || '{}')
+    if (!basicData.email) {
+      alert('Signup information not found. Please start the signup process again.')
+      router.push('/sign-up')
+      return
+    }
 
+    const welcomeData = {
+      primaryExpertise: form.primaryExpertise,
+      yearsOfExperience: form.yearsOfExperience,
+      tools: form.tools,
+      phoneNumber: form.phoneNumber,
+      hoursPerWeek: form.hoursPerWeek,
+      timezone: form.timezone,
+      preferredProjects: form.preferredProjects,
+      clientReason: form.clientReason,
+      openToCalls: form.openToCalls,
+      hasComputer: form.hasComputer,
+      hasInternet: form.hasInternet,
+      comfortableWithTracking: form.comfortableWithTracking,
+      videoUrl: form.videoUrl,
+      certifications: certificationsFiles.value.map(f => f.name),
+      personalityTest: personalityTestFile.value?.name,
+      portfolioLink: form.portfolioLink,
+      certificateUrls: form.certificateUrls,
+      personalityUrl: form.personalityUrl
+    }
+    localStorage.setItem('agentWelcomeData', JSON.stringify(welcomeData))
+    router.push('/agent/services')
   } catch (error) {
-    console.error('Form submission error:', error)
-    alert('There was an error submitting your form. Please try again.')
+    console.error('Error submitting form:', error)
+    alert('There was an error saving your information. Please try again.')
   } finally {
     isSubmitting.value = false
   }

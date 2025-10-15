@@ -1,210 +1,282 @@
 // src/services/authService.ts
+import apiClient from './apiClient'
+// Import the centralized types from the single source of truth
+import type { LoginCredentials, SignupData, AuthResponse } from '../types/api/auth'
 
-import { apiClient } from './api'
-import { STORAGE_CONFIG, debugLog } from '../config'
-import type { UserLogin, UserBase, UserOut, ApiResponse, AuthState, ServiceResponse } from '../types/api'
+// Shared interfaces for welcome form data
+export interface AgentWelcomeData {
+  primaryExpertise: string
+  yearsOfExperience: string
+  tools: string
+  hoursPerWeek: string
+  timezone: string
+  preferredProjects: string[]
+  openToCalls: string
+  hasComputer: string
+  hasInternet: string
+  comfortableWithTracking: string
+  videoUrl: string
+  certificates: string[]
+  personalityTest: string
+}
 
-export class AuthService {
-  private authState: AuthState = {
-    isAuthenticated: false,
-    user: null,
-    loading: false,
-    error: null
+export interface ClientWelcomeData {
+  email: string
+  phone: string
+  companyName: string
+  companyEmail: string
+  companyAddress: string
+  companyWebsite: string
+  fullName: string
+  shortVideo: string
+  urlLink: string
+  primaryAreaOfExpertise: string
+  timezone: string
+  openToCalls: string
+  hasWorkingComputer: string
+  hasStableInternet: string
+  comfortableWithTimeTracking: string
+  certificates: string[]
+  personalityTest: string
+}
+
+// Helper function to map client work hours to API expected values
+function mapClientWorkHours(hours: string): string {
+  switch (hours) {
+    case 'part_time': return '80'
+    case 'full_time': return '160'
+    case 'both': return 'both'
+    default: return 'both'
+  }
+}
+
+// Helper function to prepare signup data with proper field mapping
+const prepareSignupData = (data: SignupData): any => {
+  const baseData = {
+    email: data.email,
+    password: data.password,
+    role: data.role,
+    full_name: data.full_name,
+    phone_number: data.phone_number,
+    certificate_url: data.certificate_url,
+    video_url: data.video_url,
+    personality_url: data.personality_url,
   }
 
-  private static instance: AuthService
-
-  private constructor() {}
-
-  public static getInstance(): AuthService {
-    if (!AuthService.instance) {
-      AuthService.instance = new AuthService()
-    }
-    return AuthService.instance
-  }
-
-  /**
-   * Get stored user data from localStorage
-   */
-  private getStoredAuthData(): { token: string | null; userData: UserOut | null } {
-    const token = localStorage.getItem(STORAGE_CONFIG.tokenKey)
-    const userDataStr = localStorage.getItem(STORAGE_CONFIG.userKey)
-    const userData = userDataStr ? JSON.parse(userDataStr) : null
-    debugLog('Retrieved stored auth data', { hasToken: !!token, hasUserData: !!userData })
-    return { token, userData }
-  }
-
-  /**
-   * Store authentication data
-   */
-  private storeAuthData(token: string, userData: UserOut): void {
-    localStorage.setItem(STORAGE_CONFIG.tokenKey, token)
-    localStorage.setItem(STORAGE_CONFIG.userKey, JSON.stringify(userData))
-    localStorage.setItem('userRole', JSON.stringify(userData.role))
-    debugLog('Auth data stored', { role: userData.role })
-  }
-
-  /**
-   * Clear authentication data
-   */
-  private clearAuthData(): void {
-    localStorage.removeItem(STORAGE_CONFIG.tokenKey)
-    localStorage.removeItem(STORAGE_CONFIG.userKey)
-    localStorage.removeItem('userRole')
-
-    // Reset state
-    this.authState.isAuthenticated = false
-    this.authState.user = null
-    this.authState.error = null
-    debugLog('Auth data cleared')
-  }
-
-  /**
-   * Get current authentication state
-   */
-  public getAuthState(): AuthState {
-    const { token, userData } = this.getStoredAuthData()
-    
-    if (token && userData) {
-      this.authState = {
-        isAuthenticated: true,
-        user: userData,
-        loading: false,
-        error: null
-      }
-    }
-    
-    return { ...this.authState }
-  }
-
-  /**
-   * Login user
-   */
-  public async login(credentials: UserLogin): Promise<ServiceResponse<UserOut>> {
-    this.authState.loading = true
-    this.authState.error = null
-    
-    try {
-      // Try real API first
-      const response = await apiClient.post<ApiResponse<UserOut>>('/v1/users/login', credentials)
-      const responseData = response.data.data
-      const user = responseData as UserOut
-      const access_token = (responseData as any).access_token
-      
-      if (access_token) {
-        this.storeAuthData(access_token, user)
-      }
-      
-      this.authState.loading = false
-      return { success: true, data: user, error: this.authState.error || undefined }
-    } catch (error) {
-      this.authState.loading = false
-      this.authState.error = error instanceof Error ? error.message : 'Login failed'
-      return { success: false, data: undefined, error: this.authState.error || undefined }
-    }
-  }
-
-  /**
-   * Signup user
-   */
-  public async signup(userData: UserBase): Promise<ServiceResponse<UserOut>> {
-    this.authState.loading = true
-    this.authState.error = null
-    
-    try {
-      // Try real API first
-      const response = await apiClient.post<ApiResponse<UserOut>>('/v1/users/signup', userData)
-      const responseData = response.data.data
-      const user = responseData as UserOut
-      const access_token = (responseData as any).access_token
-      
-      if (access_token) {
-        this.storeAuthData(access_token, user)
-      }
-      
-      this.authState.loading = false
-      return { success: true, data: user, error: this.authState.error || undefined }
-    } catch (error) {
-      this.authState.loading = false
-      this.authState.error = error instanceof Error ? error.message : 'Signup failed'
-      return { success: false, data: undefined, error: this.authState.error || undefined }
-    }
-  }
-
-  /**
-   * Logout user
-   */
-  public async logout(): Promise<ServiceResponse<void>> {
-    try {
-      await apiClient.post('/v1/users/logout')
-    } catch (error) {
-      // Continue with logout even if API call fails
-      debugLog('Logout API call failed', { error })
-    }
-    
-    this.clearAuthData()
-    
+  if (data.role === 'client') {
     return {
-      success: true
+      ...baseData,
+      company_name: data.company_name,
+      company_email: data.company_email,
+      company_address: data.company_address,
+      company_website: data.company_website,
+      client_reason_for_signing_up: data.client_reason_for_signing_up,
+      client_need_agent_work_hours_to_be: mapClientWorkHours(data.client_need_agent_work_hours_to_be || 'both'),
+      primary_area_of_expertise: data.primary_area_of_expertise,
+      time_zone: data.time_zone,
+      portfolio_link: data.portfolio_link,
+      is_agent_open_to_calls_and_video_meetings: data.is_agent_open_to_calls_and_video_meetings === 'yes',
+      does_agent_have_working_computer: data.does_agent_have_working_computer === 'yes',
+      does_agent_have_stable_internet: data.does_agent_have_stable_internet === 'yes',
+      is_agent_comfortable_with_time_tracking_tools: data.is_agent_comfortable_with_time_tracking_tools === 'yes',
+      three_most_commonly_used_tools_or_platforms: data.three_most_commonly_used_tools_or_platforms,
+      available_hours_agent_can_commit: data.available_hours_agent_can_commit ? parseInt(data.available_hours_agent_can_commit) : undefined,
+      services: data.services,
     }
-  }
+  } else {
+    // Agent schema exact keys
+    const primaryArea = (data as any).primary_area_of_expertise || (data as any).primary_expertise || ''
+    // Build tools array from either explicit array or comma-separated string
+    const toolsArray = (data as any).three_most_commonly_used_tools_or_platforms
+      ? (data as any).three_most_commonly_used_tools_or_platforms
+      : (data as any).tools
+        ? String((data as any).tools).split(',').map((s: string) => s.trim()).filter((s: string) => !!s).slice(0, 3)
+        : []
+    const hours = (data as any).available_hours_agent_can_commit || (data as any).hours_per_week
 
-  /**
-   * Get current user
-   */
-  public async getCurrentUser(): Promise<ServiceResponse<UserOut>> {
-    try {
-      const response = await apiClient.get<ApiResponse<UserOut>>('/v1/users/me')
-      const user = response.data.data
-      
-      // Update stored user data
-      const { token } = this.getStoredAuthData()
-      if (token) {
-        this.storeAuthData(token, user)
-        this.authState.user = user
-      }
-      
-      debugLog('Current user retrieved', { role: user.role })
-      
-      return {
-        success: true,
-        data: user
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || 'Failed to get current user'
-      debugLog('Get current user failed', { error: errorMessage })
-      
-      return {
-        success: false,
-        error: errorMessage
-      }
-    }
-  }
-
-  /**
-   * Delete user account
-   */
-  public async deleteAccount(): Promise<ServiceResponse<void>> {
-    try {
-      await apiClient.delete('/v1/users/account')
-      this.clearAuthData()
-      
-      debugLog('Account deleted successfully')
-      
-      return {
-        success: true
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || 'Failed to delete account'
-      debugLog('Delete account failed', { error: errorMessage })
-      
-      return {
-        success: false,
-        error: errorMessage
-      }
+    return {
+      ...baseData,
+      primary_area_of_expertise: primaryArea,
+      years_of_experience: typeof (data as any).years_of_experience === 'number'
+        ? (data as any).years_of_experience
+        : parseInt((data as any).years_of_experience || '0'),
+      three_most_commonly_used_tools_or_platforms: toolsArray,
+      available_hours_agent_can_commit: typeof hours === 'number' ? hours : parseInt(String(hours || '0')),
+      time_zone: (data as any).time_zone || (data as any).timezone,
+      portfolio_link: (data as any).portfolio_link || (data as any).video_url || '',
+      is_agent_open_to_calls_and_video_meetings: typeof (data as any).is_agent_open_to_calls_and_video_meetings === 'boolean'
+        ? (data as any).is_agent_open_to_calls_and_video_meetings
+        : (data as any).open_to_calls === 'yes',
+      does_agent_have_working_computer: typeof (data as any).does_agent_have_working_computer === 'boolean'
+        ? (data as any).does_agent_have_working_computer
+        : (data as any).has_computer === 'yes',
+      does_agent_have_stable_internet: typeof (data as any).does_agent_have_stable_internet === 'boolean'
+        ? (data as any).does_agent_have_stable_internet
+        : (data as any).has_internet === 'yes',
+      is_agent_comfortable_with_time_tracking_tools: typeof (data as any).is_agent_comfortable_with_time_tracking_tools === 'boolean'
+        ? (data as any).is_agent_comfortable_with_time_tracking_tools
+        : (data as any).comfortable_with_tracking === 'yes',
     }
   }
 }
 
-// Export singleton instance
-export const authService = AuthService.getInstance()
+const signup = async (credentials: SignupData): Promise<AuthResponse> => {
+  try {
+    const preparedData = prepareSignupData(credentials)
+    const response = await apiClient.post('/v1/users/signup', preparedData)
+
+    const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
+    if (ok) {
+      return { success: true }
+    }
+
+    return { success: false, error: response.data?.detail || 'Signup failed.' }
+  } catch (err: any) {
+    const error = err.response?.data?.detail || err.message || 'An unexpected error occurred.'
+    const fieldErrors = err.response?.data?.errors
+    return { success: false, error, fieldErrors }
+  }
+}
+const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  try {
+    let endpoint = '/v1/users/login'
+    if (credentials.role === 'admin') {
+      endpoint = '/v1/admins/login'
+    } else if (credentials.role === 'agent') {
+      endpoint = '/v1/agents/login'
+    } else if (credentials.role === 'client') {
+      endpoint = '/v1/clients/login'
+    }
+
+    const response = await apiClient.post(endpoint, {
+      email: credentials.email,
+      password: credentials.password
+    })
+
+// After the axios POST
+const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
+if (ok && response.data.data) {
+  const userData = response.data.data  // <-- add this back
+
+  // Store tokens in localStorage
+  if (userData.access_token) {
+    localStorage.setItem('access_token', userData.access_token)
+  }
+  if (userData.refresh_token) {
+    localStorage.setItem('refresh_token', userData.refresh_token)
+  }
+  localStorage.setItem('userRole', credentials.role)
+
+      return {
+        success: true,
+        user: {
+          id: userData.id,
+          email: userData.email,
+          role: credentials.role,
+          full_name: userData.full_name
+        },
+        token: userData.access_token
+      }
+    }
+    return { success: false, error: 'Login failed.' }
+  } catch (err: any) {
+    const error = err.response?.data?.detail || 'Login failed.'
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+// Shared function for updating agent profile (used by both signup and welcome forms)
+const updateAgentProfile = async (userId: string, data: AgentWelcomeData): Promise<AuthResponse> => {
+  try {
+    let services: string[] = []
+    try {
+      const stored = JSON.parse(localStorage.getItem('selectedAgentServices') || '[]')
+      if (Array.isArray(stored)) services = stored
+    } catch {}
+
+    const updateData = {
+      primary_expertise: data.primaryExpertise,
+      years_of_experience: parseInt(data.yearsOfExperience),
+      three_most_commonly_used_tools_or_platforms: [data.tools],
+      available_hours_agent_can_commit: parseInt(data.hoursPerWeek),
+      time_zone: data.timezone,
+      portfolio_link: data.videoUrl,
+      is_agent_open_to_calls_and_video_meetings: data.openToCalls === 'yes',
+      does_agent_have_working_computer: data.hasComputer === 'yes',
+      does_agent_have_stable_internet: data.hasInternet === 'yes',
+      is_agent_comfortable_with_time_tracking_tools: data.comfortableWithTracking === 'yes',
+      certificate_url: data.certificates,
+      personality_url: data.personalityTest,
+      services,
+    }
+
+    const response = await apiClient.put(`/v1/users/${userId}`, updateData)
+
+    if (response.data) {
+      return {
+        success: true,
+        user: response.data.user
+      }
+    }
+    return { success: false, error: 'Profile update failed: Invalid response from server.' }
+  } catch (err: any) {
+    const error = err.response?.data?.detail || err.message || 'An unexpected error occurred.'
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+// Shared function for updating client profile (used by both signup and welcome forms)
+const updateClientProfile = async (userId: string, data: ClientWelcomeData): Promise<AuthResponse> => {
+  try {
+    const updateData = {
+      email: data.email,
+      phone_number: data.phone,
+      company_name: data.companyName,
+      company_email: data.companyEmail,
+      company_address: data.companyAddress,
+      company_website: data.companyWebsite,
+      full_name: data.fullName,
+      video_url: data.shortVideo,
+      portfolio_link: data.urlLink,
+      primary_area_of_expertise: data.primaryAreaOfExpertise,
+      time_zone: data.timezone,
+      is_agent_open_to_calls_and_video_meetings: data.openToCalls === 'yes',
+      does_agent_have_working_computer: data.hasWorkingComputer === 'yes',
+      does_agent_have_stable_internet: data.hasStableInternet === 'yes',
+      is_agent_comfortable_with_time_tracking_tools: data.comfortableWithTimeTracking === 'yes',
+      certificate_url: data.certificates,
+      personality_url: data.personalityTest,
+    }
+
+    const response = await apiClient.put(`/v1/users/${userId}`, updateData)
+
+    if (response.data) {
+      return {
+        success: true,
+        user: response.data.user
+      }
+    }
+    return { success: false, error: 'Profile update failed: Invalid response from server.' }
+  } catch (err: any) {
+    const error = err.response?.data?.detail || err.message || 'An unexpected error occurred.'
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+export default {
+  signup,
+  login,
+  updateAgentProfile,
+  updateClientProfile,
+  prepareSignupData,
+  mapClientWorkHours
+}

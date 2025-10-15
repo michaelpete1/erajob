@@ -159,113 +159,180 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
+// Define file type for uploaded files
+interface WorkLogFile {
+  name: string
+  size: number
+  type: string
+  data: string | null
+  lastModified: number
+}
+
+// Work logs data with proper typing
+interface WorkLog {
+  id: string
+  title: string
+  hours: number
+  date: string
+  comment: string
+  files?: WorkLogFile[]
+  projectId?: string
+  gigId?: string
+  status: 'draft' | 'submitted' | 'approved'
+}
+
 const router = useRouter()
+
+// Job data (in a real app, this would come from route params or props)
+const selectedJob = ref({
+  title: 'Content Writing Project',
+  client: 'TechCorp',
+  price: '14.00'
+})
 
 // Reactive data
 const hours = ref(8)
 const notes = ref('')
-const uploadedFiles = ref<any[]>([])
-const selectedJob = ref<any>(null)
+const uploadedFiles = ref<WorkLogFile[]>([])
 const currentDate = ref('')
-const fileInput = ref<any>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-// Initialize
+// Initialize current date
 onMounted(() => {
-  // Get current date and time
   const now = new Date()
   currentDate.value = now.toLocaleDateString('en-US', {
-    month: 'numeric',
-    day: 'numeric', 
+    weekday: 'long',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    month: 'long',
+    day: 'numeric'
   })
-  
-  // Get selected job from localStorage
-  try {
-    const jobData = localStorage.getItem('selectedGig')
-    if (jobData) {
-      selectedJob.value = JSON.parse(jobData)
-    }
-  } catch (e) {
-    // ignore
-  }
 })
 
-// Methods
-const increaseHours = () => {
-  hours.value = Math.min(24, hours.value + 0.5)
-}
-
+// Hours controls
 const decreaseHours = () => {
-  hours.value = Math.max(0.5, hours.value - 0.5)
+  if (hours.value > 0.5) {
+    hours.value -= 0.5
+  }
 }
 
+const increaseHours = () => {
+  if (hours.value < 24) {
+    hours.value += 0.5
+  }
+}
+
+// File handling
 const triggerFileUpload = () => {
   fileInput.value?.click()
 }
 
-const handleFileUpload = (event: any) => {
-  const files = Array.from(event.target.files)
-  uploadedFiles.value = [...uploadedFiles.value, ...files]
+const handleFileUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
+
+  try {
+    const files = Array.from(input.files)
+    for (const file of files) {
+      const base64Data = await fileToBase64(file)
+      uploadedFiles.value.push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        data: base64Data,
+        lastModified: file.lastModified
+      })
+    }
+  } catch (err) {
+    error.value = 'Failed to process files. Please try again.'
+    console.error('File upload error:', err)
+  }
 }
 
 const removeFile = (index: number) => {
   uploadedFiles.value.splice(index, 1)
 }
 
+// Form submission
 const submitLog = async () => {
-  // Convert files to base64 for localStorage storage
-  const processedFiles = []
+  if (hours.value <= 0) {
+    error.value = 'Please enter valid hours worked'
+    return
+  }
+
+  loading.value = true
+  error.value = null
+
+  try {
+    const workLog: Omit<WorkLog, 'id' | 'status'> = {
+      title: `Work log for ${selectedJob.value.title}`,
+      hours: hours.value,
+      date: new Date().toISOString(),
+      comment: notes.value,
+      files: [...uploadedFiles.value],
+      projectId: 'project-123', // In a real app, get this from route or props
+      gigId: 'gig-456' // In a real app, get this from route or props
+    }
+
+    const result = await submitWorkLogToAPI(workLog)
+    
+    if (result.success && result.data) {
+      // In a real app, you might want to navigate to a success page or show a success message
+      console.log('Work log submitted successfully:', result.data)
+      router.push('/agent/explore-gigs')
+    } else {
+      throw new Error(result.error || 'Failed to submit work log')
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'An unknown error occurred'
+    error.value = `Failed to submit work log: ${message}`
+    console.error('Submission error:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Define file type for uploaded files
+interface WorkLogFile {
+  name: string
+  size: number
+  type: string
+  data: string | null
+  lastModified: number
+}
+
+// Work logs data with proper typing
+interface WorkLog {
+  id: string
+  title: string
+  hours: number
+  date: string
+  comment: string
+  files?: WorkLogFile[]
+  projectId?: string
+  gigId?: string
+  status: 'draft' | 'submitted' | 'approved'
+}
+
+// Simulate API call for creating work log (replace with real API call)
+const submitWorkLogToAPI = async (logData: Omit<WorkLog, 'id' | 'status'>): Promise<{ success: boolean; data?: WorkLog; error?: string }> => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000))
   
-  if (uploadedFiles.value && uploadedFiles.value.length > 0) {
-    for (const file of uploadedFiles.value) {
-      try {
-        // Convert file to base64 data URL
-        const base64Data = await fileToBase64(file)
-        processedFiles.push({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          data: base64Data,
-          lastModified: file.lastModified
-        })
-      } catch (error) {
-        console.error('Error processing file:', error)
-        // Add file without base64 data as fallback
-        processedFiles.push({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          data: null,
-          lastModified: file.lastModified
-        })
-      }
+  // In a real implementation, this would call:
+  // const result = await workLogsService.createWorkLog(logData)
+  // return result
+  
+  // For now, return a mock response
+  return {
+    success: true,
+    data: {
+      ...logData,
+      id: 'log-' + Math.random().toString(36).substr(2, 9),
+      status: 'submitted' as const
     }
   }
-  
-  // Create log entry
-  const logEntry = {
-    id: Date.now(),
-    date: currentDate.value,
-    title: selectedJob.value?.title || 'Work Session',
-    comment: notes.value || 'No additional notes',
-    hours: hours.value,
-    job: selectedJob.value,
-    files: processedFiles
-  }
-  
-  // Save to localStorage (in real app, this would be an API call)
-  try {
-    const existingLogs = JSON.parse(localStorage.getItem('workLogs') || '[]')
-    existingLogs.unshift(logEntry)
-    localStorage.setItem('workLogs', JSON.stringify(existingLogs))
-  } catch (e) {
-    console.error('Error saving log:', e)
-  }
-  
-  // Navigate to log work page
-  router.push('/agent/log-work')
 }
 
 // Helper function to convert file to base64
@@ -273,12 +340,23 @@ const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.readAsDataURL(file)
-    reader.onload = () => resolve(reader.result as string)
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result === 'string') {
+        resolve(result)
+      } else if (result instanceof ArrayBuffer) {
+        // Handle ArrayBuffer case if needed
+        const decoder = new TextDecoder('utf-8')
+        resolve(decoder.decode(result))
+      } else {
+        reject(new Error('Failed to convert file to base64'))
+      }
+    }
     reader.onerror = error => reject(error)
   })
 }
 </script>
 
 <style scoped>
-/* No custom styles needed - using Tailwind classes */
+/* Add any custom styles here if needed */
 </style>

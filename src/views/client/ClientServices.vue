@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { PencilSquareIcon, MegaphoneIcon, FilmIcon, MusicalNoteIcon, CodeBracketIcon, GlobeAltIcon, ChartBarIcon, DocumentTextIcon, CameraIcon, MicrophoneIcon, PuzzlePieceIcon, PencilIcon, LightBulbIcon, CurrencyDollarIcon, ShoppingCartIcon } from '@heroicons/vue/24/solid';
 
@@ -25,10 +25,81 @@ const categories = [
   { title: 'E-commerce', description: 'Store Management & Dropshipping', icon: ShoppingCartIcon }
 ];
 
+// Load any previously selected services
+onMounted(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('selectedClientServices') || '[]')
+    if (Array.isArray(saved) && saved.length) {
+      // Reconstruct minimal category objects for UI selection state
+      // We only need title matches; map saved service enum back to categories heuristically
+      const reverseMap = {
+        'Digital Marketing': 'Sales & Marketing',
+        'Content Writing': 'Writing & Translation',
+        'Web Devlopment': 'Programming & Tech',
+        'Other': 'Graphic Design'
+      }
+      const titles = saved.map((s) => reverseMap[s] || 'Graphic Design')
+      selectedCategories.value = categories.filter(c => titles.includes(c.title))
+    }
+  } catch {}
+})
+
+// Autosave as user selects/deselects
+watch(selectedCategories, (val) => {
+  try {
+    const serviceMapping = {
+      'Graphic Design': 'Other',
+      'Digital Marketing': 'Digital Marketing',
+      'Video & Animation': 'Other',
+      'Music & Audio': 'Other',
+      'Programming & Tech': 'Web Devlopment',
+      'Business': 'Other',
+      'Finance & Accounting': 'Other',
+      'Writing & Translation': 'Content Writing',
+      'Photography': 'Other',
+      'Voice Over': 'Other',
+      'AI Services': 'Other',
+      'Art & Illustration': 'Other',
+      'Consulting': 'Other',
+      'Sales & Marketing': 'Digital Marketing',
+      'E-commerce': 'Other'
+    };
+    const selectedServices = [...new Set(val.map(cat => serviceMapping[cat.title] || 'Other'))];
+    localStorage.setItem('selectedClientServices', JSON.stringify(selectedServices));
+  } catch {}
+}, { deep: true })
+
 const goNext = () => {
   if (selectedCategories.value.length >= 3) {
-    localStorage.setItem('selectedClientServices', JSON.stringify(selectedCategories.value));
-    router.push('/client/additional');
+    // Map UI service titles to API enum values
+    const serviceMapping = {
+      'Graphic Design': 'Other',
+      'Digital Marketing': 'Digital Marketing',
+      'Video & Animation': 'Other',
+      'Music & Audio': 'Other',
+      'Programming & Tech': 'Web Devlopment', // Map to closest match
+      'Business': 'Other',
+      'Finance & Accounting': 'Other',
+      'Writing & Translation': 'Content Writing',
+      'Photography': 'Other',
+      'Voice Over': 'Other',
+      'AI Services': 'Other',
+      'Art & Illustration': 'Other',
+      'Consulting': 'Other',
+      'Sales & Marketing': 'Digital Marketing'
+    };
+
+    // Store selected services as API enum values, removing duplicates
+    const selectedServices = [...new Set(
+      selectedCategories.value.map(cat => serviceMapping[cat.title] || 'Other')
+    )];
+    localStorage.setItem('selectedClientServices', JSON.stringify(selectedServices));
+    const isSignUpFlow = !!localStorage.getItem('signupBasicData')
+    if (isSignUpFlow) {
+      router.push('/client/congrats')
+    } else {
+      router.push('/client/additional')
+    }
   }
 };
 </script>
