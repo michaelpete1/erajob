@@ -12,13 +12,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/admin/sign-in', name: 'admin-sign-in', component: () => import('../views/admin/AdminSignIn.vue') },
   // Client flow
   { path: '/client/welcome', name: 'client-welcome', component: () => import('../views/client/ClientWelcome.vue') },
-  { path: '/client/services', name: 'client-services', component: () => import('../views/client/ClientServices.vue') },
   { path: '/client/explore-gigs', name: 'client-explore-gigs', component: () => import('../views/client/ClientExploreGigs.vue') },
   { path: '/client/projects', name: 'client-projects', component: () => import('../views/client/ClientProjects.vue') },
   { path: '/client/projects/:id', name: 'client-project-details', component: () => import('../views/client/ClientProjectDetails.vue') },
   { path: '/client/jobs/:id', name: 'client-job-description', component: () => import('../views/client/ClientJobDescription.vue') },
   { path: '/client/projects/create', name: 'client-create-project', component: () => import('../views/client/ClientCreateProject.vue') },
-  { path: '/client/additional', name: 'client-additional', component: () => import('../views/client/ClientAdditional.vue') },
   { path: '/client/add-post', name: 'add-post', component: () => import('../views/client/ClientSummary.vue') },
   { path: '/client/congrats', name: 'client-congrats', component: () => import('../views/client/ClientCongrats.vue') },
   { path: '/client/job-application', name: 'client-job-application', component: () => import('../views/client/ClientJobApplication.vue') },
@@ -34,12 +32,6 @@ const routes: RouteRecordRaw[] = [
   // Agent flow
   { path: '/agent/welcome', name: 'agent-welcome', component: () => import('../views/agent/AgentWelcome.vue') },
   {
-    path: '/agent/services',
-    name: 'agent-services',
-    component: () => import('../views/agent/AgentServices.vue'),
-    meta: { requiresAuth: true, role: 'agent' }
-  },
-  {
     path: '/agent/congrats',
     name: 'agent-congratulations',
     component: () => import('../views/agent/AgentCongrats.vue'),
@@ -51,7 +43,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/client/ClientDashboard.vue'),
     meta: { requiresAuth: true, role: 'client' }
   },
-  { path: '/agent/additional', name: 'agent-additional', component: () => import('../views/agent/AgentAdditional.vue') },
   { path: '/agent/explore-gigs', name: 'agent-explore-gigs', component: () => import('../views/agent/AgentExploreGigs.vue') },
   { path: '/agent/gigs-listing', name: 'agent-gigs-listing', component: () => import('../views/agent/AgentProjectListing.vue') },
   { path: '/agent/log-work', name: 'agent-log-work', component: () => import('../views/agent/AgentLogWork.vue') },
@@ -120,7 +111,7 @@ router.beforeEach(async (to, _from, next) => {
 
   // Allow signup flow pages for unauthenticated users if basic signup data exists
   const hasSignupData = !!localStorage.getItem('signupBasicData')
-  const signupPages = ['/client/welcome', '/client/services', '/client/congrats', '/agent/welcome', '/agent/services', '/agent/congrats', '/agent/welcome-back']
+  const signupPages = ['/client/welcome', '/client/congrats', '/agent/welcome', '/agent/congrats', '/agent/welcome-back']
   if (!token && hasSignupData && signupPages.includes(to.path)) {
     next()
     return
@@ -128,9 +119,14 @@ router.beforeEach(async (to, _from, next) => {
 
   // If already authenticated, prevent going to sign-in pages; send to role home
   if (token && authPages.includes(to.path)) {
+    const forceAuthPage = to.query?.force === 'true'
+    if (forceAuthPage) {
+      next()
+      return
+    }
     if (role === 'admin') return next('/admin/job-approval')
     if (role === 'client') return next({ name: 'client-dashboard' })
-    if (role === 'agent') return next({ name: 'agent-services' })
+    if (role === 'agent') return next({ name: 'agent-explore-gigs' })
     return next('/')
   }
 
@@ -155,7 +151,7 @@ router.beforeEach(async (to, _from, next) => {
     // Role mismatch; keep user inside their current role area instead of signing out
     if (role === 'admin') return next('/admin/job-approval')
     if (role === 'client') return next({ name: 'client-dashboard' })
-    if (role === 'agent') return next({ name: 'agent-services' })
+    if (role === 'agent') return next({ name: 'agent-explore-gigs' })
     // Fallback
     next('/sign-in')
     return

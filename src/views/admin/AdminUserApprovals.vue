@@ -93,6 +93,33 @@ const users = ref<User[]>([])
 const isLoading = ref(true)
 const fetchError = ref<string | null>(null)
 
+const APPROVED_USERS_STORAGE_KEY = 'adminApprovedUserIds'
+const REJECTED_USERS_STORAGE_KEY = 'adminRejectedUserIds'
+
+const loadIdSet = (key: string): Set<string> => {
+  try {
+    const stored = localStorage.getItem(key)
+    if (!stored) return new Set()
+    const parsed = JSON.parse(stored)
+    if (Array.isArray(parsed)) return new Set(parsed.map((id: unknown) => String(id)))
+    return new Set()
+  } catch (error) {
+    console.warn(`Failed to load persisted ids for ${key}:`, error)
+    return new Set()
+  }
+}
+
+const approvedUserIds = ref<Set<string>>(loadIdSet(APPROVED_USERS_STORAGE_KEY))
+const rejectedUserIds = ref<Set<string>>(loadIdSet(REJECTED_USERS_STORAGE_KEY))
+
+const persistIdSet = (key: string, idSet: Set<string>) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(Array.from(idSet)))
+  } catch (error) {
+    console.warn(`Failed to persist ids for ${key}:`, error)
+  }
+}
+
 const fetchUsers = async () => {
   isLoading.value = true
   fetchError.value = null
@@ -100,7 +127,7 @@ const fetchUsers = async () => {
     const resp = await api.user.listUsers(0, 50)
     if (resp.success && Array.isArray(resp.data)) {
       // Map server users to local UI model
-      users.value = resp.data.map((u: any) => ({
+      const mappedUsers: User[] = resp.data.map((u: any) => ({
         id: u.id || u.user_id || String(u._id || ''),
         name: u.full_name || u.name || u.email || 'Unknown',
         email: u.email || '',
@@ -108,6 +135,10 @@ const fetchUsers = async () => {
         status: u.status || 'pending',
         createdAt: u.created_at || (u.date_created ? new Date(u.date_created * 1000).toISOString() : new Date().toISOString())
       }))
+      users.value = mappedUsers.filter(user => {
+        const id = String(user.id)
+        return !approvedUserIds.value.has(id) && !rejectedUserIds.value.has(id)
+      })
     } else {
       fetchError.value = resp.error || 'Failed to load users.'
     }
@@ -123,8 +154,12 @@ const approveUser = async (userId: string) => {
   try {
     const resp = await api.user.approveUser(userId)
     if (resp.success) {
-      // Remove approved user from the local list immediately
-      users.value = users.value.filter(u => u.id !== userId)
+      const id = String(userId)
+      approvedUserIds.value.add(id)
+      rejectedUserIds.value.delete(id)
+      persistIdSet(APPROVED_USERS_STORAGE_KEY, approvedUserIds.value)
+      persistIdSet(REJECTED_USERS_STORAGE_KEY, rejectedUserIds.value)
+      users.value = users.value.filter(u => u.id !== id)
     } else {
       fetchError.value = resp.error || 'Failed to approve user. Please try again.'
     }
@@ -138,8 +173,12 @@ const rejectUser = async (userId: string) => {
   try {
     const resp = await api.user.rejectUser(userId)
     if (resp.success) {
-      // Remove rejected user from the local list immediately
-      users.value = users.value.filter(u => u.id !== userId)
+      const id = String(userId)
+      rejectedUserIds.value.add(id)
+      approvedUserIds.value.delete(id)
+      persistIdSet(REJECTED_USERS_STORAGE_KEY, rejectedUserIds.value)
+      persistIdSet(APPROVED_USERS_STORAGE_KEY, approvedUserIds.value)
+      users.value = users.value.filter(u => u.id !== id)
     } else {
       fetchError.value = resp.error || 'Failed to reject user. Please try again.'
     }

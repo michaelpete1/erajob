@@ -604,7 +604,7 @@ const onSubmit = async () => {
       personalityTest: personalityTestFile.value?.name
     }
     localStorage.setItem('clientWelcomeData', JSON.stringify(welcomeData))
-    router.push('/client/services')
+    router.push('/client/congrats')
   } catch (error: any) {
     console.error('Error submitting form:', error)
     generalError.value = 'An unexpected error occurred. Please try again.'

@@ -18,7 +18,7 @@
       <p class="text-base md:text-lg text-white font-semibold mb-1 animate-fade-up-delay-2">to</p>
       <p class="text-2xl md:text-3xl font-extrabold text-white mb-10 animate-fade-up-delay-3 bg-gradient-to-r from-white to-teal-100 bg-clip-text text-transparent">ERA onboarding</p>
       <router-link
-        to="/sign-in"
+        :to="{ path: '/sign-in', query: { force: 'true' } }"
         class="btn-pressable rounded-full bg-white px-8 py-3 text-brand-teal font-semibold text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fade-up-delay-4"
       >
         Get started!

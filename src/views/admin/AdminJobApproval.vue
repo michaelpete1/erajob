@@ -162,6 +162,33 @@ const error = ref<string | null>(null);
 const approvingJobs = ref<Set<string>>(new Set());
 const rejectingJobs = ref<Set<string>>(new Set());
 
+const APPROVED_JOBS_STORAGE_KEY = 'adminApprovedJobIds';
+
+const loadApprovedJobIds = (): Set<string> => {
+  try {
+    const stored = localStorage.getItem(APPROVED_JOBS_STORAGE_KEY);
+    if (!stored) return new Set();
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      return new Set(parsed.map((id: unknown) => String(id)));
+    }
+    return new Set();
+  } catch (err) {
+    console.warn('Failed to load approved job ids from storage:', err);
+    return new Set();
+  }
+};
+
+const approvedJobIds = ref<Set<string>>(loadApprovedJobIds());
+
+const persistApprovedJobIds = () => {
+  try {
+    localStorage.setItem(APPROVED_JOBS_STORAGE_KEY, JSON.stringify(Array.from(approvedJobIds.value)));
+  } catch (err) {
+    console.warn('Failed to persist approved job ids:', err);
+  }
+};
+
 // Fetch jobs on component mount
 const fetchJobs = async () => {
     loading.value = true;
@@ -169,7 +196,11 @@ const fetchJobs = async () => {
     try {
         const response = await api.jobs.listAdminJobs(0, 50);
         if (response.success && response.data) {
-            allJobs.value = response.data;
+            const filteredJobs = response.data.filter(job => {
+                if (!job?.id) return true;
+                return !approvedJobIds.value.has(String(job.id));
+            });
+            allJobs.value = filteredJobs;
         } else {
             error.value = response.error || 'Failed to fetch jobs';
         }
@@ -191,12 +222,15 @@ const filteredJobs = computed(() => {
 const approveJob = async (jobId: string) => {
     if (!jobId) return;
 
-    approvingJobs.value.add(jobId);
+    const jobIdStr = String(jobId);
+
+    approvingJobs.value.add(jobIdStr);
     try {
         const response = await api.jobs.approveJob(jobId);
         if (response.success) {
-            // Refresh jobs list to get updated status
-            await fetchJobs();
+            approvedJobIds.value.add(jobIdStr);
+            persistApprovedJobIds();
+            allJobs.value = allJobs.value.filter(job => String(job.id) !== jobIdStr);
             alert('Job approved successfully');
         } else {
             alert(`Failed to approve job: ${response.error}`);
@@ -204,7 +238,7 @@ const approveJob = async (jobId: string) => {
     } catch (error: any) {
         alert(`Error approving job: ${error.message}`);
     } finally {
-        approvingJobs.value.delete(jobId);
+        approvingJobs.value.delete(jobIdStr);
     }
 };
 

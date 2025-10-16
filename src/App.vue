@@ -6,46 +6,39 @@ import ClientNavbar from './components/navbar/ClientNavbar.vue'
 import ClientBottomNav from './components/ClientBottomNav.vue'
 import AdminBottomNav from './components/AdminBottomNav.vue'
 
+const AUTH_BASE_ROUTES = [
+  '/',
+  '/sign-in',
+  '/sign-up',
+  '/role-select',
+  '/forgot-password',
+  '/reset-password',
+  '/admin/sign-in'
+]
+
+const AUTH_ROUTE_PREFIXES = [
+  '/client/welcome',
+  '/client/services',
+  '/client/congrats',
+  '/agent/welcome',
+  '/agent/services',
+  '/agent/congrats',
+  '/agent/welcome-back',
+  '/agent/explore-gigs',
+  '/admin/sign-in'
+]
+
 const routeError = ref<string | null>(null)
 const userRole = ref<string>('')
 const currentRoute = useRoute()
 
 
 const isAuthPage = computed(() => {
-  const authRoutes = [
-    '/', 
-    '/sign-in', 
-    '/sign-up', 
-    '/role-select',
-    '/forgot-password',
-    '/reset-password',
-    // Client signup process
-    '/client/welcome',
-    '/client/services',
-    '/client/additional',
-    '/client/congrats',
-    // Agent signup process
-    '/agent/welcome',
-    '/agent/services',
-    '/agent/additional',
-    '/agent/congrats',
-    '/agent/welcome-back',
-    '/agent/explore-gigs',
-    // Admin auth
-    '/admin/sign-in'
-  ]
-  return authRoutes.includes(currentRoute.path) || 
-         currentRoute.path.startsWith('/client/welcome') ||
-         currentRoute.path.startsWith('/client/services') ||
-         currentRoute.path.startsWith('/client/additional') ||
-         currentRoute.path.startsWith('/client/congrats') ||
-         currentRoute.path.startsWith('/agent/welcome') ||
-         currentRoute.path.startsWith('/agent/services') ||
-         currentRoute.path.startsWith('/agent/additional') ||
-         currentRoute.path.startsWith('/agent/congrats') ||
-         currentRoute.path.startsWith('/agent/welcome-back') ||
-         currentRoute.path.startsWith('/agent/explore-gigs') ||
-         currentRoute.path.startsWith('/admin/sign-in')
+  const path = currentRoute.path
+  if (AUTH_BASE_ROUTES.includes(path)) {
+    return true
+  }
+  return AUTH_ROUTE_PREFIXES.some(prefix => path.startsWith(prefix))
 })
 
 // Check if navbar should be shown
@@ -113,13 +106,19 @@ function updateUserRole() {
   }
 
   // Ensure role is consistent with route
-  if (userRole.value === 'client' && window.location.pathname.startsWith('/agent')) {
+  const currentPath = window.location.pathname
+  const isAuthPath = AUTH_BASE_ROUTES.includes(currentPath) || AUTH_ROUTE_PREFIXES.some(prefix => currentPath.startsWith(prefix))
+  if (isAuthPath) {
+    return;
+  }
+
+  if (userRole.value === 'client' && currentPath.startsWith('/agent')) {
     // Redirect to client dashboard if trying to access agent routes as client
     window.location.href = '/client/dashboard';
-  } else if (userRole.value === 'agent' && window.location.pathname.startsWith('/client')) {
+  } else if (userRole.value === 'agent' && currentPath.startsWith('/client')) {
     // Redirect to agent dashboard if trying to access client routes as agent
     window.location.href = '/agent/dashboard';
-  } else if (userRole.value === 'admin' && !window.location.pathname.startsWith('/admin')) {
+  } else if (userRole.value === 'admin' && !currentPath.startsWith('/admin')) {
     // Redirect to admin dashboard if trying to access non-admin routes as admin
     window.location.href = '/admin/job-approval';
   }

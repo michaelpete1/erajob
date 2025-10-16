@@ -12,7 +12,10 @@
     <div class="relative z-10 w-full max-w-sm mx-auto px-4 sm:px-6 py-6 sm:py-8">
       <!-- Navigation Header -->
       <div class="absolute top-4 left-4 right-4 z-20 flex justify-between items-center animate-fade-up">
-        <router-link to="/sign-up" class="text-white/80 hover:text-white transition-colors text-sm font-medium">
+        <router-link
+          :to="{ path: '/sign-up', query: { force: 'true' } }"
+          class="text-white/80 hover:text-white transition-colors text-sm font-medium"
+        >
           Sign Up
         </router-link>
       </div>
@@ -93,8 +96,7 @@
               </svg>
               <span>Agent</span>
             </button>
-            
-            
+
           </div>
         
           <button
@@ -114,10 +116,21 @@
         </form>
         <p class="mt-6 text-sm sm:text-base text-white/80 animate-fade-up-delay-4">
           Don't have an account? 
-          <router-link to="/sign-up" class="font-semibold text-white hover:text-teal-100 underline transition-colors">Sign up</router-link>
+          <router-link
+            :to="{ path: '/sign-up', query: { force: 'true' } }"
+            class="font-semibold text-white hover:text-teal-100 underline transition-colors"
+          >
+            Sign up
+          </router-link>
         </p>
         <p class="mt-2 text-xs sm:text-sm text-white/80 animate-fade-up-delay-4">
-          Admin? <router-link to="/admin/sign-in" class="font-semibold text-white hover:text-teal-100 underline transition-colors">Go to Admin Sign In</router-link>
+          Admin?
+          <router-link
+            :to="{ path: '/admin/sign-in', query: { force: 'true' } }"
+            class="font-semibold text-white hover:text-teal-100 underline transition-colors"
+          >
+            Go to Admin Sign In
+          </router-link>
         </p>
       </div>
     </div>
@@ -157,8 +170,8 @@ async function onSubmit() {
     })
 
     if (response.success && response.user) {
-      // Redirect based on role
-      if (response.user.role === 'agent') {
+      const targetRole = selectedRole.value
+      if (targetRole === 'agent') {
         router.push({ name: 'agent-explore-gigs' })
       } else {
         router.push({ name: 'client-dashboard' })

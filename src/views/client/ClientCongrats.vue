@@ -62,9 +62,12 @@ const finishSignup = async () => {
       localStorage.removeItem('signupBasicData')
       localStorage.removeItem('clientWelcomeData')
       localStorage.removeItem('selectedClientServices')
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('userRole')
     } catch {}
 
-    router.push('/client/projects')
+    router.push({ path: '/sign-in', query: { force: 'true' } })
   } catch (e: any) {
     errorMessage.value = e?.response?.data?.detail || e?.message || 'Unexpected error.'
   } finally {
@@ -87,7 +90,7 @@ const finishSignup = async () => {
     <div class="relative z-10 w-full max-w-md mx-auto px-4 py-6">
       <!-- Navigation Header -->
       <header class="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white/10 backdrop-blur-sm rounded-t-2xl animate-fade-up">
-        <button @click="$router.push('/client/additional')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
+        <button @click="$router.push('/client/services')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>

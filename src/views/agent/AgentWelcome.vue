@@ -461,7 +461,7 @@ const onSubmit = async () => {
       personalityUrl: form.personalityUrl
     }
     localStorage.setItem('agentWelcomeData', JSON.stringify(welcomeData))
-    router.push('/agent/services')
+    router.push('/agent/congrats')
   } catch (error) {
     console.error('Error submitting form:', error)
     alert('There was an error saving your information. Please try again.')
