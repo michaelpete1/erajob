@@ -6,8 +6,7 @@ import type {
   JobListApiResponse
 } from '../types/api/jobs'
 
-// Note: Using '/v1/jobs' assuming 'jobss' in the documentation is a typo.
-const BASE_URL = '/v1/jobs'
+const BASE_URL = '/v1/jobss'
 
 /**
  * Retrieves a paginated list of jobs that the authenticated agent qualifies for.
@@ -15,7 +14,9 @@ const BASE_URL = '/v1/jobs'
  * @param stop - The ending index for the list.
  */
 export const listAvailableAgentJobs = (start: number, stop: number) => {
-  return apiClient.get<JobListApiResponse>(`${BASE_URL}/agent/available/${start}/${stop}`)
+  return apiClient.get<JobListApiResponse>(`${BASE_URL}/agent/available/`, {
+    params: { start, stop }
+  })
 }
 
 /**
@@ -24,7 +25,9 @@ export const listAvailableAgentJobs = (start: number, stop: number) => {
  * @param stop - The ending index for the list.
  */
 export const listClientCreatedJobs = (start: number, stop: number) => {
-  return apiClient.get<JobListApiResponse>(`${BASE_URL}/client/created/${start}/${stop}`)
+  return apiClient.get<JobListApiResponse>(`${BASE_URL}/client/created/`, {
+    params: { start, stop }
+  })
 }
 
 /**
@@ -33,7 +36,9 @@ export const listClientCreatedJobs = (start: number, stop: number) => {
  * @param stop - The ending index for the list.
  */
 export const listAllJobsAdmin = (start: number, stop: number) => {
-  return apiClient.get<JobListApiResponse>(`${BASE_URL}/admin/${start}/${stop}`)
+  return apiClient.get<JobListApiResponse>(`${BASE_URL}/admin/`, {
+    params: { start, stop }
+  })
 }
 
 /**

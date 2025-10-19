@@ -263,39 +263,129 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { api } from '../../services/apiService';
  
+
+type AdminJob = {
+  id?: string | number | null;
+  status?: string | null | undefined;
+  timeAgo?: string | null | undefined;
+  title?: string | null | undefined;
+  agentName?: string | null | undefined;
+  agentUsername?: string | null | undefined;
+  pay?: string | null | undefined;
+  [key: string]: any;
+};
 
 const route = useRoute();
 const router = useRouter();
 
 const jobId = ref<number>(0);
-const job = ref<any>(null);
+const job = ref<AdminJob | null>(null);
 const isEditing = ref(false);
 const editedPayment = ref('');
 const showRejectModal = ref(false);
 const rejectionReason = ref('');
 const isSubmittingRejection = ref(false);
 
-// Mock job data - in a real app, this would come from an API
-const mockJobs = [
+const ADMIN_JOBS_STORAGE_KEY = 'adminJobs';
+const SELECTED_ADMIN_JOB_STORAGE_KEY = 'selectedAdminJob';
+
+// Mock job data - retained as final fallback
+const mockJobs: AdminJob[] = [
     { id: 1, status: 'Approved', timeAgo: '8 hours ago', title: 'Complete Freelancer Application UI/UX Revamp', agentName: 'Jenny Wilson', agentUsername: 'jennyson', pay: '$2,500' },
     { id: 2, status: 'Pending', timeAgo: '41 minutes ago', title: 'Create a Social Media Banner for a Fitness Brand', agentName: 'Matt Barrie', agentUsername: 'matt', pay: '$68/hr' },
     { id: 3, status: 'Pending', timeAgo: '1 hour ago', title: 'Write SEO Content for a Tech Blog', agentName: 'Matt Barrie', agentUsername: 'matt', pay: '$80 -120' },
 ];
 
-onMounted(() => {
-  // Get job ID from route params
-  jobId.value = parseInt(route.params.id as string) || 0;
-  
-  // Find the job
-  job.value = mockJobs.find(j => j.id === jobId.value) || null;
-  
-  if (job.value) {
-    editedPayment.value = job.value.pay;
+const normaliseId = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return value.toString();
+  return value;
+};
+
+const loadJobFromStorage = (id: number): AdminJob | null => {
+  const stringId = id.toString();
+
+  try {
+    const selected = localStorage.getItem(SELECTED_ADMIN_JOB_STORAGE_KEY);
+    if (selected) {
+      const parsedSelected: AdminJob = JSON.parse(selected);
+      if (normaliseId(parsedSelected.id) === stringId) {
+        return parsedSelected;
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing selected admin job from storage:', error);
   }
+
+  try {
+    const storedJobs = localStorage.getItem(ADMIN_JOBS_STORAGE_KEY);
+    if (storedJobs) {
+      const parsedJobs: AdminJob[] = JSON.parse(storedJobs);
+      const found = parsedJobs.find(storedJob => normaliseId(storedJob.id) === stringId);
+      if (found) {
+        return found;
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing admin jobs from storage:', error);
+  }
+
+  return null;
+};
+
+const loadJobFromApi = async (id: number): Promise<AdminJob | null> => {
+  try {
+    const response = await api.jobs.listAdminJobs(0, 100);
+    if (response.success && response.data) {
+      const found = response.data.find(apiJob => normaliseId(apiJob.id) === id.toString());
+      if (found) {
+        return found as AdminJob;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching admin jobs from API:', error);
+  }
+  return null;
+};
+
+const initialiseJob = async (id: number) => {
+  if (!id) {
+    router.push('/admin/job-approval');
+    return;
+  }
+
+  const storedJob = loadJobFromStorage(id);
+  if (storedJob) {
+    job.value = storedJob;
+    editedPayment.value = storedJob.pay ? String(storedJob.pay) : '';
+    return;
+  }
+
+  const apiJob = await loadJobFromApi(id);
+  if (apiJob) {
+    job.value = apiJob;
+    editedPayment.value = apiJob.pay ? String(apiJob.pay) : '';
+    return;
+  }
+
+  const fallback = mockJobs.find(mockJob => normaliseId(mockJob.id) === id.toString()) || null;
+  if (fallback) {
+    job.value = fallback;
+    editedPayment.value = fallback.pay ? String(fallback.pay) : '';
+    return;
+  }
+
+  router.push('/admin/job-approval');
+};
+
+onMounted(() => {
+  jobId.value = parseInt(route.params.id as string, 10) || 0;
+  initialiseJob(jobId.value);
 });
 
-function getStatusClass(status: string) {
+function getStatusClass(status?: string | null) {
   switch (status) {
     case 'Approved':
       return 'bg-green-100 text-green-800';
@@ -311,7 +401,7 @@ function getStatusClass(status: string) {
 function toggleEditMode() {
   isEditing.value = !isEditing.value;
   if (isEditing.value) {
-    editedPayment.value = job.value.pay;
+    editedPayment.value = job.value?.pay ? String(job.value.pay) : '';
   }
 }
 
@@ -334,7 +424,7 @@ function savePayment() {
 
 function cancelEdit() {
   isEditing.value = false;
-  editedPayment.value = job.value.pay;
+  editedPayment.value = job.value?.pay ? String(job.value.pay) : '';
 }
 
 function goBack() {

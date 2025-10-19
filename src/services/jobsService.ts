@@ -2,7 +2,7 @@
 import apiClient from './apiClient'
 import type { ApiResponse, Job, JobPostData, JobApprovalData, ServiceResponse } from '../types/api'
 
-const BASE_URL = '/v1/jobs' // Corrected from 'jobss'
+const BASE_URL = '/v1/jobss'
 
 /**
  * Lists jobs that an agent qualifies for. (Agent only)
@@ -11,7 +11,9 @@ const BASE_URL = '/v1/jobs' // Corrected from 'jobss'
  */
 export const listAvailableAgentJobs = async (start: number, stop: number): Promise<ServiceResponse<Job[]>> => {
   try {
-    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/${start}/${stop}`)
+    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/`, {
+      params: { start, stop }
+    })
     if (response.data.status_code === 200) {
       return {
         success: true,
@@ -34,13 +36,14 @@ export const listAvailableAgentJobs = async (start: number, stop: number): Promi
 
 /**
  * Lists jobs that a client has created. (Client only)
- * @param clientId - The client ID
  * @param start - The starting index for the list.
  * @param stop - The ending index for the list.
  */
-export const listClientCreatedJobs = async (clientId: string, start: number, stop: number): Promise<ServiceResponse<Job[]>> => {
+export const listClientCreatedJobs = async (start: number, stop: number): Promise<ServiceResponse<Job[]>> => {
   try {
-    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/client/created/${start}/${stop}`)
+    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/client/created/`, {
+      params: { start, stop }
+    })
     if (response.data.status_code === 200) {
       return {
         success: true,
@@ -68,7 +71,9 @@ export const listClientCreatedJobs = async (clientId: string, start: number, sto
  */
 export const listAdminJobs = async (start: number, stop: number): Promise<ServiceResponse<Job[]>> => {
   try {
-    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/admin/${start}/${stop}`)
+    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/admin/`, {
+      params: { start, stop }
+    })
     if (response.data.status_code === 200) {
       return {
         success: true,

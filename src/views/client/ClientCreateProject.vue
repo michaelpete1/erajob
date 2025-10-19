@@ -70,8 +70,9 @@
             v-model="project.budget"
             type="number"
             min="0"
-            step="0.01"
+            step="1"
             placeholder="Enter budget..."
+            @blur="normalizeBudget"
             class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
           />
         </div>
@@ -167,17 +168,23 @@
             </span>
           </div>
           <div class="flex gap-2">
-            <input
-              v-model="newSkill"
-              type="text"
-              placeholder="Add a skill..."
-              @keyup.enter="addSkill"
+            <select
+              v-model="selectedSkill"
               class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
-            />
+            >
+              <option value="" disabled>Select a skill</option>
+              <option v-for="option in skillOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
             <button
               @click="addSkill"
               type="button"
-              class="px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              :disabled="!selectedSkill"
+              :class="[
+                'px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
+                selectedSkill ? 'bg-green-500 hover:bg-green-600' : 'bg-green-300 cursor-not-allowed'
+              ]"
             >
               Add
             </button>
@@ -210,12 +217,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { jobsService } from '@/services/jobsService';
-import type { JobBase } from '@/types/api';
+import { api } from '@/services/apiService';
+import type { JobsBase } from '@/types/api/openapi';
 
 interface FormData {
   requirements: Array<{ text: string }>;
-  skills: string[];
+  skills: JobsBase['skills_needed'][];
   startDate: string;
   deadline: string;
 }
@@ -223,7 +230,7 @@ interface FormData {
 const router = useRouter();
 const loading = ref(false);
 const error = ref('');
-const newSkill = ref('');
+const selectedSkill = ref<JobsBase['skills_needed'] | ''>('');
 
 const formData = ref<FormData>({
   requirements: [{ text: '' }],
@@ -232,13 +239,38 @@ const formData = ref<FormData>({
   deadline: ''
 });
 
-const project = ref<JobBase>({
+const skillOptions: JobsBase['skills_needed'][] = [
+  'Web Development',
+  'Mobile Development',
+  'UI/UX Design',
+  'Content Writing',
+  'Digital Marketing',
+  'Data Analysis',
+  'Other'
+];
+
+const apiEnumMap: Record<JobsBase['category'], JobsBase['category']> = {
+  'Web Development': 'Web Devlopment',
+  'Web Devlopment': 'Web Devlopment',
+  'Mobile Development': 'Mobile Development',
+  'UI/UX Design': 'UI/UX Design',
+  'Content Writing': 'Content Writing',
+  'Digital Marketing': 'Digital Marketing',
+  'Data Analysis': 'Data Analysis',
+  'Other': 'Other'
+};
+
+const mapToApiEnum = (value: JobsBase['category']): JobsBase['category'] => {
+  return apiEnumMap[value] ?? 'Other';
+};
+
+const project = ref<JobsBase>({
   project_title: '',
-  category: 'Other', // Default to 'Other' which is a valid JobCategory
+  category: 'Other' as JobsBase['category'],
   budget: 0,
   description: '',
   requirement: '',
-  skills_needed: '',
+  skills_needed: 'Other' as JobsBase['skills_needed'],
   timeline: {
     start_date: 0,
     deadline: 0
@@ -246,24 +278,28 @@ const project = ref<JobBase>({
 });
 
 const isFormValid = computed(() => {
+  const hasValidRequirements =
+    formData.value.requirements.length > 0 &&
+    formData.value.requirements.every(req => req.text.trim() !== '');
+
   return (
     project.value.project_title.trim() !== '' &&
     project.value.category && project.value.category !== 'Other' &&
     project.value.budget > 0 &&
     project.value.description.trim() !== '' &&
-    project.value.requirement.trim() !== '' &&
+    hasValidRequirements &&
     formData.value.skills.length > 0 &&
-    formData.value.requirements.every(req => req.text.trim() !== '') &&
     formData.value.startDate &&
     formData.value.deadline
   );
 });
 
 const updateTimeline = (field: 'start_date' | 'deadline', value: string) => {
+  const timestamp = value ? Math.floor(new Date(value).getTime() / 1000) : 0;
   if (field === 'start_date') {
-    project.value.timeline.start_date = new Date(value).getTime();
+    project.value.timeline.start_date = timestamp;
   } else {
-    project.value.timeline.deadline = new Date(value).getTime();
+    project.value.timeline.deadline = timestamp;
   }
 };
 
@@ -278,16 +314,26 @@ const removeRequirement = (index: number) => {
 };
 
 const addSkill = () => {
-  if (newSkill.value.trim() && !formData.value.skills.includes(newSkill.value.trim())) {
-    formData.value.skills.push(newSkill.value.trim());
-    project.value.skills_needed = formData.value.skills.join(',');
-    newSkill.value = '';
+  if (selectedSkill.value && !formData.value.skills.includes(selectedSkill.value)) {
+    formData.value.skills.push(selectedSkill.value);
+    const primarySkill = formData.value.skills[0];
+    project.value.skills_needed = (primarySkill ?? 'Other') as JobsBase['skills_needed'];
+    selectedSkill.value = '';
   }
 };
 
 const removeSkill = (index: number) => {
   formData.value.skills.splice(index, 1);
-  project.value.skills_needed = formData.value.skills.join(',');
+  const primarySkill = formData.value.skills[0];
+  project.value.skills_needed = (primarySkill ?? 'Other') as JobsBase['skills_needed'];
+};
+
+const normalizeBudget = () => {
+  if (typeof project.value.budget === 'number' && !Number.isNaN(project.value.budget)) {
+    project.value.budget = Math.max(0, Math.floor(project.value.budget));
+  } else {
+    project.value.budget = 0;
+  }
 };
 
 const submitProject = async () => {
@@ -297,6 +343,8 @@ const submitProject = async () => {
   error.value = '';
 
   try {
+    normalizeBudget();
+
     // Update project data from form
     project.value.requirement = formData.value.requirements
       .map(req => req.text.trim())
@@ -304,19 +352,20 @@ const submitProject = async () => {
       .join('\n');
 
     // Transform to JobPostData format
-    const jobData = {
-      title: project.value.project_title,
-      description: project.value.description,
-      category: project.value.category,
+    const jobPayload: JobsBase = {
+      project_title: project.value.project_title.trim(),
+      category: mapToApiEnum(project.value.category as JobsBase['category']),
       budget: project.value.budget,
-      skills_needed: formData.value.skills,
+      description: project.value.description.trim(),
+      requirement: project.value.requirement,
+      skills_needed: mapToApiEnum(project.value.skills_needed as JobsBase['category']) as JobsBase['skills_needed'],
       timeline: {
-        startDate: new Date(project.value.timeline.start_date).toISOString(),
-        endDate: new Date(project.value.timeline.deadline).toISOString()
+        start_date: project.value.timeline.start_date,
+        deadline: project.value.timeline.deadline
       }
     };
 
-    const response = await jobsService.createJob(jobData);
+    const response = await api.jobs.createJob(jobPayload);
 
     if (response.success && response.data) {
       router.push('/client/projects');

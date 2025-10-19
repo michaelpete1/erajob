@@ -387,7 +387,12 @@ export const apiService = {
 
   async getClientJobs(params?: { start?: number; stop?: number }): Promise<ServiceResponse<Job[]>> { // Use ApiResponse<Job[]>
     try {
-      const response = await api.get(`${API_VERSION}/jobss/client/created/${params?.start || 0}/${params?.stop || 100}`)
+      const response = await api.get(`${API_VERSION}/jobss/client/created/`, {
+        params: {
+          start: params?.start ?? 0,
+          stop: params?.stop ?? 100
+        }
+      })
       return {
         success: true,
         data: response.data

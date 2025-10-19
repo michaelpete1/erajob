@@ -351,7 +351,9 @@ class ApiService {
 
   async listAdminJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut[]>>(`/v1/jobss/admin/${start}/${stop}`)
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/admin/', {
+        params: { start, stop }
+      })
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to list admin jobs' }
@@ -360,7 +362,9 @@ class ApiService {
 
   async listClientJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut[]>>(`/v1/jobss/client/${start}/${stop}`)
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/client/created/', {
+        params: { start, stop }
+      })
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to list client jobs' }
@@ -369,7 +373,9 @@ class ApiService {
 
   async listAgentAvailableJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut[]>>(`/v1/jobss/agent/available/${start}/${stop}`)
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/agent/available/', {
+        params: { start, stop }
+      })
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to list available jobs' }
@@ -430,13 +436,20 @@ class ApiService {
       const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobss/approve/${jobId}`, body)
       return { success: true, data: response.data.data }
     } catch (error: any) {
-      return { success: false, error: error.response?.data?.detail || 'Failed to approve job' }
+      const detail = error?.response?.data
+      if (detail) {
+        console.error('Approve job API error detail:', detail)
+      }
+      return { success: false, error: detail?.detail || detail?.message || 'Failed to approve job' }
     }
   }
 
   async rejectJob(jobId: string, reason?: string): Promise<ServiceResponse<null>> {
     try {
-      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobs/reject/${jobId}`, { reason })
+      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobss/reject/${jobId}`, {
+        admin_approved: false,
+        rejection_reason: reason || 'No reason provided'
+      })
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to reject job' }

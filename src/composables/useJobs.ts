@@ -153,12 +153,13 @@ const error = computed(() => jobState.value.error);
 const hasMore = computed(() => jobState.value.pagination.hasMore);
 
 // Job actions
-const getClientJobs = async (clientId: string, start: number = 0, stop: number = 10) => {
+const getClientJobs = async (start: number = 0, stop: number = 10) => {
   jobState.value.loading = true;
   try {
-    const response = await jobsService.listClientCreatedJobs(clientId, start, stop);
+    const response = await jobsService.listClientCreatedJobs(start, stop);
     if (response.success && response.data) {
-      jobState.value.jobs = Array.isArray(response.data) ? response.data as unknown as EJJobOut[] : [response.data as unknown as EJJobOut];
+      const jobsArray = Array.isArray(response.data) ? response.data : [response.data];
+      jobState.value.jobs = jobsArray as unknown as EJJobOut[];
     }
     return response;
   } catch (err) {

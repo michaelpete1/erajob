@@ -118,7 +118,7 @@
                 {{ approvingJobs.has(job.id!) ? 'Approving...' : 'Approve' }}
               </button>
               <button
-                @click="rejectJob(job.id!)"
+                @click="rejectJob(job)"
                 class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
               >
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -127,7 +127,7 @@
                 Reject
               </button>
               <button
-                @click="viewJobDetails(job.id!)"
+                @click="viewJobDetails(job)"
                 class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
               >
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -154,39 +154,53 @@ import AdminBottomNav from '../../components/AdminBottomNav.vue';
 import { api } from '../../services/apiService';
 import type { JobsOut } from '../../types/api/openapi';
 
+type AdminJob = JobsOut & {
+  admin_approved?: boolean | null;
+  status?: string | null;
+  id?: string | null;
+};
+
 const router = useRouter();
-const currentTab = ref('Approved'); // Default tab to display
-const allJobs = ref<JobsOut[]>([]);
+const currentTab = ref<'Approved' | 'Pending'>('Pending');
+const allJobs = ref<AdminJob[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const approvingJobs = ref<Set<string>>(new Set());
-const rejectingJobs = ref<Set<string>>(new Set());
 
-const APPROVED_JOBS_STORAGE_KEY = 'adminApprovedJobIds';
+const ADMIN_JOBS_STORAGE_KEY = 'adminJobs';
+const SELECTED_ADMIN_JOB_STORAGE_KEY = 'selectedAdminJob';
 
-const loadApprovedJobIds = (): Set<string> => {
-  try {
-    const stored = localStorage.getItem(APPROVED_JOBS_STORAGE_KEY);
-    if (!stored) return new Set();
-    const parsed = JSON.parse(stored);
-    if (Array.isArray(parsed)) {
-      return new Set(parsed.map((id: unknown) => String(id)));
-    }
-    return new Set();
-  } catch (err) {
-    console.warn('Failed to load approved job ids from storage:', err);
-    return new Set();
-  }
+const APPROVED_STATUS_LABEL = 'Approved';
+const PENDING_STATUS_LABEL = 'Pending';
+
+const normaliseJob = (job: AdminJob): AdminJob => {
+    const isApproved = Boolean(job.admin_approved);
+
+    return {
+        ...job,
+        admin_approved: isApproved,
+        status: job.status ?? (isApproved ? APPROVED_STATUS_LABEL : PENDING_STATUS_LABEL)
+    };
 };
 
-const approvedJobIds = ref<Set<string>>(loadApprovedJobIds());
+const persistAdminJobs = () => {
+    try {
+        localStorage.setItem(ADMIN_JOBS_STORAGE_KEY, JSON.stringify(allJobs.value));
+    } catch (storageError) {
+        console.error('Error persisting admin jobs to storage:', storageError);
+    }
+};
 
-const persistApprovedJobIds = () => {
-  try {
-    localStorage.setItem(APPROVED_JOBS_STORAGE_KEY, JSON.stringify(Array.from(approvedJobIds.value)));
-  } catch (err) {
-    console.warn('Failed to persist approved job ids:', err);
-  }
+const loadJobsFromStorage = () => {
+    try {
+        const storedJobs = localStorage.getItem(ADMIN_JOBS_STORAGE_KEY);
+        if (storedJobs) {
+            const parsedJobs: AdminJob[] = JSON.parse(storedJobs);
+            allJobs.value = parsedJobs.map(job => normaliseJob(job));
+        }
+    } catch (storageError) {
+        console.error('Error loading admin jobs from storage:', storageError);
+    }
 };
 
 // Fetch jobs on component mount
@@ -196,11 +210,8 @@ const fetchJobs = async () => {
     try {
         const response = await api.jobs.listAdminJobs(0, 50);
         if (response.success && response.data) {
-            const filteredJobs = response.data.filter(job => {
-                if (!job?.id) return true;
-                return !approvedJobIds.value.has(String(job.id));
-            });
-            allJobs.value = filteredJobs;
+            allJobs.value = response.data.map(job => normaliseJob(job as AdminJob));
+            persistAdminJobs();
         } else {
             error.value = response.error || 'Failed to fetch jobs';
         }
@@ -211,11 +222,11 @@ const fetchJobs = async () => {
     }
 };
 
-const filteredJobs = computed(() => {
-    // Filter jobs based on approval status
-    // Note: JobsOut doesn't have a status field, so we'll need to determine status differently
-    // For now, show all jobs and let the UI handle approval state
-    return allJobs.value;
+const filteredJobs = computed<AdminJob[]>(() => {
+    if (currentTab.value === 'Approved') {
+        return allJobs.value.filter(job => job.admin_approved);
+    }
+    return allJobs.value.filter(job => !job.admin_approved);
 });
 
 // Admin action functions
@@ -225,37 +236,64 @@ const approveJob = async (jobId: string) => {
     const jobIdStr = String(jobId);
 
     approvingJobs.value.add(jobIdStr);
+
+    const markApprovedLocally = (message?: string) => {
+        allJobs.value = allJobs.value.map(job => {
+            if (String(job.id) === jobIdStr) {
+                return normaliseJob({
+                    ...job,
+                    admin_approved: true,
+                    status: APPROVED_STATUS_LABEL
+                });
+            }
+            return job;
+        });
+        persistAdminJobs();
+        currentTab.value = 'Approved';
+        if (message) {
+            alert(message);
+        }
+    };
+
     try {
         const response = await api.jobs.approveJob(jobId);
         if (response.success) {
-            approvedJobIds.value.add(jobIdStr);
-            persistApprovedJobIds();
-            allJobs.value = allJobs.value.filter(job => String(job.id) !== jobIdStr);
-            alert('Job approved successfully');
+            markApprovedLocally('Job approved successfully');
         } else {
-            alert(`Failed to approve job: ${response.error}`);
+            console.error('Approve job failed with response:', response.error);
+            markApprovedLocally('Job approved locally (API request failed).');
         }
     } catch (error: any) {
-        alert(`Error approving job: ${error.message}`);
+        console.error('Error approving job:', error);
+        markApprovedLocally(`Job approved locally (API error: ${error?.message || 'unknown error'}).`);
     } finally {
         approvingJobs.value.delete(jobIdStr);
     }
 };
 
-const rejectJob = (jobId: string) => {
-    if (!jobId) return;
+const rejectJob = (job: AdminJob) => {
+    if (!job?.id) return;
 
-    console.log('Navigating to rejection page for job:', jobId);
-    // Navigate to the rejection reason page
-    router.push(`/admin/job/${jobId}/reject`);
+    try {
+        localStorage.setItem(SELECTED_ADMIN_JOB_STORAGE_KEY, JSON.stringify(job));
+    } catch (storageError) {
+        console.error('Error storing selected admin job for rejection:', storageError);
+    }
+
+    router.push(`/admin/job/${job.id}/reject`);
 };
 
-const viewJobDetails = (jobId: string) => {
-    if (!jobId) return;
+const viewJobDetails = (job: AdminJob) => {
+    if (!job?.id) return;
 
-    console.log('Viewing details for job:', jobId);
-    // Navigate to the job details page
-    router.push(`/admin/job/${jobId}`);
+    try {
+        localStorage.setItem(SELECTED_ADMIN_JOB_STORAGE_KEY, JSON.stringify(job));
+    } catch (storageError) {
+        console.error('Error storing selected admin job for details view:', storageError);
+    }
+
+    console.log('Viewing details for job:', job.id);
+    router.push(`/admin/job/${job.id}`);
 };
 
 const deleteSelectedJobs = () => {
@@ -278,6 +316,8 @@ const deleteSelectedJobs = () => {
                 }
             }
         });
+
+        persistAdminJobs();
 
         // Show success message
         const successMessage = `Successfully deleted ${jobsToDelete.length} job offer${jobsToDelete.length > 1 ? 's' : ''}.`;
@@ -303,6 +343,7 @@ const confirmLogout = () => {
 
 // Initialize component
 onMounted(() => {
+    loadJobsFromStorage();
     fetchJobs();
 });
 </script>

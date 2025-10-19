@@ -189,7 +189,6 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useJobs } from '../../composables/useJobs'
-import type { JobOut, JobCategory } from '../../types/api'
 
 const router = useRouter()
 const activeTab = ref<'active' | 'pending'>('pending')
@@ -218,13 +217,13 @@ const formatDate = (timestamp: number | null | undefined) => {
   }
 }
 
-// Define a more flexible project type that matches the actual data structure
-interface Project extends Omit<JobOut, 'category' | 'timeline'> {
+interface Project {
   id: string
   project_title: string
-  category: string | JobCategory
+  category: string
   budget: number
   description: string
+  requirement?: string
   date_created: number
   timeline: {
     start_date: number
@@ -235,31 +234,56 @@ interface Project extends Omit<JobOut, 'category' | 'timeline'> {
     name: string
     avatar?: string
   }>
+  status?: string
+  admin_approved?: boolean
 }
 
 const activeProjects = ref<Project[]>([])
 const browseProjects = ref<Project[]>([])
 
+const toProject = (jobPayload: unknown): Project => {
+  const job = (jobPayload || {}) as Record<string, any>
+  const timeline = job.timeline || {}
+  const startDate = typeof timeline.start_date === 'number'
+    ? timeline.start_date
+    : typeof timeline.startDate === 'number'
+      ? timeline.startDate
+      : 0
+  const deadline = typeof timeline.deadline === 'number'
+    ? timeline.deadline
+    : typeof timeline.end_date === 'number'
+      ? timeline.end_date
+      : typeof timeline.endDate === 'number'
+        ? timeline.endDate
+        : 0
+
+  return {
+    id: (job.id ?? job.job_id ?? `temp-${Date.now()}`).toString(),
+    project_title: typeof job.project_title === 'string' ? job.project_title : (typeof job.title === 'string' ? job.title : 'Untitled Project'),
+    category: typeof job.category === 'string' ? job.category : 'Other',
+    budget: typeof job.budget === 'number' ? job.budget : 0,
+    description: typeof job.description === 'string' ? job.description : '',
+    requirement: typeof job.requirement === 'string' ? job.requirement : '',
+    date_created: typeof job.date_created === 'number' ? job.date_created : 0,
+    timeline: {
+      start_date: startDate,
+      deadline: deadline
+    },
+    agents: Array.isArray(job.agents) ? job.agents : [],
+    status: typeof job.status === 'string' ? job.status : undefined,
+    admin_approved: typeof job.admin_approved === 'boolean' ? job.admin_approved : undefined
+  }
+}
+
 const fetchActiveProjects = async () => {
   try {
-    // Get the client ID from your auth state or use a default value
-    const clientId = 'current' // Replace with actual client ID from your auth state
-    const response = await getClientJobs(clientId, 0, 10)
-    // Transform the response to match our Project type
-    const projects = Array.isArray(response)
-      ? response.map(project => ({
-          ...project,
-          // Ensure category is properly typed
-          category: project.category as string || 'Other',
-          // Ensure timeline has required fields
-          timeline: project.timeline || { deadline: 0, start_date: 0 },
-          // Ensure agents array exists
-          agents: project.agents || [],
-          // Ensure date_created is a number
-          date_created: typeof project.date_created === 'number' ? project.date_created : Date.now() / 1000
-        }))
-      : []
-    activeProjects.value = projects as Project[]
+    const response = await getClientJobs(0, 10)
+    if (!response.success || !response.data) {
+      activeProjects.value = []
+      return
+    }
+    const jobsData = Array.isArray(response.data) ? response.data : [response.data]
+    activeProjects.value = jobsData.map(job => toProject(job))
   } catch (err) {
     console.error('Error fetching active projects:', err)
     error.value = 'Failed to load active projects'
@@ -272,21 +296,12 @@ const fetchBrowseProjects = async () => {
       start: 0,
       stop: 10
     })
-    // Transform the response to match our Project type
-    const projects = Array.isArray(response)
-      ? response.map(project => ({
-          ...project,
-          // Ensure category is properly typed
-          category: project.category as string || 'Other',
-          // Ensure timeline has required fields
-          timeline: project.timeline || { deadline: 0, start_date: 0 },
-          // Ensure agents array exists
-          agents: project.agents || [],
-          // Ensure date_created is a number
-          date_created: typeof project.date_created === 'number' ? project.date_created : Date.now() / 1000
-        }))
-      : []
-    browseProjects.value = projects as Project[]
+    if (!response.success || !response.data) {
+      browseProjects.value = []
+      return
+    }
+    const jobsData = Array.isArray(response.data) ? response.data : [response.data]
+    browseProjects.value = jobsData.map(job => toProject(job))
   } catch (err) {
     console.error('Error fetching browse projects:', err)
     error.value = 'Failed to load available projects'

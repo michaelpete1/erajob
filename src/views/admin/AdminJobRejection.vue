@@ -142,19 +142,21 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { api } from '../../services/apiService';
  
 
 const router = useRouter();
 const route = useRoute();
 
 interface Job {
-  id: number;
-  title: string;
-  agentName: string;
-  agentUsername: string;
-  pay: string;
-  timeAgo: string;
-  status: string;
+  id?: string | number | null;
+  title?: string | null;
+  agentName?: string | null;
+  agentUsername?: string | null;
+  pay?: string | null;
+  timeAgo?: string | null;
+  status?: string | null;
+  [key: string]: any;
 }
 
 interface RejectionReason {
@@ -170,12 +172,94 @@ const rejectionReason = ref<RejectionReason>({
   notifyAgent: true
 });
 
-// Mock job data - in a real app, this would come from an API
+const ADMIN_JOBS_STORAGE_KEY = 'adminJobs';
+const SELECTED_ADMIN_JOB_STORAGE_KEY = 'selectedAdminJob';
+
+// Mock job data - retained as a final fallback
 const mockJobs: Job[] = [
   { id: 1, status: 'Approved', timeAgo: '8 hours ago', title: 'Complete Freelancer Application UI/UX Revamp', agentName: 'Jenny Wilson', agentUsername: 'jennyson', pay: '$2,500' },
   { id: 2, status: 'Pending', timeAgo: '41 minutes ago', title: 'Create a Social Media Banner for a Fitness Brand', agentName: 'Matt Barrie', agentUsername: 'matt', pay: '$68/hr' },
   { id: 3, status: 'Pending', timeAgo: '1 hour ago', title: 'Write SEO Content for a Tech Blog', agentName: 'Matt Barrie', agentUsername: 'matt', pay: '$80 -120' },
 ];
+
+const normaliseId = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return value.toString();
+  return value;
+};
+
+const loadJobFromStorage = (id: number): Job | null => {
+  const stringId = id.toString();
+
+  try {
+    const selected = localStorage.getItem(SELECTED_ADMIN_JOB_STORAGE_KEY);
+    if (selected) {
+      const parsedSelected: Job = JSON.parse(selected);
+      if (normaliseId(parsedSelected.id) === stringId) {
+        return parsedSelected;
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing selected admin job from storage:', error);
+  }
+
+  try {
+    const storedJobs = localStorage.getItem(ADMIN_JOBS_STORAGE_KEY);
+    if (storedJobs) {
+      const parsedJobs: Job[] = JSON.parse(storedJobs);
+      const found = parsedJobs.find(storedJob => normaliseId(storedJob.id) === stringId);
+      if (found) {
+        return found;
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing admin jobs from storage:', error);
+  }
+
+  return null;
+};
+
+const loadJobFromApi = async (id: number): Promise<Job | null> => {
+  try {
+    const response = await api.jobs.listAdminJobs(0, 100);
+    if (response.success && response.data) {
+      const found = response.data.find(apiJob => normaliseId(apiJob.id) === id.toString());
+      if (found) {
+        return found as Job;
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching admin jobs from API:', error);
+  }
+  return null;
+};
+
+const initialiseJob = async (id: number) => {
+  if (!id) {
+    router.push('/admin/job-approval');
+    return;
+  }
+
+  const storedJob = loadJobFromStorage(id);
+  if (storedJob) {
+    job.value = storedJob;
+    return;
+  }
+
+  const apiJob = await loadJobFromApi(id);
+  if (apiJob) {
+    job.value = apiJob;
+    return;
+  }
+
+  const fallback = mockJobs.find(mockJob => normaliseId(mockJob.id) === id.toString()) || null;
+  if (fallback) {
+    job.value = fallback;
+    return;
+  }
+
+  router.push('/admin/job-approval');
+};
 
 const isFormValid = computed(() => {
   return rejectionReason.value.type.trim() !== '' && 
@@ -184,13 +268,8 @@ const isFormValid = computed(() => {
 });
 
 onMounted(() => {
-  const jobId = parseInt(route.params.id as string);
-  job.value = mockJobs.find(j => j.id === jobId) || null;
-  
-  if (!job.value) {
-    // Job not found, redirect back to job approval
-    router.push('/admin/job-approval');
-  }
+  const jobId = parseInt(route.params.id as string, 10) || 0;
+  initialiseJob(jobId);
 });
 
 const goBack = () => {

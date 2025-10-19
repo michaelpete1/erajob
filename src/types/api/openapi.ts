@@ -49,6 +49,7 @@ export interface JobTimeline {
 
 export type JobCategories =
   | 'Web Development'
+  | 'Web Devlopment'
   | 'Mobile Development'
   | 'UI/UX Design'
   | 'Content Writing'
@@ -58,6 +59,7 @@ export type JobCategories =
 
 export type Skills =
   | 'Web Development'
+  | 'Web Devlopment'
   | 'Mobile Development'
   | 'UI/UX Design'
   | 'Content Writing'
