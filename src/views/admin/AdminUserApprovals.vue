@@ -126,15 +126,17 @@ const fetchUsers = async () => {
   try {
     const resp = await api.user.listUsers(0, 50)
     if (resp.success && Array.isArray(resp.data)) {
-      // Map server users to local UI model
-      const mappedUsers: User[] = resp.data.map((u: any) => ({
-        id: u.id || u.user_id || String(u._id || ''),
-        name: u.full_name || u.name || u.email || 'Unknown',
-        email: u.email || '',
-        role: u.role?.agent ? 'agent' : u.role?.client ? 'client' : 'client',
-        status: u.status || 'pending',
-        createdAt: u.created_at || (u.date_created ? new Date(u.date_created * 1000).toISOString() : new Date().toISOString())
-      }))
+      // Map server users to local UI model, skipping admin accounts
+      const mappedUsers: User[] = resp.data
+        .filter((u: any) => !u.is_admin)
+        .map((u: any) => ({
+          id: u.id || u.user_id || String(u._id || ''),
+          name: u.full_name || u.name || u.email || 'Unknown',
+          email: u.email || '',
+          role: u.role?.agent ? 'agent' : u.role?.client ? 'client' : 'client',
+          status: u.status || 'pending',
+          createdAt: u.created_at || (u.date_created ? new Date(u.date_created * 1000).toISOString() : new Date().toISOString())
+        }))
       users.value = mappedUsers.filter(user => {
         const id = String(user.id)
         return !approvedUserIds.value.has(id) && !rejectedUserIds.value.has(id)

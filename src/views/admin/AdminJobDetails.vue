@@ -38,7 +38,26 @@
         </div>
       </div>
 
-      <div v-if="job" class="space-y-4 sm:space-y-6 animate-fade-in">
+      <div v-if="isLoadingJob" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+
+      <div v-else-if="loadError" class="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-lg text-center space-y-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-1">Unable to load job details</h3>
+          <p class="text-sm text-gray-600">{{ loadError }}</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <button @click="retryFetch" class="flex-1 sm:flex-none px-4 py-2.5 rounded-md bg-brand-teal hover:bg-teal-700 text-white text-sm font-medium transition-colors min-h-[44px] touch-manipulation">
+            Try Again
+          </button>
+          <button @click="goBack" class="flex-1 sm:flex-none px-4 py-2.5 rounded-md bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium transition-colors min-h-[44px] touch-manipulation">
+            Go Back
+          </button>
+        </div>
+      </div>
+
+      <div v-else-if="job" class="space-y-4 sm:space-y-6 animate-fade-in">
         <!-- Job Information Card -->
         <div class="bg-white/95 backdrop-blur-sm p-5 sm:p-6 rounded-xl shadow-lg">
           <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4">Job Information</h3>
@@ -93,7 +112,7 @@
                 Payment Amount
               </label>
               <div v-if="job?.status !== 'Pending' || !isEditing" class="relative">
-                <p class="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-md font-semibold text-green-600">
+                <p class="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-md font-semibold">
                   {{ job.pay }}
                 </p>
               </div>
@@ -108,16 +127,21 @@
                 <div class="flex gap-2 sm:gap-3">
                   <button 
                     @click="savePayment" 
-                    class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
+                    :disabled="isSavingPayment"
+                    class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-if="isSavingPayment" class="w-4 h-4 inline mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <svg v-else class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    Save Changes
+                    {{ isSavingPayment ? 'Saving...' : 'Save Changes' }}
                   </button>
                   <button 
                     @click="cancelEdit" 
-                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
+                    :disabled="isSavingPayment"
+                    class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
@@ -151,16 +175,20 @@
             <button 
               v-if="job.status === 'Pending'"
               @click="approveJob" 
-              class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
+              :disabled="isApproving"
+              class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg v-if="isApproving" class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <svg v-else class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
-              Approve Job
+              {{ isApproving ? 'Approving...' : 'Approve Job' }}
             </button>
             <button 
               v-if="job.status === 'Pending'"
-              @click="rejectJob" 
+              @click="openRejectModal" 
               class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
             >
               <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -170,12 +198,16 @@
             </button>
             <button 
               @click="deleteJob" 
-              class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-gray-600 hover:bg-gray-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation"
+              :disabled="isDeleting"
+              class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-gray-600 hover:bg-gray-700 text-white text-xs sm:text-sm font-medium transition-colors min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg v-if="isDeleting" class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <svg v-else class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
               </svg>
-              Delete Job
+              {{ isDeleting ? 'Deleting...' : 'Delete Job' }}
             </button>
           </div>
         </div>
@@ -264,126 +296,158 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../../services/apiService';
- 
+import type { JobsOut } from '../../types/api/openapi';
 
 type AdminJob = {
-  id?: string | number | null;
-  status?: string | null | undefined;
-  timeAgo?: string | null | undefined;
-  title?: string | null | undefined;
-  agentName?: string | null | undefined;
-  agentUsername?: string | null | undefined;
-  pay?: string | null | undefined;
+  id: string;
+  status: string;
+  timeAgo: string;
+  title: string;
+  agentName: string;
+  agentUsername: string;
+  pay: string;
+  rawBudget: number | null;
+  adminApproved: boolean;
+  rejectionReason?: string | null;
   [key: string]: any;
 };
+
+type RawAdminJob = JobsOut & Record<string, any>;
 
 const route = useRoute();
 const router = useRouter();
 
-const jobId = ref<number>(0);
+const jobId = ref<string>('');
 const job = ref<AdminJob | null>(null);
+const isLoadingJob = ref(false);
+const loadError = ref<string | null>(null);
 const isEditing = ref(false);
 const editedPayment = ref('');
+const isSavingPayment = ref(false);
+const isApproving = ref(false);
+const isDeleting = ref(false);
 const showRejectModal = ref(false);
 const rejectionReason = ref('');
 const isSubmittingRejection = ref(false);
 
-const ADMIN_JOBS_STORAGE_KEY = 'adminJobs';
-const SELECTED_ADMIN_JOB_STORAGE_KEY = 'selectedAdminJob';
-
-// Mock job data - retained as final fallback
-const mockJobs: AdminJob[] = [
-    { id: 1, status: 'Approved', timeAgo: '8 hours ago', title: 'Complete Freelancer Application UI/UX Revamp', agentName: 'Jenny Wilson', agentUsername: 'jennyson', pay: '$2,500' },
-    { id: 2, status: 'Pending', timeAgo: '41 minutes ago', title: 'Create a Social Media Banner for a Fitness Brand', agentName: 'Matt Barrie', agentUsername: 'matt', pay: '$68/hr' },
-    { id: 3, status: 'Pending', timeAgo: '1 hour ago', title: 'Write SEO Content for a Tech Blog', agentName: 'Matt Barrie', agentUsername: 'matt', pay: '$80 -120' },
-];
-
-const normaliseId = (value: string | number | null | undefined) => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'number') return value.toString();
-  return value;
-};
-
-const loadJobFromStorage = (id: number): AdminJob | null => {
-  const stringId = id.toString();
-
-  try {
-    const selected = localStorage.getItem(SELECTED_ADMIN_JOB_STORAGE_KEY);
-    if (selected) {
-      const parsedSelected: AdminJob = JSON.parse(selected);
-      if (normaliseId(parsedSelected.id) === stringId) {
-        return parsedSelected;
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing selected admin job from storage:', error);
+function formatCurrency(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
   }
 
-  try {
-    const storedJobs = localStorage.getItem(ADMIN_JOBS_STORAGE_KEY);
-    if (storedJobs) {
-      const parsedJobs: AdminJob[] = JSON.parse(storedJobs);
-      const found = parsedJobs.find(storedJob => normaliseId(storedJob.id) === stringId);
-      if (found) {
-        return found;
-      }
-    }
-  } catch (error) {
-    console.error('Error parsing admin jobs from storage:', error);
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value;
   }
 
-  return null;
-};
+  return 'N/A';
+}
 
-const loadJobFromApi = async (id: number): Promise<AdminJob | null> => {
-  try {
-    const response = await api.jobs.listAdminJobs(0, 100);
-    if (response.success && response.data) {
-      const found = response.data.find(apiJob => normaliseId(apiJob.id) === id.toString());
-      if (found) {
-        return found as AdminJob;
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching admin jobs from API:', error);
-  }
-  return null;
-};
+function formatRelativeTime(timestamp?: number | null): string {
+  if (!timestamp) return 'N/A';
 
-const initialiseJob = async (id: number) => {
+  const milliseconds = timestamp > 1e12 ? timestamp : timestamp * 1000;
+  const diff = Date.now() - milliseconds;
+
+  if (diff <= 0) return 'Just now';
+
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+
+  return new Date(milliseconds).toLocaleDateString();
+}
+
+function parseNumericAmount(value: string): number | null {
+  const cleaned = value.replace(/[^0-9.]/g, '');
+  if (!cleaned) return null;
+
+  const parsed = Number.parseFloat(cleaned);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+
+  return parsed;
+}
+
+function mapApiJob(raw: RawAdminJob | null | undefined): AdminJob | null {
+  if (!raw) return null;
+
+  const budgetFromPayload = typeof raw.budget === 'number'
+    ? raw.budget
+    : parseNumericAmount(String(raw.budget ?? raw.pay ?? ''));
+
+  const rawBudget = typeof budgetFromPayload === 'number' && Number.isFinite(budgetFromPayload)
+    ? budgetFromPayload
+    : null;
+
+  const rejection = raw.rejection_reason ?? raw.rejectionReason ?? null;
+  const adminApproved = Boolean(raw.admin_approved ?? raw.adminApproved ?? raw.status === 'Approved');
+  const computedStatus = raw.status
+    ? String(raw.status)
+    : adminApproved
+      ? 'Approved'
+      : rejection
+        ? 'Rejected'
+        : 'Pending';
+
+  return {
+    ...raw,
+    id: String(raw.id ?? ''),
+    status: computedStatus,
+    adminApproved,
+    rejectionReason: rejection,
+    timeAgo: formatRelativeTime(raw.last_updated ?? raw.date_created ?? null),
+    title: raw.project_title ?? raw.title ?? 'Untitled job',
+    agentName: raw.agent_name ?? raw.agentName ?? 'Not assigned',
+    agentUsername: raw.agent_username ?? raw.agentUsername ?? 'N/A',
+    pay: rawBudget !== null ? formatCurrency(rawBudget) : formatCurrency(raw.pay),
+    rawBudget,
+  };
+}
+
+async function fetchJobDetails(id: string) {
   if (!id) {
     router.push('/admin/job-approval');
     return;
   }
 
-  const storedJob = loadJobFromStorage(id);
-  if (storedJob) {
-    job.value = storedJob;
-    editedPayment.value = storedJob.pay ? String(storedJob.pay) : '';
-    return;
+  isLoadingJob.value = true;
+  loadError.value = null;
+
+  try {
+    const response = await api.jobs.getJob(id);
+    if (!response.success || !response.data) {
+      loadError.value = response.error || 'Job not found.';
+      job.value = null;
+      return;
+    }
+
+    const mapped = mapApiJob(response.data as RawAdminJob);
+    if (!mapped) {
+      loadError.value = 'Job data is unavailable.';
+      job.value = null;
+      return;
+    }
+
+    job.value = mapped;
+    editedPayment.value = mapped.pay !== 'N/A' ? mapped.pay : '';
+  } catch (error: any) {
+    loadError.value = error?.message || 'Failed to load job details.';
+    job.value = null;
+  } finally {
+    isLoadingJob.value = false;
   }
+}
 
-  const apiJob = await loadJobFromApi(id);
-  if (apiJob) {
-    job.value = apiJob;
-    editedPayment.value = apiJob.pay ? String(apiJob.pay) : '';
-    return;
+function retryFetch() {
+  if (jobId.value) {
+    fetchJobDetails(jobId.value);
   }
-
-  const fallback = mockJobs.find(mockJob => normaliseId(mockJob.id) === id.toString()) || null;
-  if (fallback) {
-    job.value = fallback;
-    editedPayment.value = fallback.pay ? String(fallback.pay) : '';
-    return;
-  }
-
-  router.push('/admin/job-approval');
-};
-
-onMounted(() => {
-  jobId.value = parseInt(route.params.id as string, 10) || 0;
-  initialiseJob(jobId.value);
-});
+}
 
 function getStatusClass(status?: string | null) {
   switch (status) {
@@ -399,89 +463,159 @@ function getStatusClass(status?: string | null) {
 }
 
 function toggleEditMode() {
+  if (isLoadingJob.value || !job.value) return;
   isEditing.value = !isEditing.value;
   if (isEditing.value) {
-    editedPayment.value = job.value?.pay ? String(job.value.pay) : '';
+    editedPayment.value = job.value.pay !== 'N/A' ? String(job.value.pay) : '';
   }
 }
 
-function savePayment() {
-  if (job.value && editedPayment.value.trim()) {
-    // In a real app, this would call an API to update the payment
-    job.value.pay = editedPayment.value.trim();
-    
-    // Show success message
+async function savePayment() {
+  if (!job.value) {
+    alert('Job details are not available.');
+    return;
+  }
+
+  const parsedAmount = parseNumericAmount(editedPayment.value.trim());
+  if (parsedAmount === null) {
+    alert('Please enter a valid numeric payment amount.');
+    return;
+  }
+
+  isSavingPayment.value = true;
+
+  try {
+    const response = await api.jobs.updateJob(job.value.id || jobId.value, { budget: parsedAmount });
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to update payment amount.');
+    }
+
+    job.value = {
+      ...job.value,
+      rawBudget: parsedAmount,
+      pay: formatCurrency(parsedAmount),
+    };
+
     alert('Payment amount updated successfully!');
-    
-    // Exit edit mode
     isEditing.value = false;
-    
-    console.log('Payment updated for job', jobId.value, ':', editedPayment.value);
-  } else {
-    alert('Please enter a valid payment amount.');
+  } catch (error: any) {
+    alert(error?.message || 'Failed to update payment amount.');
+  } finally {
+    isSavingPayment.value = false;
   }
 }
 
 function cancelEdit() {
   isEditing.value = false;
-  editedPayment.value = job.value?.pay ? String(job.value.pay) : '';
+  editedPayment.value = job.value?.pay !== 'N/A' ? String(job.value?.pay ?? '') : '';
 }
 
 function goBack() {
   router.push('/admin/job-approval');
 }
 
-function approveJob() {
-  if (job.value) {
-    job.value.status = 'Approved';
+async function approveJob() {
+  if (!job.value) return;
+
+  isApproving.value = true;
+  try {
+    const response = await api.jobs.approveJob(job.value.id || jobId.value);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to approve job.');
+    }
+
+    job.value = {
+      ...job.value,
+      status: 'Approved',
+      adminApproved: true,
+    };
+
     alert('Job approved successfully!');
-    console.log('Job approved:', jobId.value);
+  } catch (error: any) {
+    alert(error?.message || 'Failed to approve job.');
+  } finally {
+    isApproving.value = false;
   }
 }
 
-function rejectJob() {
+function openRejectModal() {
   showRejectModal.value = true;
   rejectionReason.value = '';
 }
 
 function closeRejectModal() {
+  if (isSubmittingRejection.value) return;
   showRejectModal.value = false;
   rejectionReason.value = '';
 }
 
-function submitRejection() {
-  if (!rejectionReason.value.trim()) {
+async function submitRejection() {
+  const trimmedReason = rejectionReason.value.trim();
+  if (!trimmedReason) {
     alert('Please provide a reason for rejection.');
     return;
   }
-  
-  if (confirm('Are you sure you want to reject this job? This action cannot be undone.')) {
-    isSubmittingRejection.value = true;
-    
-    // Simulate API call
-    setTimeout(() => {
-      if (job.value) {
-        job.value.status = 'Rejected';
-        job.value.rejectionReason = rejectionReason.value.trim();
-        
-        alert('Job rejected successfully! The agent will be notified with your reason.');
-        console.log('Job rejected:', jobId.value, 'Reason:', rejectionReason.value);
-        
-        router.push('/admin/job-approval');
-      }
-      isSubmittingRejection.value = false;
-    }, 500);
+
+  if (!job.value) return;
+
+  isSubmittingRejection.value = true;
+
+  try {
+    const response = await api.jobs.rejectJob(job.value.id || jobId.value, trimmedReason);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to reject job.');
+    }
+
+    alert('Job rejected successfully! The agent will be notified with your reason.');
+    job.value = {
+      ...job.value,
+      status: 'Rejected',
+      adminApproved: false,
+      rejectionReason: trimmedReason,
+    };
+
+    showRejectModal.value = false;
+    router.push('/admin/job-approval');
+  } catch (error: any) {
+    alert(error?.message || 'Failed to reject job.');
+  } finally {
+    isSubmittingRejection.value = false;
   }
 }
 
-function deleteJob() {
-  if (confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
-    // In a real app, this would call an API to delete the job
+async function deleteJob() {
+  if (!job.value) return;
+
+  if (!confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+    return;
+  }
+
+  isDeleting.value = true;
+
+  try {
+    const response = await api.jobs.deleteJob(job.value.id || jobId.value);
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to delete job.');
+    }
+
     alert('Job deleted successfully!');
     router.push('/admin/job-approval');
-    console.log('Job deleted:', jobId.value);
+  } catch (error: any) {
+    alert(error?.message || 'Failed to delete job.');
+  } finally {
+    isDeleting.value = false;
   }
 }
+
+onMounted(() => {
+  jobId.value = String(route.params.id ?? '');
+  if (!jobId.value) {
+    router.push('/admin/job-approval');
+    return;
+  }
+
+  fetchJobDetails(jobId.value);
+});
 </script>
 
 <style scoped>

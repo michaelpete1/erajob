@@ -153,19 +153,18 @@ const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
       password: credentials.password
     })
 
-// After the axios POST
-const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
-if (ok && response.data.data) {
-  const userData = response.data.data  // <-- add this back
+    const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
+    if (ok && response.data.data) {
+      const userData = response.data.data
 
-  // Store tokens in localStorage
-  if (userData.access_token) {
-    localStorage.setItem('access_token', userData.access_token)
-  }
-  if (userData.refresh_token) {
-    localStorage.setItem('refresh_token', userData.refresh_token)
-  }
-  localStorage.setItem('userRole', credentials.role)
+      if (userData.access_token) {
+        localStorage.setItem('access_token', userData.access_token)
+      }
+      if (userData.refresh_token) {
+        localStorage.setItem('refresh_token', userData.refresh_token)
+      }
+      localStorage.setItem('userRole', credentials.role)
+      localStorage.setItem('userInfo', JSON.stringify(userData))
 
       return {
         success: true,
@@ -272,11 +271,23 @@ const updateClientProfile = async (userId: string, data: ClientWelcomeData): Pro
   }
 }
 
+const logout = () => {
+  try {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('userRole')
+    localStorage.removeItem('userInfo')
+  } catch (err) {
+    console.warn('Logout cleanup failed:', err)
+  }
+}
+
 export default {
   signup,
   login,
   updateAgentProfile,
   updateClientProfile,
   prepareSignupData,
-  mapClientWorkHours
+  mapClientWorkHours,
+  logout
 }

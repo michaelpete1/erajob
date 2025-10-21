@@ -138,44 +138,63 @@
 
         <!-- Results Grid -->
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6 max-w-6xl mx-auto">
-          
-            <div 
-            v-for="job in filteredGigs" 
-            :key="job.id || ''"
+          <div
+            v-for="job in filteredGigs"
+            :key="job.key"
             class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 block cursor-pointer"
-            @click="goToGig(job)"
+            @click="goToGig(job.raw)"
           >
             <div class="block">
-              <div class="flex items-center mb-3 sm:mb-4 gap-3">
-                <span class="text-2xl sm:text-3xl flex-shrink-0">
-                  {{ getCategoryIcon(job.category) }}
+              <div class="flex items-start justify-between mb-3 sm:mb-4 gap-3">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl sm:text-3xl flex-shrink-0">
+                    {{ job.categoryIcon }}
+                  </span>
+                  <h3 class="text-lg sm:text-xl font-bold text-brand-teal break-words flex-1 min-w-0">
+                    {{ job.title }}
+                  </h3>
+                </div>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide"
+                  :class="statusBadgeClass(job.status, activeTab === 'active')"
+                >
+                  {{ statusLabel(job.status, activeTab === 'active') }}
                 </span>
-                <h3 class="text-lg sm:text-xl font-bold text-brand-teal break-words flex-1 min-w-0">
-                  {{ job.project_title }}
-                </h3>
               </div>
               <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 break-words leading-relaxed">
-                {{ job.description }}
+                {{ job.snippet }}
               </p>
-              <div class="flex items-center justify-between mb-3 sm:mb-4">
-                <span class="text-xl sm:text-2xl font-bold text-brand-teal whitespace-nowrap">${{ job.budget }}</span>
-                <span class="text-xs sm:text-sm text-gray-500 whitespace-nowrap">budget</span>
-              </div>
+              <dl class="grid grid-cols-2 gap-2 text-xs sm:text-sm text-gray-600 mb-3">
+                <div>
+                  <dt class="font-semibold text-gray-700">Budget</dt>
+                  <dd class="text-brand-teal font-bold">{{ job.budget }}</dd>
+                </div>
+                <div>
+                  <dt class="font-semibold text-gray-700">Posted</dt>
+                  <dd>{{ job.created }}</dd>
+                </div>
+              </dl>
 
               <div>
-                <button @click.stop="goToGig(job)" class="w-full bg-brand-teal text-white py-2.5 sm:py-3 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base font-medium min-h-[44px] touch-manipulation">
+                <button
+                  @click.stop="goToGig(job.raw)"
+                  class="w-full bg-brand-teal text-white py-2.5 sm:py-3 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base font-medium min-h-[44px] touch-manipulation"
+                >
                   View Details
                 </button>
               </div>
             </div>
-          </div>      <!-- No results message -->
-      <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-8 sm:py-12">
-        <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-sm mx-auto">
-          <span class="text-3xl sm:text-4xl mb-3 sm:mb-4 block">🔍</span>
-          <h3 class="text-lg sm:text-xl font-bold text-brand-teal mb-2 break-words">No gigs found</h3>
-          <p class="text-sm sm:text-base text-gray-600 break-words leading-relaxed">Try adjusting your search terms or browse all gigs in the Active tab.</p>
-        </div>
-      </div>
+          </div>
+
+          <div v-if="filteredGigs.length === 0" class="col-span-full text-center py-8 sm:py-12">
+            <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-sm mx-auto">
+              <span class="text-3xl sm:text-4xl mb-3 sm:mb-4 block">🔍</span>
+              <h3 class="text-lg sm:text-xl font-bold text-brand-teal mb-2 break-words">No gigs found</h3>
+              <p class="text-sm sm:text-base text-gray-600 break-words leading-relaxed">
+                Try adjusting your search terms or browse all gigs in the Active tab.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -201,10 +220,101 @@ import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/o
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
 import { createGigSlug } from '@/utils/slugUtils'
 import { useJobs } from '@/composables/useJobs'
+import { applicationsService } from '@/services/applicationsService'
+import type { ApplicationOut } from '@/types/api'
 
 const openMobileNav = ref(false)
 const activeTab = ref<'active' | 'browse'>('browse')
 const searchQuery = ref('')
+const agentApplications = ref<ApplicationOut[]>([])
+const applicationsLoading = ref(false)
+const applicationsError = ref<string | null>(null)
+
+const normalizeId = (value: unknown): string | null => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+  return null
+}
+
+const getJobId = (job: any): string | null => {
+  return (
+    normalizeId(job?.id) ||
+    normalizeId(job?.job_id) ||
+    normalizeId(job?.jobId) ||
+    normalizeId(job?.uid)
+  )
+}
+
+const isAcceptedProposalStatus = (status: ApplicationOut['proposal_status']) => {
+  if (!status) return false
+  if (typeof status === 'string') {
+    const normalized = status.toLowerCase()
+    const acceptedFlags = [
+      'accepted',
+      'approved',
+      'accepted_by_client',
+      'client_accepted',
+      'client_approved',
+      'selected'
+    ]
+    return acceptedFlags.some(flag => normalized === flag || normalized.includes(flag))
+  }
+  return false
+}
+
+const acceptedJobIds = computed(() => {
+  const ids = new Set<string>()
+  agentApplications.value.forEach(application => {
+    const jobId = normalizeId(application?.job_id)
+    if (jobId && isAcceptedProposalStatus(application.proposal_status)) {
+      ids.add(jobId)
+    }
+  })
+  return ids
+})
+
+const proposalJobIds = computed(() => {
+  const ids = new Set<string>()
+  agentApplications.value.forEach(application => {
+    const jobId = normalizeId(application?.job_id)
+    if (jobId) {
+      ids.add(jobId)
+    }
+  })
+  return ids
+})
+
+const loadAgentApplications = async () => {
+  applicationsLoading.value = true
+  applicationsError.value = null
+  try {
+    const response = await applicationsService.listAgentApplications()
+    if (response.success) {
+      const data = response.data as unknown
+      if (Array.isArray(data)) {
+        agentApplications.value = data as ApplicationOut[]
+      } else if (data && typeof data === 'object') {
+        agentApplications.value = [data as ApplicationOut]
+      } else {
+        agentApplications.value = []
+        applicationsError.value = 'Failed to load applications.'
+      }
+    } else {
+      agentApplications.value = []
+      applicationsError.value = response.error || 'Failed to load applications.'
+    }
+  } catch (error: any) {
+    agentApplications.value = []
+    applicationsError.value = error?.message || 'Failed to load applications.'
+  } finally {
+    applicationsLoading.value = false
+  }
+}
 
 // Determine gig links based on flow type (navigate directly to agent summary)
 const router = useRouter()
@@ -273,12 +383,12 @@ const paginationParams = {
 
 // Load jobs when component mounts
 onMounted(async () => {
-  await getAvailableJobs(paginationParams)
+  await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
 })
 
 // Watch tab changes to load appropriate jobs
 watch(activeTab, async () => {
-  await getAvailableJobs(paginationParams)
+  await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
 })
 
 const selectedServices = ref<any[]>([])
@@ -290,32 +400,113 @@ onMounted(() => {
   }
 })
 
-const filteredGigs = computed(() => {
-  if (!jobs.value) return []
-  
-  let result = jobs.value
-  
-  // Filter by search query if present
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase().trim()
-    result = result.filter(job => 
-      job.project_title.toLowerCase().includes(query) ||
-      job.description.toLowerCase().includes(query) ||
-      (typeof job.category === 'string' ? job.category.toLowerCase().includes(query) : false)
-    )
+const formatBudget = (budget?: number | null) => {
+  if (!budget || Number.isNaN(budget)) return '$0'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(budget / 100)
+}
+
+const formatDate = (timestamp?: number | null) => {
+  if (!timestamp) return '—'
+  const ms = timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
+  const date = new Date(ms)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString()
+}
+
+interface MappedGigCard {
+  key: string
+  title: string
+  snippet: string
+  budget: string
+  created: string
+  categoryIcon: string
+  status: string
+  raw: any
+}
+
+const filteredGigs = computed<MappedGigCard[]>(() => {
+  const source = Array.isArray(jobs.value) ? jobs.value : []
+
+  const normalized = source.map((job, index) => {
+    const key = job.id ? String(job.id) : `gig-${index}`
+    const description = typeof job.description === 'string' ? job.description : ''
+    const title = typeof job.project_title === 'string' ? job.project_title : 'Untitled gig'
+    const category = typeof job.category === 'string' ? job.category : ''
+    return {
+      key,
+      title,
+      snippet: description.length > 160 ? `${description.slice(0, 157)}...` : description,
+      budget: formatBudget(job.budget),
+      created: formatDate(job.date_created),
+      categoryIcon: getCategoryIcon(category),
+      searchable: `${title} ${description} ${category}`.toLowerCase(),
+      status: normalizeJobStatus(job),
+      raw: job
+    }
+  })
+
+  let result = normalized
+
+  result = result.filter(job => {
+    if (activeTab.value === 'active') {
+      return job.status === 'active'
+    }
+    return ['awaiting_client', 'available'].includes(job.status)
+  })
+
+  const query = searchQuery.value.trim().toLowerCase()
+  if (query) {
+    result = result.filter(job => job.searchable.includes(query))
   }
-  
-  // Filter by selected services if any are selected
+
   if (selectedServices.value.length > 0) {
-    const serviceTitles = selectedServices.value.map(service => service.title.toLowerCase())
-    result = result.filter(job => 
-      serviceTitles.some(service => 
-        job.project_title.toLowerCase().includes(service) ||
-        (typeof job.category === 'string' ? job.category.toLowerCase().includes(service) : false)
-      )
-    )
+    const serviceTitles = selectedServices.value
+      .map(service => (service?.title ? String(service.title).toLowerCase() : ''))
+      .filter(Boolean)
+    if (serviceTitles.length > 0) {
+      result = result.filter(job => serviceTitles.some(service => job.searchable.includes(service)))
+    }
   }
-  
-  return result
+
+  return result.map(({ searchable, ...rest }) => rest)
 })
+
+const normalizeJobStatus = (job: any): string => {
+  const adminApproved = isAdminApproved(job)
+  const jobId = getJobId(job)
+  const hasAcceptedProposal = jobId ? acceptedJobIds.value.has(jobId) : false
+  const hasAgentProposal = jobId ? proposalJobIds.value.has(jobId) : false
+
+  if (adminApproved && hasAcceptedProposal) return 'active'
+  if (adminApproved && hasAgentProposal) return 'awaiting_client'
+  if (adminApproved) return 'available'
+  if (hasAcceptedProposal) return 'pending_admin'
+  if (hasAgentProposal) return 'proposal_submitted'
+  return 'pending_review'
+}
+
+const isAdminApproved = (job: any): boolean => {
+  const adminFlags = [job?.admin_approved, job?.adminApproved, job?.is_admin_approved]
+  return adminFlags.some(value => value === true || value === 1 || (typeof value === 'string' && ['true', '1', 'yes'].includes(value.trim().toLowerCase())))
+}
+
+const statusLabel = (status: string, isActive: boolean) => {
+  if (status === 'active') return 'Active'
+  if (status === 'awaiting_client') return 'Awaiting Client'
+  if (status === 'available') return 'Available'
+  return isActive ? 'Active' : 'Pending'
+}
+
+const statusBadgeClass = (status: string, isActive: boolean) => {
+  if (status === 'active' || isActive) {
+    return 'bg-green-100 text-green-700 border border-green-200'
+  }
+  if (status === 'available') {
+    return 'bg-blue-100 text-blue-700 border border-blue-200'
+  }
+  if (status === 'awaiting_client') {
+    return 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+  }
+  return 'bg-gray-100 text-gray-600 border border-gray-200'
+}
 </script>

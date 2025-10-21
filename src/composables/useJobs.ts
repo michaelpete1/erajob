@@ -136,13 +136,6 @@ function toLocalJobOut(job: EJJobOut): LocalJobOut {
   };
 }
 
-// Initialize state on mount if not already set
-onMounted(() => {
-  if (jobState.value.jobs.length === 0) {
-    resetJobs();
-  }
-});
-
 // Computed properties for the UI
 const jobs = computed<LocalJobOut[]>(() =>
   jobState.value.jobs.map(job => toLocalJobOut(job))
@@ -191,10 +184,22 @@ const getAvailableJobs = async (params: { start?: number; stop?: number } = {}) 
 const getAllJobs = async (params: { start?: number; stop?: number } = {}) => {
   const { start = 0, stop = 10 } = params;
   jobState.value.loading = true;
+  const role = localStorage.getItem('userRole') || '';
+
   try {
-    const response = await jobsService.listAdminJobs(start, stop);
+    let response: ServiceResponse<Job[]>
+    if (role === 'admin') {
+      response = await jobsService.listAdminJobs(start, stop);
+    } else if (role === 'agent') {
+      response = await jobsService.listAvailableAgentJobs(start, stop);
+    } else {
+      response = await jobsService.listClientCreatedJobs(start, stop);
+    }
+
     if (response.success && response.data) {
-      jobState.value.jobs = Array.isArray(response.data) ? response.data as unknown as EJJobOut[] : [response.data as unknown as EJJobOut];
+      jobState.value.jobs = Array.isArray(response.data)
+        ? (response.data as unknown as EJJobOut[])
+        : [response.data as unknown as EJJobOut];
       jobState.value.pagination.hasMore = response.data.length > 0;
     }
     return response;
@@ -344,6 +349,12 @@ const clearError = () => {
 
 // Export the composable function
 export function useJobs() {
+  onMounted(() => {
+    if (jobState.value.jobs.length === 0) {
+      resetJobs();
+    }
+  });
+
   return {
     // State
     jobs,

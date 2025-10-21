@@ -8,10 +8,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
           </svg>
         </button>
-        <h1 class="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight ml-1 sm:ml-2">Notifications</h1>
+        <h1 class="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight ml-1 sm:ml-2">Alerts</h1>
       </div>
       <div class="flex items-center gap-2 sm:gap-3">
-        <button @click="markAllAsRead" class="p-2 -mr-2 sm:p-2 sm:-mr-2 md:p-2.5 md:-mr-2.5 rounded-full hover:bg-white hover:bg-opacity-10 active:bg-opacity-20 transition-all duration-200 touch-manipulation" aria-label="Mark all as read">
+        <button @click="handleMarkAllAsRead" class="p-2 -mr-2 sm:p-2 sm:-mr-2 md:p-2.5 md:-mr-2.5 rounded-full hover:bg-white hover:bg-opacity-10 active:bg-opacity-20 transition-all duration-200 touch-manipulation" aria-label="Mark all as read">
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
@@ -78,14 +78,14 @@
         </div>
       </div>
 
-      <!-- Notifications Content (only show when not loading and no error) -->
+      <!-- Alerts Content (only show when not loading and no error) -->
       <div v-if="!loading && !error">
-        <!-- Notifications List -->
-        <div v-if="filteredNotifications.length > 0">
-          <div v-for="notification in filteredNotifications" :key="notification.id" class="mb-4 sm:mb-6">
+        <!-- Alerts List -->
+        <div v-if="filteredAlerts.length > 0">
+          <div v-for="alert in filteredAlerts" :key="alert.id" class="mb-4 sm:mb-6">
             <!-- Priority Notification -->
             <section
-              v-if="notification.type === 'priority'"
+              v-if="alert.type === 'priority'"
               class="bg-red-50 border-l-4 border-red-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
             >
               <div class="flex items-start gap-3 sm:gap-4">
@@ -94,20 +94,20 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-red-600 font-semibold">{{ formatDate(notification.created_at) }}</p>
-                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                    <p class="text-xs sm:text-sm text-red-600 font-semibold">{{ alert.timeDisplay }}</p>
+                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
                       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
+                  <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ alert.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
                     <button
-                      v-for="action in notification.actions"
+                      v-for="action in alert.actions"
                       :key="action"
-                      @click="handleNotificationActionClick(notification.id, action)"
+                      @click="handleAlertActionClick(alert.id, action)"
                       :class="[
                         'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 touch-manipulation',
                         action === 'Review' ? 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
@@ -122,7 +122,7 @@
 
             <!-- Project Update Notification -->
             <section
-              v-else-if="notification.type === 'project'"
+              v-else-if="alert.type === 'project'"
               class="bg-blue-50 border-l-4 border-blue-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
             >
               <div class="flex items-start gap-3 sm:gap-4">
@@ -131,20 +131,20 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-blue-600 font-semibold">{{ formatDate(notification.created_at) }}</p>
-                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                    <p class="text-xs sm:text-sm text-blue-600 font-semibold">{{ alert.timeDisplay }}</p>
+                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
                       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
+                  <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ alert.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
                     <button
-                      v-for="action in notification.actions"
+                      v-for="action in alert.actions"
                       :key="action"
-                      @click="handleNotificationActionClick(notification.id, action)"
+                      @click="handleAlertActionClick(alert.id, action)"
                       class="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 touch-manipulation"
                     >
                       {{ action }}
@@ -156,7 +156,7 @@
 
             <!-- Agent Response Notification -->
             <section
-              v-else-if="notification.type === 'agent'"
+              v-else-if="alert.type === 'agent'"
               class="bg-green-50 border-l-4 border-green-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
             >
               <div class="flex items-start gap-3 sm:gap-4">
@@ -165,20 +165,20 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-green-600 font-semibold">{{ formatDate(notification.created_at) }}</p>
-                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                    <p class="text-xs sm:text-sm text-green-600 font-semibold">{{ alert.timeDisplay }}</p>
+                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
                       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
+                  <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ alert.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
                     <button
-                      v-for="action in notification.actions"
+                      v-for="action in alert.actions"
                       :key="action"
-                      @click="handleNotificationActionClick(notification.id, action)"
+                      @click="handleAlertActionClick(alert.id, action)"
                       class="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-green-600 active:bg-green-700 transition-all duration-200 touch-manipulation"
                     >
                       {{ action }}
@@ -199,15 +199,15 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-gray-500 font-semibold">{{ formatDate(notification.created_at) }}</p>
-                    <button @click="handleRemoveNotification(notification.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
+                    <p class="text-xs sm:text-sm text-gray-500 font-semibold">{{ alert.timeDisplay }}</p>
+                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
                       <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
                     </button>
                   </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ notification.title }}</p>
-                  <p class="text-sm text-gray-700">{{ notification.description }}</p>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
+                  <p class="text-sm sm:text-base text-gray-700">{{ alert.description }}</p>
                 </div>
               </div>
             </section>
@@ -221,7 +221,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
             </svg>
           </div>
-          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">No notifications</h3>
+          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">No alerts</h3>
           <p class="text-sm sm:text-base text-gray-500 max-w-md mx-auto">You're all caught up! Check back later for new updates about your projects and agents.</p>
         </div>
       </div>
@@ -232,25 +232,83 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useNotifications } from '../../composables/useNotifications'
+import { useAlerts } from '../../composables/useAlerts'
 
-// Utility to format date
-function formatDate(timestamp: number | string): string {
-  const date = new Date(Number(timestamp))
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+interface AlertDisplay {
+  id: string
+  type: 'priority' | 'project' | 'agent' | 'general'
+  title: string
+  description: string
+  created_at: number
+  read: boolean
+  actions: string[]
+  timeDisplay: string
 }
 
 // Filter and sort state
 const activeFilter = ref('all')
 const sortBy = ref('newest')
 
-const { notifications, loading, error, getNotifications, markAsRead, markAllAsRead, deleteNotification, handleNotificationAction } = useNotifications()
+const {
+  alerts,
+  loading,
+  error,
+  getAlerts,
+  markAsRead,
+  markAllAsRead,
+  deleteAlert,
+  handleAlertAction
+} = useAlerts()
+
+const mapAlertToDisplay = (alert: any): AlertDisplay => {
+  const priority = String(alert?.priority || '').toLowerCase()
+  const alertType = String(alert?.alert_type || '').toLowerCase()
+
+  let type: AlertDisplay['type'] = 'general'
+  if (priority.includes('high')) {
+    type = 'priority'
+  } else if (alertType.includes('project')) {
+    type = 'project'
+  } else if (alertType.includes('agent')) {
+    type = 'agent'
+  }
+
+  const createdAtRaw = alert?.date_created ?? alert?.last_updated ?? null
+  let createdAt = Date.now()
+  if (typeof createdAtRaw === 'number') {
+    createdAt = createdAtRaw > 1_000_000_000_000 ? createdAtRaw : createdAtRaw * 1000
+  } else if (typeof createdAtRaw === 'string') {
+    const parsed = Date.parse(createdAtRaw)
+    if (!Number.isNaN(parsed)) {
+      createdAt = parsed
+    }
+  }
+
+  const actions = [alert?.alert_primary_action, alert?.alert_secondary_action]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+
+  const date = new Date(createdAt)
+  const timeDisplay = date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return {
+    id: String(alert?.id || crypto.randomUUID()),
+    type,
+    title: alert?.alert_title || 'Alert',
+    description: alert?.alert_description || '',
+    created_at: createdAt,
+    read: Boolean(alert?.is_read),
+    actions,
+    timeDisplay
+  }
+}
+
+const notifications = computed<AlertDisplay[]>(() => alerts.value.map(mapAlertToDisplay))
 
 // Filters
 const filters = ref([
@@ -263,7 +321,10 @@ const filters = ref([
 
 // Update filter counts based on notifications data
 const updateFilterCounts = () => {
-  if (notifications.value.length === 0) return
+  if (notifications.value.length === 0) {
+    filters.value.forEach(filter => { filter.count = 0 })
+    return
+  }
 
   const counts = {
     all: notifications.value.length,
@@ -279,7 +340,7 @@ const updateFilterCounts = () => {
 }
 
 // Computed filtered notifications
-const filteredNotifications = computed(() => {
+const filteredAlerts = computed(() => {
   if (notifications.value.length === 0) return []
 
   let filtered = [...notifications.value]
@@ -308,39 +369,30 @@ const filteredNotifications = computed(() => {
 // Methods
 const handleMarkAllAsRead = async () => {
   const result = await markAllAsRead()
-  if (result.success) {
-    // Update filter counts after marking all as read
-    updateFilterCounts()
-  }
+  if (result.success) updateFilterCounts()
 }
 
-const handleRemoveNotification = async (id) => {
-  const result = await deleteNotification(id)
-  if (result.success) {
-    // Update filter counts after deletion
-    updateFilterCounts()
-  }
+const handleRemoveAlert = async (id: string) => {
+  const result = await deleteAlert(id)
+  if (result.success) updateFilterCounts()
 }
 
-const handleNotificationActionClick = async (notificationId, action) => {
-  const result = await handleNotificationAction(notificationId, action)
-  if (result.success) {
-    // Update filter counts after action
-    updateFilterCounts()
-  }
+const handleAlertActionClick = async (alertId: string, action: string) => {
+  const result = await handleAlertAction(alertId, action)
+  if (result.success) updateFilterCounts()
 }
 
-// Load notifications on mount
+// Load alerts on mount
 onMounted(async () => {
   try {
-    await getNotifications()
+    await getAlerts()
     updateFilterCounts()
   } catch (error) {
-    console.error('Error loading notifications:', error)
+    console.error('Error loading alerts:', error)
   }
 })
 
-// Watch for notifications changes to update filter counts
+// Watch for alerts changes to update filter counts
 watch(notifications, updateFilterCounts, { immediate: true })
 </script>
 

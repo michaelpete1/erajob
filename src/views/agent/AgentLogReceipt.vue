@@ -170,186 +170,150 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { workLogsService } from '@/services/workLogsService'
+import type { WorkLogOut } from '@/types/api'
 
 const router = useRouter()
-const logData = ref<any>(null)
-const logImages = ref<any[]>([])
-const selectedImage = ref<any>(null)
-const loading = ref(false)
-const error = ref<string | null>(null)
 
-// Work logs data with proper typing
-interface WorkLog {
+interface WorkLogFile {
+  name: string
+  url: string
+}
+
+interface WorkLogView {
   id: string
   title: string
   hours: number
   date: string
   comment: string
-  files?: any[]
-  projectId?: string
-  gigId?: string
-  status: 'draft' | 'submitted' | 'approved'
+  files: WorkLogFile[]
 }
 
-// Simulate API call for individual work log (replace with real API call)
-const loadWorkLogFromAPI = async (logId: string): Promise<WorkLog | null> => {
-  // In a real implementation, this would call:
-  // const result = await workLogsService.getWorkLogById(logId)
+const logData = ref<WorkLogView | null>(null)
+const logImages = ref<WorkLogFile[]>([])
+const selectedImage = ref<WorkLogFile | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-  // For now, simulate successful API response
-  const mockApiResponse = [
-    {
-      id: '1',
-      title: 'Content Writing for TechCorp',
-      hours: 8,
-      date: '2024-01-15',
-      comment: 'Completed blog post about React best practices',
-      projectId: 'proj_1',
-      gigId: 'gig_1',
-      status: 'submitted' as const,
-      files: []
-    },
-    {
-      id: '2',
-      title: 'UI Design for Mobile App',
-      hours: 6,
-      date: '2024-01-14',
-      comment: 'Created wireframes and mockups for user dashboard',
-      projectId: 'proj_2',
-      gigId: 'gig_2',
-      status: 'approved' as const,
-      files: [
-        { name: 'wireframes.png', data: 'mock-image-data' },
-        { name: 'mockups.jpg', data: 'mock-image-data-2' }
-      ]
-    }
-  ]
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  return mockApiResponse.find(log => log.id === logId) || null
+const formatTimestamp = (timestamp?: number | null) => {
+  if (!timestamp) return ''
+  const ms = timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
+  const date = new Date(ms)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString()
 }
 
-// Fallback to localStorage
-const loadWorkLogFromLocalStorage = (logId?: string) => {
-  try {
-    const logs = localStorage.getItem('workLogs')
-    if (logs) {
-      const allLogs = JSON.parse(logs)
-      if (logId) {
-        return allLogs.find((log: any) => log.id === parseInt(logId))
-      } else {
-        return allLogs[0] // Return first log if no specific ID
-      }
-    }
-  } catch (e) {
-    console.error('Error loading work log from localStorage:', e)
+const normalizeLog = (log: WorkLogOut): WorkLogView => {
+  const files = Array.isArray(log.files)
+    ? log.files.map((item, index) => {
+        if (typeof item === 'string') {
+          return {
+            name: `Attachment-${index + 1}`,
+            url: item
+          }
+        }
+
+        if (item && typeof item === 'object') {
+          const possibleUrl = (item as Record<string, unknown>).url
+          const possibleName = (item as Record<string, unknown>).name
+
+          return {
+            name: typeof possibleName === 'string' && possibleName.trim().length > 0
+              ? possibleName
+              : `Attachment-${index + 1}`,
+            url: typeof possibleUrl === 'string' ? possibleUrl : ''
+          }
+        }
+
+        return {
+          name: `Attachment-${index + 1}`,
+          url: ''
+        }
+      })
+    : []
+
+  return {
+    id: log.id,
+    title: log.log_title || 'Work Log',
+    hours: typeof log.hours === 'number' ? log.hours : 0,
+    date: formatTimestamp(log.date_created),
+    comment: log.log_comment || '',
+    files
   }
-  return null
 }
 
-onMounted(async () => {
+const loadLog = async (logId: string) => {
   loading.value = true
   error.value = null
-
   try {
-    const logId = Array.isArray(router.currentRoute.value.params.id)
-      ? router.currentRoute.value.params.id[0]
-      : router.currentRoute.value.params.id
-
-    if (logId) {
-      // Try to load from API first
-      const apiLog = await loadWorkLogFromAPI(logId)
-      if (apiLog) {
-        logData.value = apiLog
-        extractImages(apiLog)
-        console.log('Loaded work log from API:', logData.value)
-        return
-      }
-    }
-
-    // Fallback to localStorage if API fails or no logId
-    const localLog = loadWorkLogFromLocalStorage(logId)
-    if (localLog) {
-      logData.value = localLog
-      extractImages(localLog)
-      console.log('Loaded work log from localStorage')
+    const response = await workLogsService.getAgentLogById(logId)
+    if (response.success && response.data) {
+      const normalized = normalizeLog(response.data)
+      logData.value = normalized
+      logImages.value = normalized.files.filter(file => isImageFile(file))
       return
     }
-
-    // Final fallback to selectedLog if not found by ID
-    if (!logData.value) {
-      const selectedLog = localStorage.getItem('selectedLog')
-      if (selectedLog) {
-        logData.value = JSON.parse(selectedLog)
-        extractImages(logData.value)
-        console.log('Loaded work log from selectedLog')
-      }
-    }
-  } catch (caughtError) {
-    console.error('Error loading log data:', caughtError)
-    // Type-safe error handling
-    if (caughtError instanceof Error) {
-      error.value = `Failed to load log details: ${caughtError.message}`
-    } else {
-      error.value = 'Failed to load log details'
-    }
+    error.value = response.error || 'Failed to load log details.'
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to load log details.'
   } finally {
     loading.value = false
   }
-})
-
-const extractImages = (log: any) => {
-  if (log.files && Array.isArray(log.files)) {
-    logImages.value = log.files.filter((file: any) => isImageFile(file.name))
-  }
 }
 
-const isImageFile = (fileName: string) => {
-  if (!fileName || typeof fileName !== 'string') return false
-  
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
-  const lowerFileName = fileName.toLowerCase()
-  const lastDotIndex = lowerFileName.lastIndexOf('.')
-  
-  if (lastDotIndex === -1) return false
-  
-  const extension = lowerFileName.substring(lastDotIndex)
-  return imageExtensions.includes(extension)
-}
+onMounted(async () => {
+  const logId = Array.isArray(router.currentRoute.value.params.id)
+    ? router.currentRoute.value.params.id[0]
+    : router.currentRoute.value.params.id
 
-const getFileUrl = (file: any) => {
-  // Check if it's a real File object (freshly uploaded)
-  if (file instanceof File) {
-    return URL.createObjectURL(file)
+  if (!logId) {
+    error.value = 'No log identifier provided.'
+    return
   }
-  
-  // Check if it's a file from localStorage with base64 data
-  if (file && file.data) {
-    return file.data
-  }
-  
-  // Check if it's a file object with URL
-  if (file && file.url) {
-    return file.url
-  }
-  
-  // For demo purposes, create a placeholder based on file type
-  if (file && file.name) {
-    const extension = file.name.split('.').pop()?.toLowerCase()
-    
-    // Create different placeholders for different image types
-    if (['jpg', 'jpeg', 'png'].includes(extension || '')) {
-      return `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y0ZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7igJx7e2ZpbGUubmFtZX194oCdPC90ZXh0Pjwvc3ZnPg==`
+
+  await loadLog(logId)
+
+  if (!logData.value) {
+    try {
+      const stored = localStorage.getItem('selectedLog')
+      if (stored) {
+        const fallback = JSON.parse(stored)
+        logData.value = {
+          id: fallback.id || logId,
+          title: fallback.title || 'Work Log',
+          hours: fallback.hours || 0,
+          date: fallback.date || '',
+          comment: fallback.comment || '',
+          files: []
+        }
+        logImages.value = []
+      }
+    } catch (storageError) {
+      console.warn('Unable to load fallback log from storage', storageError)
     }
   }
-  
-  // Default placeholder
-  return `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y0ZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBQcmV2aWV3PC90ZXh0Pjwvc3ZnPg==`
+})
+
+const isImageFile = (file: WorkLogFile) => {
+  if (!file) return false
+
+  if (typeof file.url === 'string' && file.url.startsWith('data:image/')) {
+    return true
+  }
+
+  const name = file.name
+  if (!name || typeof name !== 'string') {
+    return false
+  }
+
+  const lowerFileName = name.toLowerCase()
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
+  return imageExtensions.some(ext => lowerFileName.endsWith(ext))
 }
 
-const viewImage = (image: any) => {
+const getFileUrl = (file: WorkLogFile) => file.url || ''
+
+const viewImage = (image: WorkLogFile) => {
   selectedImage.value = image
 }
 

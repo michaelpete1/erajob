@@ -65,6 +65,7 @@ export function useAuth() {
   }
 
   const logoutUser = () => {
+    authService.logout()
     user.value = null
     token.value = null
   }

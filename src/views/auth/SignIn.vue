@@ -140,9 +140,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '../../composables/useAuth'
 import BrandLogo from '../../components/BrandLogo.vue'
 import type { AuthResponse } from '../../types/api/auth'
+import { apiService } from '@/services/apiService'
 
 const email = ref('')
 const password = ref('')
@@ -150,7 +150,7 @@ const showPassword = ref(false)
 const selectedRole = ref<'client' | 'agent'>('client')
 const loginError = ref<string | null>(null)
 const router = useRouter()
-const { loginUser, loading } = useAuth()
+const loading = ref(false)
 
 async function onSubmit() {
   loginError.value = null
@@ -163,16 +163,60 @@ async function onSubmit() {
   // Removed admin test bypass; use real login for admin
 
   try {
-    const response = await loginUser({
-      email: email.value,
-      password: password.value,
-      role: selectedRole.value
+    loading.value = true
+    let response: AuthResponse
+
+    const mapUser = (role: 'client' | 'agent' | 'admin', data: any) => ({
+      id: String(data?.id ?? ''),
+      email: String(data?.email ?? email.value),
+      role,
+      full_name: typeof data?.full_name === 'string' ? data.full_name : undefined
     })
 
+    const missingTokenError = 'Authentication failed: access token was not provided.'
+
+    if (selectedRole.value === 'agent') {
+      const result = await apiService.agentLogin({ email: email.value, password: password.value })
+      if (result.success && result.data?.access_token) {
+        response = { success: true, user: mapUser('agent', result.data), token: result.data.access_token ?? null }
+        localStorage.setItem('userInfo', JSON.stringify(result.data))
+      } else if (result.success && !result.data?.access_token) {
+        response = { success: false, error: missingTokenError }
+      } else {
+        response = { success: false, error: result.error }
+      }
+    } else if (selectedRole.value === 'client') {
+      const result = await apiService.clientLogin({ email: email.value, password: password.value })
+      if (result.success && result.data?.access_token) {
+        response = { success: true, user: mapUser('client', result.data), token: result.data.access_token ?? null }
+        localStorage.setItem('userInfo', JSON.stringify(result.data))
+      } else if (result.success && !result.data?.access_token) {
+        response = { success: false, error: missingTokenError }
+      } else {
+        response = { success: false, error: result.error }
+      }
+    } else {
+      const result = await apiService.adminLogin({ email: email.value, password: password.value })
+      if (result.success && result.data?.access_token) {
+        response = { success: true, user: mapUser('admin', result.data), token: result.data.access_token ?? null }
+        localStorage.setItem('userInfo', JSON.stringify(result.data))
+      } else if (result.success && !result.data?.access_token) {
+        response = { success: false, error: missingTokenError }
+      } else {
+        response = { success: false, error: result.error }
+      }
+    }
+
     if (response.success && response.user) {
-      const targetRole = selectedRole.value
-      if (targetRole === 'agent') {
+      const role = response.user.role
+      localStorage.setItem('userRole', role)
+      if (role !== 'admin') {
+        localStorage.removeItem('isAdmin')
+      }
+      if (role === 'agent') {
         router.push({ name: 'agent-explore-gigs' })
+      } else if (role === 'admin') {
+        router.push({ name: 'admin-job-approval' })
       } else {
         router.push({ name: 'client-dashboard' })
       }
@@ -182,6 +226,8 @@ async function onSubmit() {
   } catch (err: any) {
     console.error('SignIn: Login error:', err)
     loginError.value = err.message || 'An unexpected error occurred.'
+  } finally {
+    loading.value = false
   }
 }
 </script>

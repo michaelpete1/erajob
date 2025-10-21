@@ -83,11 +83,30 @@
               <p class="text-sm">{{ alertMessage }}</p>
             </div>
 
+            <div v-if="successMessage" class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded-lg mb-3" role="status">
+              <p class="font-bold">Success</p>
+              <p class="text-sm">{{ successMessage }}</p>
+            </div>
+
             <div class="relative">
-              <textarea v-model="proposal" rows="6" class="w-full p-4 rounded-xl border-2 border-gray-200 placeholder-gray-400 focus:ring-brand-teal focus:border-brand-teal transition duration-150 shadow-inner" placeholder="Tell us why you would like this job, and any additional details or even a counter proposal."></textarea>
+              <textarea
+                v-model="proposal"
+                rows="6"
+                class="w-full p-4 rounded-xl border-2 border-gray-200 placeholder-gray-400 focus:ring-brand-teal focus:border-brand-teal transition duration-150 shadow-inner"
+                placeholder="Tell us why you would like this job, and any additional details or even a counter proposal."
+                :disabled="submitting"
+              ></textarea>
               <div class="flex justify-end p-2">
-                <button @click="sendProposal" class="inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-white font-bold hover:bg-teal-800 transition duration-150 shadow-lg transform hover:scale-[1.01]">
-                  Send Proposition
+                <button
+                  @click="sendProposal"
+                  :disabled="submitting"
+                  class="inline-flex items-center justify-center rounded-full bg-brand-teal px-8 py-3 text-white font-bold hover:bg-teal-800 transition duration-150 shadow-lg transform hover:scale-[1.01] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <svg v-if="submitting" class="-ml-1 mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ submitting ? 'Sending...' : 'Submit Proposal' }}
                 </button>
               </div>
             </div>
@@ -102,248 +121,259 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue' // 'computed' added
-import { useRouter, useRoute } from 'vue-router' // 'useRoute' added
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import AgentBottomNav from '../../components/AgentBottomNavUpdated.vue'
+import { useJobs } from '@/composables/useJobs'
+import type { Job as ApiJob } from '@/types/api'
+import type { JobsOut } from '@/types/api/openapi'
+import { applicationsService } from '@/services/applicationsService'
 
-// --- Mock/Internal Type Definitions to fix TS errors ---
-
-interface ApiJobData {
-    id: string;
-    project_title: string;
-    description: string;
-    budget: number; // in cents
-    category: string;
-    requirement: string;
-    skills_needed: string | string[];
+interface GigDetail {
+  id: string
+  title: string
+  description: string
+  category: string
+  budget: number
+  requirements: string[]
+  skillsNeeded: string
+  client: string
+  memberSince: string
 }
-
-interface ApiServiceResponse {
-    success: boolean;
-    data: ApiJobData | null;
-}
-
-interface Job {
-    id: string;
-    title: string;
-    description: string;
-    price: string; // formatted price
-    category: string;
-    budget: number; // raw budget in cents
-    requirements: string[];
-    skills_needed: string;
-    client: string;
-    memberSince: string;
-}
-
-// --- Mock Services and Components (since imports are not available in this context) ---
-
-// Mock jobsService to resolve type issues
-const jobsService = {
-    async getJobById(id: string): Promise<ApiServiceResponse> {
-        console.log(`Mock: Fetching job ${id} from API...`);
-        // Simulate a successful API response with data matching the structure the component expects
-        if (id === '12345') {
-             return {
-                success: true,
-                data: {
-                    id: '12345',
-                    project_title: 'Interactive Portfolio Website Redesign',
-                    description: 'We need an experienced front-end developer to revamp our current static portfolio site into a highly interactive and mobile-responsive web application.',
-                    budget: 4500, // $45.00
-                    category: 'Web Development',
-                    requirement: 'Must be proficient in Vue 3 (Composition API) and Tailwind CSS. Portfolio review required.',
-                    skills_needed: ['Vue 3', 'Tailwind CSS', 'TypeScript', 'UI/UX'],
-                }
-            };
-        }
-        // Simulate a failure for other IDs
-        return { success: false, data: null };
-    }
-}
-
-// Placeholder component for AgentBottomNav
-const AgentBottomNav = {
-  template: `
-    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t border-gray-200 p-3 z-10">
-      <div class="flex justify-around max-w-sm mx-auto">
-        <button class="text-gray-600 hover:text-brand-teal flex flex-col items-center">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m0 0l-7 7m0-7v10a1 1 0 01-1 1h-3"></path></svg>
-          <span class="text-xs">Home</span>
-        </button>
-        <button class="text-brand-teal flex flex-col items-center">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-1.041-8.5-2.745M12 4v10m0 0l-4-4m4 4l4-4"></path></svg>
-          <span class="text-xs font-semibold">Gigs</span>
-        </button>
-        <button class="text-gray-600 hover:text-brand-teal flex flex-col items-center">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-          <span class="text-xs">Profile</span>
-        </button>
-      </div>
-    </nav>
-  `,
-}
-
-// --- Component Logic ---
 
 const router = useRouter()
-const route = useRoute() // Initialized useRoute
-const gig = ref<Job | null>(null)
+const route = useRoute()
+const { jobs, getAvailableJobs } = useJobs()
+
+type RawJob = Partial<JobsOut> & Partial<ApiJob> & Record<string, any>
+
+const gig = ref<GigDetail | null>(null)
 const proposal = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
-const alertMessage = ref<string | null>(null) // Used to replace alert()
+const alertMessage = ref<string | null>(null)
+const submitting = ref(false)
+const successMessage = ref<string | null>(null)
 
 const defaultDescription = `We're looking for a skilled professional to complete this project. The full brief will be shared with successful applicants.`
-
 const gigBullets = ref<string[]>([])
 
-// Helper function defined to fix 'Cannot find name 'extractIdFromSlug'.'
 const extractIdFromSlug = (slug: string): string => {
-    const parts = slug.split('-')
-    // Assumes the ID is the last part of the slug and is a string
-    return parts.pop() || ''
+  const parts = slug.split('-')
+  return parts.pop() || ''
 }
 
-// Computed property to format budget
-const formattedBudget = computed(() => { // 'computed' fixed
-    if (!gig.value?.budget) return '—'
-    // Budget is in cents, convert to dollars/hr
-    return `$${(gig.value.budget / 100).toFixed(2)}/hr`
+const formattedBudget = computed(() => {
+  if (!gig.value?.budget || gig.value.budget <= 0) return '—'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(gig.value.budget)
 })
 
-// Computed property to format requirements as bullets
-const formattedRequirements = computed(() => { // 'computed' fixed
-    // Mock data for a nice UI if real requirements are missing
-    if (!gig.value?.requirements || gig.value.requirements.length === 0 || (gig.value.requirements.length === 1 && gig.value.requirements[0] === 'Requirements not specified')) {
-        return [
-            'Simplifying navigation and reducing clutter to make key features easier to find.',
-            'Improving the overall layout and design for a consistent and professional look.',
-            'Creating reusable interactions and transitions for a more engaging user experience.'
-        ]
-    }
-    // API response often has 'requirement' as a single string, manually convert to array if needed
-    if (gig.value.requirements.length === 1 && typeof gig.value.requirements[0] === 'string' && gig.value.requirements[0].includes('\n')) {
-        return gig.value.requirements[0].split('\n').filter(line => line.trim() !== '')
-    }
-    
-    return gig.value.requirements
+const formattedRequirements = computed(() => {
+  if (!gig.value?.requirements || gig.value.requirements.length === 0) {
+    return [
+      'Simplifying navigation and reducing clutter to make key features easier to find.',
+      'Improving the overall layout and design for a consistent and professional look.',
+      'Creating reusable interactions and transitions for a more engaging user experience.'
+    ]
+  }
+
+  if (
+    gig.value.requirements.length === 1 &&
+    typeof gig.value.requirements[0] === 'string' &&
+    gig.value.requirements[0].includes('\n')
+  ) {
+    return gig.value.requirements[0]
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+  }
+
+  return gig.value.requirements
 })
 
-onMounted(async () => {
-    const slug = route.params.slug as string // 'route' fixed
+const mapJobToGig = (job: RawJob): GigDetail => {
+  const requirementSource =
+    job.requirement ??
+    job.requirements ??
+    job.requirement_description ??
+    job.requirement_details ??
+    job.description ??
+    ''
 
-    if (slug) {
-        loading.value = true
-        error.value = null
+  const requirements = Array.isArray(requirementSource)
+    ? requirementSource
+    : typeof requirementSource === 'string' && requirementSource.includes('\n')
+      ? requirementSource
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean)
+      : requirementSource
+        ? [String(requirementSource)]
+        : []
 
-        try {
-            // Extract ID from slug (function fixed)
-            const id = extractIdFromSlug(slug)
-            if (!id) {
-                throw new Error('Invalid gig ID in URL slug')
-            }
+  const skillsField = job.skills_needed ?? job.skillsNeeded ?? job.skills
+  const skills = Array.isArray(skillsField)
+    ? skillsField
+        .map(skill => {
+          if (typeof skill === 'string') return skill
+          if (skill && typeof skill === 'object') {
+            const name = (skill as Record<string, any>).name
+            return typeof name === 'string' ? name : ''
+          }
+          return ''
+        })
+        .filter(Boolean)
+        .join(', ')
+    : typeof skillsField === 'string'
+      ? skillsField
+      : ''
 
-            // Try to get gig from API first (using mock service)
-            const result = await jobsService.getJobById(id)
+  const numericBudget = typeof job.budget === 'number'
+    ? job.budget
+    : typeof job.budget === 'string'
+      ? Number.parseFloat(job.budget)
+      : 0
 
-            // Fixed property access based on defined types
-            if (result.success && result.data) {
-                const data = result.data
+  const clientName =
+    typeof job.company_name === 'string'
+      ? job.company_name
+      : typeof job.client_name === 'string'
+        ? job.client_name
+        : typeof job.client === 'string'
+          ? job.client
+          : typeof job.clientId === 'string'
+            ? job.clientId
+            : 'Not specified'
 
-                gig.value = {
-                    id: data.id,
-                    title: data.project_title,
-                    description: data.description,
-                    price: (data.budget / 100).toFixed(2), // Convert cents to dollars
-                    category: data.category,
-                    budget: data.budget,
-                    requirements: [data.requirement || 'Requirements not specified'],
-                    // Ensure skills_needed is a joined string
-                    skills_needed: Array.isArray(data.skills_needed) ? data.skills_needed.join(', ') : data.skills_needed || '',
-                    client: 'Sydney, Australia', // Default since API doesn't have client info
-                    memberSince: '03 September 2025' // Default since API doesn't have this
-                }
-                console.log('Loaded gig from API:', data)
-            } else {
-                // Fallback to localStorage if API fails (using stored job object)
-                const stored = localStorage.getItem('lastProposition')
-                if (stored) {
-                    const propositionData = JSON.parse(stored)
-                    // Attempt to use gig data from the last proposition
-                    if (propositionData.gig && propositionData.gig.id === id) {
-                        gig.value = propositionData.gig as Job
-                        console.log('Loaded gig from localStorage (last proposition):', propositionData.gig)
-                    }
-                }
-            }
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching details.'
-            console.error('Error loading gig:', errorMessage)
-            error.value = 'Failed to load gig details. Please try again.'
-        } finally {
-            loading.value = false
-        }
-    } else {
-        console.error('No slug provided in route')
-        error.value = 'No gig ID provided in the URL.'
+  const createdTimestamp =
+    typeof job.date_created === 'number'
+      ? job.date_created * 1000
+      : typeof job.created_at === 'string'
+        ? Date.parse(job.created_at)
+        : null
+
+  return {
+    id: job.id ? String(job.id) : '',
+    title: typeof job.project_title === 'string'
+      ? job.project_title
+      : typeof job.title === 'string'
+        ? job.title
+        : 'Untitled Project',
+    description: job.description ?? defaultDescription,
+    category: typeof job.category === 'string' ? job.category : 'Other',
+    budget: Number.isFinite(numericBudget) ? numericBudget : 0,
+    requirements,
+    skillsNeeded: skills,
+    client: clientName,
+    memberSince: createdTimestamp
+      ? new Date(createdTimestamp).toLocaleDateString()
+      : '03 September 2025'
+  }
+}
+
+const getStoredJob = (id: string): RawJob | null => {
+  const match = jobs.value.find(job => String(job.id ?? '') === id)
+  if (match) {
+    return match as unknown as RawJob
+  }
+
+  const stored = localStorage.getItem('selectedGig')
+  if (!stored) return null
+
+  try {
+    const parsed = JSON.parse(stored)
+    return String(parsed?.id ?? '') === id ? parsed as RawJob : null
+  } catch {
+    return null
+  }
+}
+
+const loadGigDetails = async (slug: string) => {
+  const id = extractIdFromSlug(slug)
+  if (!id) {
+    error.value = 'Invalid gig ID in URL.'
+    return
+  }
+
+  loading.value = true
+  error.value = null
+
+  try {
+    let rawJob = getStoredJob(id)
+
+    if (!rawJob) {
+      const response = await getAvailableJobs({ start: 0, stop: 20 })
+      if (!response.success) {
+        error.value = response.error || 'Unable to load job details.'
+      }
+      rawJob = getStoredJob(id)
     }
 
-    // Set gig bullets after gig is loaded, ensuring default is used if fetch failed
-    if (gig.value) {
-        gigBullets.value = formattedRequirements.value
-    } else {
-        // Final fallback if no data was loaded at all
-         gig.value = {
-            id: 'fallback',
-            title: 'Posted Project (Mock Data)',
-            description: defaultDescription + ' This data is mock data shown because the project ID could not be loaded.',
-            price: '—',
-            category: 'Other',
-            budget: 0,
-            requirements: ['Requirements not specified', 'Mobile-first design approach is a plus.'],
-            skills_needed: 'General Freelancer Skills',
-            client: 'Sydney, Australia',
-            memberSince: '03 September 2025'
-        }
-        gigBullets.value = formattedRequirements.value
-        error.value = 'Could not load project details. Showing a generic placeholder.'
+    if (!rawJob) {
+      error.value = 'Job details are not available right now.'
+      gig.value = null
+      return
     }
+
+    gig.value = mapJobToGig(rawJob)
+    gigBullets.value = formattedRequirements.value
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to load gig details.'
+    gig.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  const slug = route.params.slug as string
+  if (!slug) {
+    error.value = 'No gig ID provided in the URL.'
+    return
+  }
+
+  loadGigDetails(slug)
 })
 
-const sendProposal = () => {
-    alertMessage.value = null
-    if (!proposal.value.trim()) {
-        // Replaced alert() with setting an internal message
-        alertMessage.value = 'Please enter a proposition before sending.'
-        return
+const sendProposal = async () => {
+  alertMessage.value = null
+  successMessage.value = null
+
+  if (!gig.value?.id) {
+    alertMessage.value = 'Job information is missing. Please go back and try again.'
+    return
+  }
+
+  if (!proposal.value.trim()) {
+    alertMessage.value = 'Please enter a proposition before sending.'
+    return
+  }
+
+  submitting.value = true
+  try {
+    const payload = {
+      job_id: gig.value.id,
+      proposal: proposal.value.trim()
     }
 
-    // Simulate proposition review - randomly accept or reject
-    const isAccepted = Math.random() > 0.5 // 50% chance of acceptance
+    const response = await applicationsService.applyForJob(payload)
+    if (response.success) {
+      const rawMessage = typeof response.data === 'string' ? response.data : ''
+      const isJsonString = rawMessage.trim().startsWith('{') && rawMessage.trim().endsWith('}')
+      const displayMessage = rawMessage && !isJsonString
+        ? rawMessage
+        : 'Proposal submitted successfully.'
 
-    // Store proposition details
-    const propositionData = {
-        gig: gig.value,
-        proposal: proposal.value,
-        timestamp: new Date().toISOString(),
-        status: isAccepted ? 'accepted' : 'rejected'
-    }
-
-    try {
-        // Storing data to demonstrate successful submission
-        localStorage.setItem('lastProposition', JSON.stringify(propositionData))
-    } catch (e) {
-        console.error('Error storing proposition in localStorage:', e)
-    }
-
-    proposal.value = ''
-
-    // Navigate to appropriate page based on acceptance (assuming these routes exist)
-    if (isAccepted) {
-        router.push('/agent/proposition-accepted')
+      successMessage.value = displayMessage
+      proposal.value = ''
     } else {
-        router.push('/agent/proposition-rejected')
+      alertMessage.value = response.error || 'Failed to submit proposal. Please try again.'
     }
+  } catch (err: any) {
+    alertMessage.value = err?.message || 'Failed to submit proposal. Please try again.'
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

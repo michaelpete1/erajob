@@ -34,17 +34,17 @@
       <div class="bg-white rounded-lg shadow-sm overflow-hidden">
         <div 
           class="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
-          @click="handleSectionClick('profile')"
+          @click="handleSectionClick('account')"
         >
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-10 h-10 bg-brand-teal/10 rounded-full flex items-center justify-center">
+              <svg class="w-5 h-5 text-brand-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
             <div>
-              <h3 class="font-medium text-gray-900">Profile Settings</h3>
-              <p class="text-sm text-gray-500">Update your personal information</p>
+              <h3 class="font-medium text-gray-900">Account</h3>
+              <p class="text-sm text-gray-500">View your account overview</p>
             </div>
           </div>
           <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,9 +159,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { agentsService } from '@/services/agentsService'
+import authService from '@/services/authService'
 
 const router = useRouter()
 
+const userRole = ref<string>(localStorage.getItem('userRole') || '')
 const userName = ref<string>('')
 const userEmail = ref<string>('')
 const currentLanguage = ref<string>('English')
@@ -180,7 +182,28 @@ const userInitials = computed(() => {
     .substring(0, 2)
 })
 
+const hydrateFromLocalStorage = () => {
+  try {
+    const storedName = localStorage.getItem('userName')
+    if (storedName) userName.value = storedName
+
+    const storedEmail = localStorage.getItem('userEmail')
+    if (storedEmail) userEmail.value = storedEmail
+
+    const userInfo = localStorage.getItem('userInfo')
+    if (userInfo) {
+      const parsed = JSON.parse(userInfo)
+      if (parsed?.name) userName.value = parsed.name
+      if (parsed?.email) userEmail.value = parsed.email
+    }
+  } catch (err) {
+    console.error('Error hydrating user info:', err)
+  }
+}
+
 const loadUserProfile = async () => {
+  if (userRole.value !== 'agent') return
+
   loading.value = true
   error.value = null
 
@@ -254,6 +277,8 @@ const closeDropdown = (event: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', closeDropdown)
+  userRole.value = localStorage.getItem('userRole') || ''
+  hydrateFromLocalStorage()
   loadUserProfile()
 })
 
@@ -266,8 +291,14 @@ const handleSectionClick = (section: string) => {
     case 'terms':
       router.push('/terms-and-conditions')
       break
-    case 'profile':
-      router.push('/profile-settings')
+    case 'account':
+      if (userRole.value === 'agent') {
+        router.push('/agent/account')
+      } else if (userRole.value === 'client') {
+        router.push('/client/account')
+      } else {
+        router.push('/profile-settings')
+      }
       break
     case 'language':
       toggleLanguageDropdown()
@@ -276,13 +307,13 @@ const handleSectionClick = (section: string) => {
       alert(' Support clicked! This would open support page or contact options.')
       break
     case 'logout':
-      const confirmed = confirm('🚪 Are you sure you want to logout?\n\nYou will need to sign in again to access your account.')
-      if (confirmed) {
+      if (confirm('🚪 Are you sure you want to logout?\n\nYou will need to sign in again to access your account.')) {
+        authService.logout()
         localStorage.removeItem('userToken')
-        localStorage.removeItem('userInfo')
         localStorage.removeItem('selectedClientServices')
         localStorage.removeItem('selectedAgentServices')
-        router.push('/sign-in')
+        localStorage.removeItem('selectedGig')
+        router.replace('/sign-in')
       }
       break
     default:

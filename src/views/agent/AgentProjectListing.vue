@@ -53,7 +53,7 @@
 
       <div v-if="openMobileNav" class="fixed top-16 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-white/95 text-brand-teal rounded-xl shadow-lg z-50 md:hidden">
         <div class="flex flex-col p-3">
-          <div class="flex justify-center mb-3 pb-3 border-b border-gray-200">
+          <div class="flex justify-center mb-3 pb-3 border-gray-200">
             <router-link @click="openMobileNav = false" to="/agent/gigs-listing" class="flex items-center justify-center">
               <BrandLogo size="sm" />
             </router-link>
@@ -145,9 +145,17 @@
             @click="activeTab === 'active' ? goToLogWorkHours(gig) : null"
           >
             <div class="block">
-              <div class="flex items-center mb-3 sm:mb-4 gap-3">
-                <span class="text-2xl sm:text-3xl">{{ gig.icon }}</span>
-                <h3 class="text-lg sm:text-xl font-bold text-brand-teal">{{ gig.title }}</h3>
+              <div class="flex items-start justify-between mb-3 sm:mb-4 gap-3">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl sm:text-3xl">{{ gig.icon }}</span>
+                  <h3 class="text-lg sm:text-xl font-bold text-brand-teal">{{ gig.title }}</h3>
+                </div>
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide"
+                  :class="statusBadgeClass(gig.status, activeTab === 'active')"
+                >
+                  {{ statusLabel(gig.status, activeTab === 'active') }}
+                </span>
               </div>
               <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{{ gig.description }}</p>
               <div class="flex items-center justify-between mb-3 sm:mb-4">
@@ -191,6 +199,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { applicationsService } from '@/services/applicationsService'
+import { jobsService } from '@/services/jobsService'
+import type { ApplicationOut } from '@/types/api'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
 import { createGigSlug } from '@/utils/slugUtils'
@@ -200,6 +211,9 @@ const openMobileNav = ref(false)
 const activeTab = ref<'active' | 'browse'>('browse')
 const searchQuery = ref('')
 const selectedServices = ref<any[]>([])
+const assignedJobs = ref<JobCard[]>([])
+const assignedLoading = ref(false)
+const assignedError = ref<string | null>(null)
 
 const router = useRouter()
 
@@ -210,6 +224,10 @@ const {
   getAvailableJobs
 } = useJobs()
 
+const approvedApplications = ref<ApplicationOut[]>([])
+const applicationsLoading = ref(false)
+const applicationsError = ref<string | null>(null)
+
 const paginationParams = { start: 0, stop: 10 }
 
 onMounted(async () => {
@@ -218,13 +236,78 @@ onMounted(async () => {
     selectedServices.value = JSON.parse(stored)
   }
 
-  await getAvailableJobs(paginationParams)
+  await fetchData()
 })
 
 watch(activeTab, async () => {
   // Refresh jobs when switching tabs to ensure we have the latest data
-  await getAvailableJobs(paginationParams)
+  await fetchData()
 })
+
+const fetchData = async () => {
+  applicationsLoading.value = true
+  applicationsError.value = null
+  await getAvailableJobs(paginationParams)
+  try {
+    const response = await applicationsService.listAgentApplications()
+    if (response.success && response.data) {
+      approvedApplications.value = response.data.filter(app => isAcceptedProposalStatus(app.proposal_status))
+      const ids = new Set(
+        approvedApplications.value
+          .map(app => (app.job_id ? String(app.job_id) : ''))
+          .filter(id => id.length > 0)
+      )
+      if (ids.size > 0) {
+        await fetchAssignedJobs(ids)
+      } else {
+        assignedJobs.value = []
+      }
+    } else {
+      applicationsError.value = response.error || 'Failed to load approved gigs.'
+      assignedJobs.value = []
+    }
+  } catch (err: any) {
+    applicationsError.value = err?.message || 'Failed to load approved gigs.'
+    assignedJobs.value = []
+  } finally {
+    applicationsLoading.value = false
+  }
+}
+
+const fetchAssignedJobs = async (jobIds: Set<string>) => {
+  assignedLoading.value = true
+  assignedError.value = null
+  try {
+    const results = await Promise.allSettled(
+      Array.from(jobIds).map(async id => {
+        const response = await jobsService.getJobById(id)
+        if (response.success && response.data) {
+          if (isJobApprovedForAgent(response.data)) {
+            return buildJobCard(response.data)
+          }
+          return null
+        }
+        throw new Error(response.error || `Failed to load job ${id}`)
+      })
+    )
+
+    const fulfilled = results
+      .filter((result): result is PromiseFulfilledResult<JobCard | null> => result.status === 'fulfilled')
+      .map(result => result.value)
+      .filter((card): card is JobCard => card !== null)
+    const rejected = results.filter(result => result.status === 'rejected')
+
+    assignedJobs.value = fulfilled
+    if (rejected.length > 0) {
+      assignedError.value = `Unable to load ${rejected.length} assigned job${rejected.length > 1 ? 's' : ''}.`
+    }
+  } catch (error: any) {
+    assignedJobs.value = []
+    assignedError.value = error?.message || 'Failed to load assigned jobs.'
+  } finally {
+    assignedLoading.value = false
+  }
+}
 
 const getCategoryIcon = (category: string | undefined) => {
   const normalized = (category || '').toLowerCase()
@@ -238,36 +321,118 @@ const getCategoryIcon = (category: string | undefined) => {
   return '💼'
 }
 
-const parseKeywords = (skills: string | undefined) => {
-  if (!skills) return []
-  return skills.split(',').map(skill => skill.trim()).filter(Boolean)
+interface JobCard {
+  id: string
+  title: string
+  description: string
+  price: string
+  category: string
+  icon: string
+  status: string
+  keywords: string[]
+  raw: any
 }
 
-const normalizedJobs = computed(() => {
-  return (jobs.value || []).map(job => {
-    const budget = job.budget ?? 0
-    return {
-      id: job.id || '',
-      title: job.project_title,
-      description: job.description,
-      price: (budget / 100).toFixed(2),
-      category: job.category,
-      icon: getCategoryIcon(job.category),
-      status: job.status,
-      keywords: parseKeywords(job.skills_needed),
-      raw: job
+const extractKeywords = (job: any): string[] => {
+  const skillsField = job?.skills_needed ?? job?.skills
+  if (Array.isArray(skillsField)) {
+    return skillsField
+      .map((skill: any) => {
+        if (typeof skill === 'string') return skill
+        if (skill && typeof skill === 'object') {
+          return skill.name || skill.title || ''
+        }
+        return ''
+      })
+      .filter(Boolean)
+  }
+  if (typeof skillsField === 'string') {
+    try {
+      const parsed = JSON.parse(skillsField)
+      if (Array.isArray(parsed)) return parsed.filter((item: any) => typeof item === 'string').map(item => item.trim()).filter(Boolean)
+    } catch (error) {
+      // ignore json parse errors and fallback to splitting by comma
     }
-  })
-})
-
-const isActiveStatus = (status?: string) => {
-  if (!status) return false
-  const value = status.toLowerCase()
-  return ['in_progress', 'active', 'assigned', 'accepted', 'ongoing'].some(flag => value.includes(flag))
+    return skillsField
+      .split(',')
+      .map((skill: string) => skill.trim())
+      .filter(Boolean)
+  }
+  return []
 }
 
-const activeJobs = computed(() => normalizedJobs.value.filter(job => isActiveStatus(job.status)))
-const browseJobs = computed(() => normalizedJobs.value.filter(job => !isActiveStatus(job.status)))
+const buildJobCard = (job: any): JobCard => {
+  const rawId = job?.id ?? job?.job_id ?? ''
+  const id = typeof rawId === 'string' ? rawId : String(rawId || '')
+  const title = job?.project_title ?? job?.title ?? 'Untitled Project'
+  const description = job?.description ?? ''
+  const budgetRaw = typeof job?.budget === 'number' ? job.budget : Number.parseFloat(job?.budget ?? '0')
+  const budget = Number.isFinite(budgetRaw) ? budgetRaw : 0
+  const category = job?.category ?? 'Other'
+
+  return {
+    id,
+    title,
+    description,
+    price: (budget / 100).toFixed(2),
+    category,
+    icon: getCategoryIcon(category),
+    status: normalizeJobStatus(job),
+    keywords: extractKeywords(job),
+    raw: job
+  }
+}
+
+const normalizeJobStatus = (job: any): string => {
+  return isJobApprovedForAgent(job) ? 'approved' : 'pending_review'
+}
+
+const isAcceptedProposalStatus = (status: ApplicationOut['proposal_status']) => {
+  if (!status) return false
+  if (typeof status === 'string') {
+    const normalized = status.toLowerCase()
+    const acceptedFlags = [
+      'accepted',
+      'approved',
+      'accepted_by_client',
+      'client_accepted',
+      'client_approved',
+      'selected'
+    ]
+    return acceptedFlags.some(flag => normalized === flag || normalized.includes(flag))
+  }
+  return false
+}
+
+const isJobApprovedForAgent = (job: any): boolean => {
+  const adminFlags = [job?.admin_approved, job?.adminApproved, job?.is_admin_approved]
+  if (adminFlags.some(value => isTruthyApproval(value))) return true
+  return false
+}
+
+const isTruthyApproval = (value: unknown): boolean => {
+  if (value === true) return true
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    return ['true', 'yes', 'approved', 'accepted'].includes(normalized)
+  }
+  if (typeof value === 'number') {
+    return value === 1
+  }
+  return false
+}
+
+const normalizedJobs = computed(() => (jobs.value || []).map(buildJobCard))
+
+const activeJobs = computed(() => assignedJobs.value.map(job => ({ ...job, status: 'approved' })))
+
+const assignedJobIds = computed(() => new Set(activeJobs.value.map(job => job.id)))
+
+const browseJobs = computed(() =>
+  normalizedJobs.value
+    .filter(job => !assignedJobIds.value.has(job.id))
+    .map(job => ({ ...job, status: isJobApprovedForAgent(job.raw) ? 'approved' : 'pending_review' }))
+)
 
 const filteredGigs = computed(() => {
   const source = activeTab.value === 'active' ? activeJobs.value : browseJobs.value
@@ -307,8 +472,7 @@ const persistJob = (job: typeof normalizedJobs.value[number]) => {
 
 const goToLogWorkHours = (gig: typeof normalizedJobs.value[number]) => {
   persistJob(gig)
-  const slug = createGigSlug(gig.title, gig.id)
-  router.push({ path: `/agent/job/${slug}` })
+  router.push({ path: '/agent/logging-details' })
 }
 
 const goToGig = (gig: typeof normalizedJobs.value[number]) => {
@@ -320,5 +484,27 @@ const goToGig = (gig: typeof normalizedJobs.value[number]) => {
     const slug = createGigSlug(gig.title, gig.id)
     router.push({ path: `/agent/gig/${slug}` })
   }
+}
+
+const isLoading = computed(() => jobsLoading.value || assignedLoading.value)
+const currentError = computed(() => {
+  if (activeTab.value === 'active') return assignedError.value || applicationsError.value
+  return jobsError.value
+})
+
+const statusLabel = (status: string, isActive: boolean) => {
+  if (isActive) return 'Approved'
+  if (!status) return 'Pending'
+  const normalized = status.toLowerCase()
+  if (normalized.includes('approved') || normalized.includes('accepted') || normalized.includes('assigned')) return 'Approved'
+  return 'Pending'
+}
+
+const statusBadgeClass = (status: string, isActive: boolean) => {
+  const normalized = status?.toLowerCase?.() || ''
+  if (isActive || normalized.includes('approved') || normalized.includes('accepted') || normalized.includes('assigned')) {
+    return 'bg-green-100 text-green-700 border border-green-200'
+  }
+  return 'bg-yellow-100 text-yellow-700 border border-yellow-200'
 }
 </script>

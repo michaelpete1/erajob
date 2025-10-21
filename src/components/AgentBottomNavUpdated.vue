@@ -2,54 +2,53 @@
   <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg z-50 lg:hidden">
     <div class="max-w-lg mx-auto px-2 py-2">
       <div class="flex items-center justify-around">
-        <!-- Projects Button -->
-        <router-link 
-          to="/agent/gigs-listing" 
+        <!-- Explore Gigs -->
+        <router-link
+          to="/agent/explore-gigs"
+          :class="navItemClass('/agent/explore-gigs')"
+          class="flex flex-col items-center justify-center flex-1 py-2"
+        >
+          <BriefcaseIcon :class="iconClass('/agent/explore-gigs')" />
+          <span class="text-xs mt-1">Explore</span>
+        </router-link>
+
+        <!-- My Gigs -->
+        <router-link
+          to="/agent/gigs-listing"
           :class="navItemClass('/agent/gigs-listing')"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
-          <PencilSquareIcon :class="iconClass('/agent/gigs-listing')" />
-          <span class="text-xs mt-1">Projects</span>
+          <ClipboardDocumentListIcon :class="iconClass('/agent/gigs-listing')" />
+          <span class="text-xs mt-1">My Gigs</span>
         </router-link>
 
-        <!-- Proposals Button -->
-        <router-link 
-          to="/agent/proposals" 
-          :class="navItemClass('/agent/proposals')"
+        <!-- Log Work -->
+        <router-link
+          to="/agent/log-work"
+          :class="['relative', navItemClass('/agent/log-work')]"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
-          <DocumentTextIcon :class="iconClass('/agent/proposals')" />
-          <span class="text-xs mt-1">Proposals</span>
+          <ClockIcon :class="iconClass('/agent/log-work')" />
+          <span class="text-xs mt-1">Log Work</span>
         </router-link>
 
-        <!-- Dashboard Button -->
-        <router-link 
-          to="/agent/logging-dashboard" 
-          :class="navItemClass('/agent/logging-dashboard')"
-          class="flex flex-col items-center justify-center flex-1 py-2"
-        >
-          <ChartBarIcon :class="iconClass('/agent/logging-dashboard')" />
-          <span class="text-xs mt-1">Dashboard</span>
-        </router-link>
-
-        <!-- FIX: Scoped to /agent/notifications -->
-        <router-link 
-          to="/agent/notifications" 
+        <!-- Notifications -->
+        <router-link
+          to="/agent/notifications"
           :class="['relative', navItemClass('/agent/notifications')]"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
           <BellIcon :class="iconClass('/agent/notifications')" />
           <span class="text-xs mt-1">Alerts</span>
-          <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
         </router-link>
 
-        <!-- FIX: Use global /settings since /agent/settings route does not exist -->
-        <router-link 
-          to="/settings" 
+        <!-- Settings -->
+        <router-link
+          to="/settings"
           :class="navItemClass('/settings')"
           class="flex flex-col items-center justify-center flex-1 py-2"
         >
-          <AdjustmentsHorizontalIcon :class="iconClass('/settings')" />
+          <Cog6ToothIcon :class="iconClass('/settings')" />
           <span class="text-xs mt-1">Settings</span>
         </router-link>
       </div>
@@ -58,43 +57,53 @@
 </template>
 
 <script setup lang="ts">
-import { 
-  PencilSquareIcon,
-  ChartBarIcon,
-  DocumentTextIcon,
-  BellIcon,
-  AdjustmentsHorizontalIcon // Added missing import
-} from '@heroicons/vue/24/outline'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import {
+  BriefcaseIcon,
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  BellIcon,
+  Cog6ToothIcon
+} from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 
-// Navigation item classes
-function navItemClass(path: string) {
-  // FIX: Use startsWith to handle nested routes (e.g., /agent/settings/profile)
-  const isActive = route.path.startsWith(path);
+const navItemClass = (path: string) => {
+  const isActive = route.path.startsWith(path)
   return [
     'transition-colors',
     'duration-200',
     isActive ? 'text-brand-teal' : 'text-gray-600 hover:text-gray-900'
-  ];
+  ]
 }
 
-// Icon classes
-function iconClass(path: string) {
-  // FIX: Use startsWith to handle nested routes
-  const isActive = route.path.startsWith(path);
+const iconClass = (path: string) => {
+  const isActive = route.path.startsWith(path)
   return [
     'w-6',
     'h-6',
     isActive ? 'text-brand-teal' : 'text-gray-600'
   ]
 }
+
+const BODY_CLASS = 'agent-bottom-nav-safe'
+
+onMounted(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.add(BODY_CLASS)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.remove(BODY_CLASS)
+  }
+})
 </script>
 
 <style scoped>
-/* Add padding to body content to account for fixed bottom nav */
-.agent-bottom-nav-safe { 
-  padding-bottom: 80px; 
+.agent-bottom-nav-safe {
+  padding-bottom: 80px;
 }
 </style>

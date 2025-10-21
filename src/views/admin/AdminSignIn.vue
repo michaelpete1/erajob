@@ -132,9 +132,7 @@ async function onSubmit() {
     })
 
     if (response.success) {
-      // Store admin flag for authorization checks in the frontend
       localStorage.setItem('userRole', 'admin')
-      localStorage.setItem('isAdmin', 'true')
 
       // Allow localStorage writes to settle, then debug log current storage
       await Promise.resolve()

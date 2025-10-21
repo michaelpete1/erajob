@@ -22,13 +22,25 @@
         <div class="flex items-center gap-3 mb-4">
           <span class="text-2xl">📝</span>
           <div>
-            <h3 class="font-semibold text-gray-800">{{ selectedJob?.title || 'Content Writing Project' }}</h3>
+            <h3 class="font-semibold text-gray-800">{{ selectedJob?.project_title || 'Content Writing Project' }}</h3>
             <p class="text-sm text-gray-500">{{ selectedJob?.client || 'TechCorp' }}</p>
           </div>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-lg font-bold text-teal-500">${{ selectedJob?.price || '14.00' }}</span>
+          <span class="text-lg font-bold text-teal-500">{{ formattedRate || '$14.00' }}</span>
           <span class="text-sm text-gray-500">per hour</span>
+        </div>
+      </div>
+
+      <!-- Feedback Messages -->
+      <div v-if="error" class="mb-4">
+        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ error }}
+        </div>
+      </div>
+      <div v-if="success" class="mb-4">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {{ success }}
         </div>
       </div>
 
@@ -43,6 +55,22 @@
         <p class="text-gray-600 text-sm">
           {{ currentDate }} (Time Set Automatically)
         </p>
+      </div>
+
+      <!-- Log Title -->
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <label class="block text-gray-700 text-sm font-medium mb-2" for="log-title-input">
+          Log Title
+        </label>
+        <input
+          id="log-title-input"
+          v-model="logTitle"
+          type="text"
+          maxlength="120"
+          placeholder="e.g. Initial Design Review"
+          class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500 outline-none transition-all duration-200"
+        />
+        <p class="mt-2 text-xs text-gray-500">Keep it short and descriptive (max 120 characters).</p>
       </div>
 
       <!-- Hours Input -->
@@ -122,7 +150,7 @@
               <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span class="text-sm text-gray-700">{{ file.name }}</span>
+              <span class="text-sm text-gray-700">Attachment {{ index + 1 }}</span>
             </div>
             <button @click="removeFile(index)" class="text-red-500 hover:text-red-600">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,59 +175,58 @@
       <!-- Submit Button -->
       <button
         @click="submitLog"
-        class="w-full bg-teal-500 text-white font-medium py-4 rounded-xl hover:bg-teal-600 transition-colors duration-200 shadow-sm hover:shadow-md"
+        :disabled="loading"
+        class="w-full bg-teal-500 text-white font-medium py-4 rounded-xl transition-colors duration-200 shadow-sm hover:shadow-md disabled:cursor-not-allowed disabled:bg-teal-300"
       >
-        Log Hours
+        <span v-if="!loading">Log Hours</span>
+        <span v-else class="inline-flex items-center gap-2">
+          <svg class="h-5 w-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Submitting...
+        </span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { workLogsService } from '@/services/workLogsService'
+import type { WorkLogPostPayload } from '@/types/api'
 
-// Define file type for uploaded files
-interface WorkLogFile {
-  name: string
-  size: number
-  type: string
-  data: string | null
-  lastModified: number
-}
-
-// Work logs data with proper typing
-interface WorkLog {
+interface SelectedJobSummary {
   id: string
-  title: string
-  hours: number
-  date: string
-  comment: string
-  files?: WorkLogFile[]
-  projectId?: string
-  gigId?: string
-  status: 'draft' | 'submitted' | 'approved'
+  project_title: string
+  client?: string
+  budget?: number
 }
 
 const router = useRouter()
 
-// Job data (in a real app, this would come from route params or props)
-const selectedJob = ref({
-  title: 'Content Writing Project',
-  client: 'TechCorp',
-  price: '14.00'
-})
+interface UploadedAttachment {
+  name: string
+  data: string
+}
 
-// Reactive data
+const selectedJob = ref<SelectedJobSummary | null>(null)
 const hours = ref(8)
 const notes = ref('')
-const uploadedFiles = ref<WorkLogFile[]>([])
+const logTitle = ref('')
+const uploadedFiles = ref<UploadedAttachment[]>([])
 const currentDate = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const success = ref<string | null>(null)
 
-// Initialize current date
+const formattedRate = computed(() => {
+  if (!selectedJob.value?.budget) return null
+  return `$${(selectedJob.value.budget / 100).toFixed(2)}`
+})
+
 onMounted(() => {
   const now = new Date()
   currentDate.value = now.toLocaleDateString('en-US', {
@@ -208,18 +235,37 @@ onMounted(() => {
     month: 'long',
     day: 'numeric'
   })
+
+  try {
+    const stored = localStorage.getItem('selectedGig')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      selectedJob.value = {
+        id: parsed.id || parsed.job_id || '',
+        project_title: parsed.project_title || parsed.title || 'Project',
+        client: parsed.client || parsed.client_name || '',
+        budget: typeof parsed.budget === 'number' ? parsed.budget : undefined
+      }
+    }
+  } catch (e) {
+    console.warn('Unable to load selected gig from storage', e)
+  }
+
+  if (selectedJob.value) {
+    logTitle.value = `Work log for ${selectedJob.value.project_title}`.slice(0, 120)
+  }
 })
 
 // Hours controls
 const decreaseHours = () => {
   if (hours.value > 0.5) {
-    hours.value -= 0.5
+    hours.value = Number((hours.value - 0.5).toFixed(1))
   }
 }
 
 const increaseHours = () => {
   if (hours.value < 24) {
-    hours.value += 0.5
+    hours.value = Number((hours.value + 0.5).toFixed(1))
   }
 }
 
@@ -236,17 +282,13 @@ const handleFileUpload = async (event: Event) => {
     const files = Array.from(input.files)
     for (const file of files) {
       const base64Data = await fileToBase64(file)
-      uploadedFiles.value.push({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        data: base64Data,
-        lastModified: file.lastModified
-      })
+      uploadedFiles.value.push({ name: file.name, data: base64Data })
     }
   } catch (err) {
     error.value = 'Failed to process files. Please try again.'
     console.error('File upload error:', err)
+  } finally {
+    if (input) input.value = ''
   }
 }
 
@@ -256,82 +298,58 @@ const removeFile = (index: number) => {
 
 // Form submission
 const submitLog = async () => {
-  if (hours.value <= 0) {
-    error.value = 'Please enter valid hours worked'
+  if (!selectedJob.value?.id) {
+    error.value = 'Please select a project before logging work.'
     return
+  }
+
+  if (hours.value <= 0) {
+    error.value = 'Please enter valid hours worked.'
+    return
+  }
+
+  const trimmedTitle = logTitle.value.trim()
+  if (!trimmedTitle) {
+    error.value = 'A descriptive log title is required.'
+    return
+  }
+
+  const trimmedComment = notes.value.trim()
+  if (trimmedComment.length < 5) {
+    error.value = 'Please provide more detail in the notes (minimum 5 characters).'
+    return
+  }
+
+  const payload: WorkLogPostPayload = {
+    job_id: selectedJob.value.id,
+    log_title: trimmedTitle,
+    log_comment: trimmedComment,
+    hours: Number(hours.value.toFixed(2)),
+    files: uploadedFiles.value.length > 0 ? uploadedFiles.value.map(file => file.data) : undefined
   }
 
   loading.value = true
   error.value = null
+  success.value = null
 
   try {
-    const workLog: Omit<WorkLog, 'id' | 'status'> = {
-      title: `Work log for ${selectedJob.value.title}`,
-      hours: hours.value,
-      date: new Date().toISOString(),
-      comment: notes.value,
-      files: [...uploadedFiles.value],
-      projectId: 'project-123', // In a real app, get this from route or props
-      gigId: 'gig-456' // In a real app, get this from route or props
+    const response = await workLogsService.postWorkLog(payload)
+    if (response.success && response.data) {
+      success.value = 'Work log submitted successfully.'
+      try {
+        localStorage.setItem('lastSubmittedLog', JSON.stringify(response.data))
+      } catch (storageErr) {
+        console.warn('Unable to cache submitted log', storageErr)
+      }
+      router.push('/agent/log-work')
+      return
     }
 
-    const result = await submitWorkLogToAPI(workLog)
-    
-    if (result.success && result.data) {
-      // In a real app, you might want to navigate to a success page or show a success message
-      console.log('Work log submitted successfully:', result.data)
-      router.push('/agent/explore-gigs')
-    } else {
-      throw new Error(result.error || 'Failed to submit work log')
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'An unknown error occurred'
-    error.value = `Failed to submit work log: ${message}`
-    console.error('Submission error:', err)
+    error.value = response.error || 'Failed to submit work log. Please try again.'
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to submit work log. Please try again.'
   } finally {
     loading.value = false
-  }
-}
-
-// Define file type for uploaded files
-interface WorkLogFile {
-  name: string
-  size: number
-  type: string
-  data: string | null
-  lastModified: number
-}
-
-// Work logs data with proper typing
-interface WorkLog {
-  id: string
-  title: string
-  hours: number
-  date: string
-  comment: string
-  files?: WorkLogFile[]
-  projectId?: string
-  gigId?: string
-  status: 'draft' | 'submitted' | 'approved'
-}
-
-// Simulate API call for creating work log (replace with real API call)
-const submitWorkLogToAPI = async (logData: Omit<WorkLog, 'id' | 'status'>): Promise<{ success: boolean; data?: WorkLog; error?: string }> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  // In a real implementation, this would call:
-  // const result = await workLogsService.createWorkLog(logData)
-  // return result
-  
-  // For now, return a mock response
-  return {
-    success: true,
-    data: {
-      ...logData,
-      id: 'log-' + Math.random().toString(36).substr(2, 9),
-      status: 'submitted' as const
-    }
   }
 }
 
@@ -339,20 +357,15 @@ const submitWorkLogToAPI = async (logData: Omit<WorkLog, 'id' | 'status'>): Prom
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.readAsDataURL(file)
     reader.onload = () => {
-      const result = reader.result
-      if (typeof result === 'string') {
-        resolve(result)
-      } else if (result instanceof ArrayBuffer) {
-        // Handle ArrayBuffer case if needed
-        const decoder = new TextDecoder('utf-8')
-        resolve(decoder.decode(result))
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
       } else {
         reject(new Error('Failed to convert file to base64'))
       }
     }
     reader.onerror = error => reject(error)
+    reader.readAsDataURL(file)
   })
 }
 </script>

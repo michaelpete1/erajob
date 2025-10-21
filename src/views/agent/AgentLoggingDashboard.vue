@@ -1,31 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { workLogsService } from '@/services/workLogsService'
+import type { WorkLogOut } from '@/types/api'
 
 const router = useRouter()
 
-const activeTab = ref<'daily'|'weekly'>('daily')
+const activeTab = ref<'daily' | 'weekly'>('daily')
+const workLogs = ref<WorkLogOut[]>([])
+const selectedGig = ref<any>(null)
+const jobId = ref<string>('')
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-// Work logs data with proper typing
-interface WorkLog {
+interface DisplayLog {
   id: string
   title: string
   hours: number
   date: string
   comment: string
-  projectId?: string
-  gigId?: string
-  status: 'draft' | 'submitted' | 'approved'
+  rawDate: Date
 }
 
-// Reactive data
-const logs = ref<WorkLog[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
-
-const totalHours = ref(0)
-
-// Type definitions
 interface DailyData {
   day: string
   hours: number
@@ -38,97 +34,31 @@ interface WeeklyData {
 
 type ChartData = DailyData | WeeklyData
 
-// Chart data for different views
 const dailyData = ref<DailyData[]>([])
 const weeklyData = ref<WeeklyData[]>([])
 
-const currentChartData = computed<ChartData[]>(() => {
-  return activeTab.value === 'daily' ? dailyData.value : weeklyData.value
-})
+const normalizeLog = (log: WorkLogOut): DisplayLog => {
+  const ms = log.date_created > 1_000_000_000_000 ? log.date_created : log.date_created * 1000
+  const date = new Date(ms)
 
-// Load work logs and generate chart data
-onMounted(async () => {
-  loading.value = true
-  error.value = null
-
-  try {
-    // Try to load from API first (in a real implementation)
-    // For now, we'll simulate API call with localStorage fallback
-    await loadWorkLogsFromAPI()
-
-    if (logs.value.length === 0) {
-      // Fallback to localStorage if API returns empty
-      loadWorkLogsFromLocalStorage()
-    }
-
-    // Generate chart data from loaded logs
-    generateChartData()
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred'
-    console.error('Error loading work logs:', errorMessage)
-    error.value = 'Failed to load work logs'
-
-    // Fallback to localStorage on error
-    loadWorkLogsFromLocalStorage()
-    generateChartData()
-  } finally {
-    loading.value = false
-  }
-})
-
-// Simulate API call for work logs (replace with real API call)
-const loadWorkLogsFromAPI = async () => {
-  // In a real implementation, this would call:
-  // const result = await workLogsService.getMyWorkLogs()
-
-  // For now, simulate successful API response
-  const mockApiResponse = [
-    {
-      id: '1',
-      title: 'Content Writing for TechCorp',
-      hours: 8,
-      date: '2024-01-15',
-      comment: 'Completed blog post about React best practices',
-      projectId: 'proj_1',
-      gigId: 'gig_1',
-      status: 'submitted' as const
-    },
-    {
-      id: '2',
-      title: 'UI Design for Mobile App',
-      hours: 6,
-      date: '2024-01-14',
-      comment: 'Created wireframes and mockups for user dashboard',
-      projectId: 'proj_2',
-      gigId: 'gig_2',
-      status: 'approved' as const
-    }
-  ]
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  logs.value = mockApiResponse
-  console.log('Loaded work logs from API simulation')
-}
-
-// Fallback to localStorage
-const loadWorkLogsFromLocalStorage = () => {
-  try {
-    const storedLogs = localStorage.getItem('workLogs')
-    if (storedLogs) {
-      logs.value = JSON.parse(storedLogs)
-      console.log('Loaded work logs from localStorage')
-    }
-  } catch (e) {
-    console.error('Error loading work logs from localStorage:', e)
+  return {
+    id: log.id,
+    title: log.log_title || 'Work Log',
+    hours: typeof log.hours === 'number' ? log.hours : 0,
+    date: Number.isNaN(date.getTime()) ? '' : date.toLocaleString(),
+    comment: log.log_comment || '',
+    rawDate: date
   }
 }
 
-// Generate chart data from work logs
+const displayLogs = computed<DisplayLog[]>(() => workLogs.value.map(normalizeLog))
+
+const totalHours = computed(() => displayLogs.value.reduce((total, log) => total + log.hours, 0))
+
+const currentChartData = computed<ChartData[]>(() => (activeTab.value === 'daily' ? dailyData.value : weeklyData.value))
+
 const generateChartData = () => {
-  if (logs.value.length === 0) {
-    // Default chart data if no logs
+  if (displayLogs.value.length === 0) {
     dailyData.value = [
       { day: 'Mon', hours: 0 },
       { day: 'Tue', hours: 0 },
@@ -145,73 +75,72 @@ const generateChartData = () => {
       { week: 'W3', hours: 0 },
       { week: 'W4', hours: 0 }
     ]
-
-    totalHours.value = 0
     return
   }
 
-  // Calculate total hours
-  totalHours.value = logs.value.reduce((total, log) => total + log.hours, 0)
-
-  // Generate daily data (group by day of week)
-  const dailyTotals: { [key: string]: number } = {}
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const dailyTotals: Record<string, number> = {}
 
-  logs.value.forEach(log => {
-    const date = new Date(log.date)
-    const dayName = dayNames[date.getDay()]
+  displayLogs.value.forEach(log => {
+    if (Number.isNaN(log.rawDate.getTime())) return
+    const dayName = dayNames[log.rawDate.getDay()]
     dailyTotals[dayName] = (dailyTotals[dayName] || 0) + log.hours
   })
 
-  dailyData.value = dayNames.map(day => ({
-    day,
-    hours: dailyTotals[day] || 0
-  }))
+  dailyData.value = dayNames.map(day => ({ day, hours: dailyTotals[day] || 0 }))
 
-  // Generate weekly data (group by week)
-  const weeklyTotals: { [key: string]: number } = {}
-
-  logs.value.forEach(log => {
-    const date = new Date(log.date)
-    const weekStart = new Date(date)
-    weekStart.setDate(date.getDate() - date.getDay()) // Start of week (Sunday)
+  const weeklyTotals: Record<string, number> = {}
+  displayLogs.value.forEach(log => {
+    if (Number.isNaN(log.rawDate.getTime())) return
+    const date = log.rawDate
     const weekKey = `W${Math.ceil((date.getDate() - date.getDay() + 1) / 7)}`
-
     weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + log.hours
   })
 
-  // Generate 4 weeks of data
   weeklyData.value = []
   for (let i = 1; i <= 4; i++) {
     const weekKey = `W${i}`
-    weeklyData.value.push({
-      week: weekKey,
-      hours: weeklyTotals[weekKey] || 0
-    })
+    weeklyData.value.push({ week: weekKey, hours: weeklyTotals[weekKey] || 0 })
   }
-
-  console.log('Generated chart data:', { dailyData: dailyData.value, weeklyData: weeklyData.value })
 }
 
-// Helper function to get bar height percentage (commented out as it's not used)
-// const getBarHeight = (hours: number, maxHours: number) => {
-//   if (maxHours === 0) return '0%'
-//   return `${Math.max((hours / maxHours) * 100, 5)}%` // Minimum 5% height
-// }
+const fetchWorkLogs = async () => {
+  if (!jobId.value) {
+    workLogs.value = []
+    error.value = 'No job selected. Please open a gig to view its logs.'
+    generateChartData()
+    return
+  }
 
-// Get max hours for scaling
+  loading.value = true
+  error.value = null
+
+  try {
+    const response = await workLogsService.listAgentLogsForJob(jobId.value)
+    if (response.success && response.data) {
+      workLogs.value = response.data
+    } else {
+      workLogs.value = []
+      error.value = response.error || 'Failed to load work logs.'
+    }
+  } catch (err: any) {
+    workLogs.value = []
+    error.value = err?.message || 'Failed to load work logs.'
+  } finally {
+    loading.value = false
+    generateChartData()
+  }
+}
+
 const maxHours = computed(() => {
   const data = currentChartData.value
   if (data.length === 0) return 10
   return Math.max(...data.map(item => item.hours || 0), 10)
 })
 
-// Helper function to get the label for chart items
-const getChartItemLabel = (item: ChartData): string => {
-  return 'day' in item ? item.day : item.week
-}
+const getChartItemLabel = (item: ChartData): string => ('day' in item ? item.day : item.week)
 
-const goToLog = (log: any) => {
+const goToLog = (log: DisplayLog) => {
   try {
     localStorage.setItem('selectedLog', JSON.stringify(log))
   } catch (e) {
@@ -219,6 +148,23 @@ const goToLog = (log: any) => {
   }
   router.push(`/agent/log-receipt/${log.id}`)
 }
+
+onMounted(async () => {
+  try {
+    const storedGig = localStorage.getItem('selectedGig')
+    if (storedGig) {
+      selectedGig.value = JSON.parse(storedGig)
+      if (selectedGig.value?.id) {
+        jobId.value = selectedGig.value.id
+      }
+    }
+  } catch (e) {
+    console.warn('Unable to read selected gig from storage', e)
+  }
+
+  await fetchWorkLogs()
+})
+const logs = displayLogs
 </script>
 
 <template>
@@ -240,8 +186,16 @@ const goToLog = (log: any) => {
 
     <!-- Main Content -->
     <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto">
-      <!-- Stats Overview -->
-      <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+      <div v-if="loading" class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-6 text-center shadow-sm">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
+        <p class="text-gray-600">Loading work logs...</p>
+      </div>
+
+      <div v-else-if="error" class="bg-white border border-red-200 rounded-xl sm:rounded-2xl p-6 text-center shadow-sm mb-4 sm:mb-6">
+        <p class="text-red-600 font-medium">{{ error }}</p>
+      </div>
+
+      <div v-else class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
           <h2 class="text-lg sm:text-xl font-bold text-gray-800 break-words">Logged Hours</h2>
           <div class="text-center sm:text-right">
@@ -295,7 +249,10 @@ const goToLog = (log: any) => {
       <!-- Recent Logs -->
       <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
         <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 break-words">Recent Logs</h3>
-        <div class="space-y-3">
+        <div v-if="logs.length === 0" class="text-center py-8">
+          <p class="text-gray-500 text-sm">No work logs available for this job yet.</p>
+        </div>
+        <div v-else class="space-y-3">
           <div
             v-for="log in logs"
             :key="log.id"

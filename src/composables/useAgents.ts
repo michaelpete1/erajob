@@ -2,6 +2,7 @@
 
 import { ref, computed, onMounted } from 'vue'
 import { agentsService } from '../services'
+import type { ApplicationOut } from '../types/api'
 import type {
   AgentOut,
   AgentState,
@@ -9,7 +10,11 @@ import type {
   PaginationParams
 } from '../types/api'
 
-export function useAgents() {
+interface RecommendedSeed {
+  applications?: ApplicationOut[]
+}
+
+export function useAgents(seed?: RecommendedSeed) {
   const agentState = ref<AgentState>({
     agents: [],
     currentAgent: null,
@@ -109,10 +114,50 @@ export function useAgents() {
     agentState.value.error = null
   }
 
+  const seedRecommendedAgents = async (applications: ApplicationOut[]) => {
+    if (!applications?.length) return
+
+    try {
+      const uniqueAgentIds = Array.from(
+        new Set(
+          applications
+            .map(application => application.agent_id)
+            .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+        )
+      )
+
+      if (!uniqueAgentIds.length) return
+
+      const fetchedAgents: AgentOut[] = []
+      for (const agentId of uniqueAgentIds) {
+        const response = await agentsService.getAgentById(agentId)
+        if (response.success && response.data) {
+          fetchedAgents.push(response.data)
+        }
+      }
+
+      if (fetchedAgents.length) {
+        agentState.value.agents = fetchedAgents
+        agentState.value.pagination = {
+          start: 0,
+          stop: fetchedAgents.length,
+          hasMore: false
+        }
+        agentState.value.error = null
+      }
+    } catch (error) {
+      console.error('Error seeding recommended agents:', error)
+    }
+  }
+
   // Initialize state on mount
-  onMounted(() => {
+  onMounted(async () => {
     const currentState = agentsService.getAgentState()
     agentState.value = currentState
+
+    if (seed?.applications?.length) {
+      await seedRecommendedAgents(seed.applications)
+    }
   })
 
   return {
@@ -131,6 +176,7 @@ export function useAgents() {
     getAgentsByLocation,
     getAvailableAgents,
     resetAgents,
-    clearError
+    clearError,
+    seedRecommendedAgents
   }
 }

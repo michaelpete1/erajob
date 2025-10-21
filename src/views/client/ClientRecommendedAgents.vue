@@ -25,17 +25,34 @@
     <div class="px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6 max-w-4xl mx-auto">
       <!-- Search and Filter Section -->
       <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm mb-4 sm:mb-6">
-        <div class="mb-4 sm:mb-6">
-          <div class="relative">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+          <div class="relative flex-1">
             <input
-              v-model="searchQuery"
+              v-model.trim="searchQuery"
               type="text"
-              placeholder="Search agents by name, skills, or location..."
+              placeholder="Search agents by name, skill, or location..."
               class="w-full px-3 sm:px-4 py-2 sm:py-3 pl-9 sm:pl-10 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm sm:text-base"
+              @keyup.enter="performSearch"
             >
             <svg class="absolute left-3 sm:left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-teal-600 border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+              @click="performSearch"
+              :disabled="loading"
+            >
+              Search
+            </button>
+            <button
+              class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              @click="resetFilters"
+              :disabled="loading && searchQuery === ''"
+            >
+              Reset
+            </button>
           </div>
         </div>
       </div>
@@ -58,7 +75,12 @@
       <!-- Agents Grid -->
       <div v-else class="space-y-4 sm:space-y-6">
         <div v-if="filteredAgents.length > 0">
-          <div v-for="agent in filteredAgents" :key="agent.id" class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group hover:border-teal-300 relative overflow-hidden" @click="$router.push(`/client/agent/${agent.id}`)">
+          <div
+            v-for="agent in filteredAgents"
+            :key="agent.id"
+            class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group hover:border-teal-300 relative overflow-hidden"
+            @click="goToAgent(agent)"
+          >
             <!-- Agent card content -->
             <div class="relative z-10">
               <div class="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
@@ -90,15 +112,18 @@
                       <span class="text-xs sm:text-sm text-gray-500">📍</span>
                       <span class="text-sm text-gray-700 font-medium">{{ agent.location }}</span>
                     </div>
-                    <div class="flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-full">
+                    <div
+                      v-if="agent.completion_rate !== undefined"
+                      class="flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-full"
+                    >
                       <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span class="font-semibold text-sm text-green-700">{{ agent.completionRate }}%</span>
+                      <span class="font-semibold text-sm text-green-700">{{ agent.completion_rate }}%</span>
                     </div>
-                    <div class="flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
+                    <div v-if="agent.company_name" class="flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
                       <span class="text-xs sm:text-sm text-gray-500">💼</span>
-                      <span class="text-sm text-gray-700 font-medium">{{ agent.company }}</span>
+                      <span class="text-sm text-gray-700 font-medium">{{ agent.company_name }}</span>
                     </div>
                   </div>
 
@@ -106,8 +131,12 @@
                   <div class="mb-3">
                     <p class="text-xs sm:text-sm text-gray-500 mb-2">Top Skills:</p>
                     <div class="flex flex-wrap gap-1 sm:gap-2">
-                      <span v-for="skill in agent.skills.slice(0, 4)" :key="skill.name" class="px-2 py-1 bg-teal-100 text-teal-700 text-xs font-medium rounded-full">
-                        {{ skill.name }}
+                      <span
+                        v-for="skill in (agent.skills || []).slice(0, 4)"
+                        :key="skill"
+                        class="px-2 py-1 bg-teal-100 text-teal-700 text-xs font-medium rounded-full"
+                      >
+                        {{ skill }}
                       </span>
                     </div>
                   </div>
@@ -115,19 +144,19 @@
                   <!-- Enhanced Stats Grid -->
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-100">
                     <div class="text-center">
-                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.completedJobs }}</p>
+                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.completed_jobs ?? 0 }}</p>
                       <p class="text-xs sm:text-sm text-gray-500">Jobs Done</p>
                     </div>
                     <div class="text-center">
-                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.availability.responseTime }}</p>
+                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.response_time || '—' }}</p>
                       <p class="text-xs sm:text-sm text-gray-500">Response Time</p>
                     </div>
                     <div class="text-center">
-                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.experience.length }}+</p>
+                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.years_experience ?? '—' }}</p>
                       <p class="text-xs sm:text-sm text-gray-500">Years Exp</p>
                     </div>
                     <div class="text-center">
-                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.reviews }}</p>
+                      <p class="text-lg sm:text-xl font-bold text-gray-800">{{ agent.reviews_count ?? 0 }}</p>
                       <p class="text-xs sm:text-sm text-gray-500">Reviews</p>
                     </div>
                   </div>
@@ -135,11 +164,15 @@
                   <!-- Availability Info -->
                   <div class="flex items-center justify-between mt-3">
                     <div class="flex items-center gap-2">
-                      <span class="text-xs sm:text-sm text-gray-500">{{ agent.availability.type }} · {{ agent.availability.hours }}</span>
+                      <span class="text-xs sm:text-sm text-gray-500">{{ agent.availability_type || 'Availability N/A' }}</span>
                     </div>
                     <div class="text-right">
-                      <span :class="agent.status === 'Available' ? 'text-green-600' : 'text-blue-600'" class="font-semibold text-xs sm:text-sm block">{{ agent.status }}</span>
-                      <p class="font-bold text-sm sm:text-base text-gray-800">${{ agent.rate }}/Mo</p>
+                      <span :class="agent.status === 'available' ? 'text-green-600' : 'text-blue-600'" class="font-semibold text-xs sm:text-sm block">
+                        {{ agent.status ? agent.status.charAt(0).toUpperCase() + agent.status.slice(1) : 'Status N/A' }}
+                      </span>
+                      <p class="font-bold text-sm sm:text-base text-gray-800" v-if="agent.rate_per_hour">
+                        ${{ agent.rate_per_hour }}/hr
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -162,8 +195,11 @@
         </div>
 
         <!-- Load More -->
-        <div class="text-center mt-8 sm:mt-12">
-          <button class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white hover:bg-gray-50 text-teal-600 font-semibold text-sm sm:text-base rounded-lg sm:rounded-xl transition-colors border border-teal-200 hover:border-teal-300">
+        <div class="text-center mt-8 sm:mt-12" v-if="hasMore && !loading && !searchQuery">
+          <button
+            class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white hover:bg-gray-50 text-teal-600 font-semibold text-sm sm:text-base rounded-lg sm:rounded-xl transition-colors border border-teal-200 hover:border-teal-300"
+            @click="loadMore"
+          >
             <span>Load More Agents</span>
             <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -175,58 +211,121 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useAgents } from '../../composables/useAgents'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAgents } from '@/composables/useAgents'
+import type { AgentOut } from '@/types/api'
 
-// Define agent interface to match API response
-interface Agent {
+const router = useRouter()
+
+const {
+  agents,
+  loading,
+  error,
+  hasMore,
+  getRecommendedAgents,
+  clearError
+} = useAgents()
+
+const searchQuery = ref('')
+const pagination = ref({ start: 0, stop: 10 })
+
+const normalizeAgentName = (agent: AgentOut) => agent.full_name || agent.id || 'Agent'
+interface NormalizedAgent {
   id: string
   name: string
   title: string
-  company: string
+  company_name: string
   location: string
-  status: 'Available' | 'Busy' | 'Offline'
-  rate: string  // Changed from number to string to match API
+  status: string
+  rate_per_hour?: string | number | null
   rating: number
-  completionRate: number
-  availability: {
-    type: 'Full-time' | 'Part-time' | 'Contract'
-    hours: string
-    responseTime: string
-  }
-  skills: Array<{ name: string }>
-  completedJobs: number
-  experience: any[]
-  reviews: number
-  last_updated: number | string
+  completion_rate?: number
+  skills: string[]
+  completed_jobs: number
+  response_time: string
+  years_experience: string
+  reviews_count: number
+  availability_type: string
 }
 
-// Use the agents composable
-const { agents, loading, error, getRecommendedAgents } = useAgents()
+const normalizedAgents = computed<NormalizedAgent[]>(() => {
+  return (agents.value || []).map(agent => ({
+    id: agent.id ?? '',
+    name: normalizeAgentName(agent),
+    title: agent.bio || 'Skilled Specialist',
+    company_name: agent.company_name || 'Independent Contractor',
+    location: agent.time_zone || 'Remote',
+    status: agent.status || 'available',
+    rate_per_hour: (agent as any)?.rate_per_hour ?? null,
+    rating: Number((agent as any)?.rating ?? 4.8),
+    completion_rate: (agent as any)?.completion_rate,
+    skills: Array.isArray(agent.skills) ? agent.skills : [],
+    completed_jobs: Number((agent as any)?.completed_jobs ?? 0),
+    response_time: (agent as any)?.response_time || 'Fast responder',
+    years_experience: String((agent as any)?.years_experience ?? '2+'),
+    reviews_count: Number((agent as any)?.reviews_count ?? 0),
+    availability_type: (agent as any)?.availability?.type || 'Full-time'
+  }))
+})
 
-// Search functionality
-const searchQuery = ref('')
-
-// Computed filtered agents
-const filteredAgents = computed<Agent[]>(() => {
-  if (!searchQuery.value.trim()) {
-    return agents.value as unknown as Agent[]
-  }
-
-  const query = searchQuery.value.toLowerCase().trim()
-  return (agents.value as unknown as Agent[]).filter(agent =>
+const filteredAgents = computed<NormalizedAgent[]>(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return normalizedAgents.value
+  return normalizedAgents.value.filter(agent =>
     agent.name.toLowerCase().includes(query) ||
     agent.title.toLowerCase().includes(query) ||
     agent.location.toLowerCase().includes(query) ||
-    agent.company.toLowerCase().includes(query) ||
-    agent.skills.some(skill => skill.name.toLowerCase().includes(query))
+    agent.company_name.toLowerCase().includes(query) ||
+    agent.skills.some(skill => skill.toLowerCase().includes(query))
   )
 })
 
-// Load agents on mount
+const performSearch = async () => {
+  try {
+    clearError()
+    if (!agents.value.length) {
+      pagination.value = { start: 0, stop: 10 }
+      await getRecommendedAgents(pagination.value)
+    }
+  } catch (err) {
+    console.error('Search error:', err)
+  }
+}
+
+const loadMore = async () => {
+  if (loading.value || !hasMore.value) return
+  const nextStart = pagination.value.stop
+  const nextStop = nextStart + 10
+  pagination.value = { start: nextStart, stop: nextStop }
+  try {
+    await getRecommendedAgents(pagination.value)
+  } catch (err) {
+    console.error('Pagination error:', err)
+  }
+}
+
+const resetFilters = async () => {
+  searchQuery.value = ''
+  pagination.value = { start: 0, stop: 10 }
+  clearError()
+  await getRecommendedAgents(pagination.value)
+}
+
+const goToAgent = (agent: NormalizedAgent) => {
+  if (!agent?.id) return
+  try {
+    const rawAgent = (agents.value || []).find(a => (a.id ?? '') === agent.id)
+    localStorage.setItem('selectedAgent', JSON.stringify(rawAgent ?? agent))
+  } catch (err) {
+    console.warn('Unable to cache agent data', err)
+  }
+  router.push(`/client/agent/${agent.id}`)
+}
+
 onMounted(async () => {
   try {
-    await getRecommendedAgents()
+    await getRecommendedAgents({ start: 0, stop: 10 })
   } catch (err) {
     console.error('Error loading recommended agents:', err)
   }

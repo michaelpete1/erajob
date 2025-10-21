@@ -78,13 +78,20 @@
     <!-- Work Logs -->
     <div class="px-4 sm:px-6 pb-6">
       <div class="max-w-4xl mx-auto space-y-3 sm:space-y-4">
+        <div v-if="successMessage" class="bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3">
+          {{ successMessage }}
+        </div>
+        <div v-if="actionError" class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">
+          {{ actionError }}
+        </div>
+
         <!-- Summary Stats -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
           <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-xs sm:text-sm text-gray-500 font-medium">Total Hours</p>
-                <p class="text-xl sm:text-2xl font-bold text-gray-800">127.5</p>
+                <p class="text-xl sm:text-2xl font-bold text-gray-800">{{ totalLoggedHours.toFixed(1) }}</p>
               </div>
               <div class="w-10 h-10 sm:w-12 sm:h-12 bg-teal-100 rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +105,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-xs sm:text-sm text-gray-500 font-medium">This Week</p>
-                <p class="text-xl sm:text-2xl font-bold text-gray-800">18.5h</p>
+                <p class="text-xl sm:text-2xl font-bold text-gray-800">{{ weeklyLoggedHours.toFixed(1) }}h</p>
               </div>
               <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,55 +118,107 @@
 
         <!-- Work Log Entries -->
         <div class="space-y-3">
+          <div v-if="loading" class="bg-white rounded-xl border border-gray-200 p-8 flex justify-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-500"></div>
+          </div>
+
+          <div v-else-if="error" class="bg-white rounded-xl border border-red-200 p-6">
+            <p class="text-sm text-red-600">{{ error }}</p>
+            <button class="mt-4 inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-teal-500 rounded-lg hover:bg-teal-600 transition-colors" @click="fetchWorkLogs">
+              Retry
+            </button>
+          </div>
+
+          <div v-else-if="displayLogs.length === 0" class="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 class="mt-3 text-sm font-semibold text-gray-900">No work logs yet</h3>
+            <p class="mt-1 text-sm text-gray-500">Logs submitted by agents will appear here for your review.</p>
+          </div>
+
           <div
-            v-for="log in workLogs"
+            v-else
+            v-for="log in displayLogs"
             :key="log.id"
-            @click="goToLogDetail(log)"
-            class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md hover:border-teal-300 transition-all duration-300 cursor-pointer group"
+            class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 transition-all duration-300"
           >
             <div class="flex items-start justify-between">
               <div class="flex-1">
                 <div class="flex items-center gap-3 mb-2">
-                  <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center">
-                    <span class="text-white font-semibold text-sm">{{ log.initials }}</span>
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {{ log.initials }}
                   </div>
-                  <div class="flex-1">
-                    <h3 class="text-sm sm:text-base font-semibold text-gray-800">{{ log.agentName }}</h3>
-                    <p class="text-xs sm:text-sm text-gray-500">{{ log.date }} {{ log.time }}</p>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-sm sm:text-base font-semibold text-gray-800 truncate">{{ log.title }}</h3>
+                    <p class="text-xs sm:text-sm text-gray-500">{{ log.dateLabel }}</p>
                   </div>
                 </div>
-                
-                <div class="ml-12 sm:ml-14">
-                  <p class="text-sm sm:text-base text-gray-700 mb-2">{{ log.task }}</p>
-                  
-                  <div class="flex items-center gap-4 text-xs sm:text-sm">
+
+                <div class="ml-12 sm:ml-14 space-y-3">
+                  <p class="text-sm sm:text-base text-gray-700" v-if="log.comment">{{ log.comment }}</p>
+                  <p class="text-sm text-gray-400" v-else>No additional description provided.</p>
+
+                  <div class="flex flex-wrap items-center gap-4 text-xs sm:text-sm">
                     <div class="flex items-center gap-1 text-gray-500">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>{{ log.hours }} hours</span>
+                      <span>{{ log.hours.toFixed(1) }} hours</span>
                     </div>
-                    
-                    <div class="flex items-center gap-1 text-gray-500">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                      <span>{{ log.category }}</span>
-                    </div>
-                    
-                    <span :class="[
-                      'px-2 py-1 rounded-full text-xs font-medium',
-                      log.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                      log.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-gray-100 text-gray-800'
-                    ]">
-                      {{ log.status }}
+                    <span :class="['px-2 py-1 rounded-full text-xs font-medium', log.statusClasses]">
+                      {{ log.statusLabel }}
                     </span>
+                    <span v-if="log.rejectionReason" class="text-xs text-red-600">Reason: {{ log.rejectionReason }}</span>
+                  </div>
+
+                  <div v-if="log.files.length" class="pt-1">
+                    <h4 class="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Attachments</h4>
+                    <div class="flex flex-wrap gap-2">
+                      <a
+                        v-for="(file, index) in log.files"
+                        :key="`${log.id}-file-${index}`"
+                        :href="file"
+                        target="_blank"
+                        class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors"
+                        @click.stop
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-4.553a2.1 2.1 0 10-2.971-2.971L12.029 7.029m-1.058 1.058L6.447 12.61a2.1 2.1 0 102.971 2.971l3.473-3.473" />
+                        </svg>
+                        <span>Attachment {{ index + 1 }}</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-3 pt-3">
+                    <button
+                      v-if="!log.clientApproved && !log.rejectionReason"
+                      class="inline-flex items-center px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-teal-500 rounded-lg hover:bg-teal-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      :disabled="actionLoadingId === log.id"
+                      @click.stop="approveLog(log.id)"
+                    >
+                      {{ actionLoadingId === log.id ? 'Approving...' : 'Approve Log' }}
+                    </button>
+                    <button
+                      v-if="!log.clientApproved && !log.rejectionReason"
+                      class="inline-flex items-center px-4 py-2 text-xs sm:text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      :disabled="actionLoadingId === log.id"
+                      @click.stop="promptReject(log.id)"
+                    >
+                      Reject Log
+                    </button>
+                    <button
+                      class="inline-flex items-center px-4 py-2 text-xs sm:text-sm font-semibold text-teal-600 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+                      @click.stop="goToLogDetail(log)"
+                    >
+                      View Details
+                    </button>
                   </div>
                 </div>
               </div>
-              
-              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 group-hover:text-teal-500 transition-colors duration-300 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-300 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -171,120 +230,245 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { workLogsService } from '@/services/workLogsService'
+import type { WorkLogOut } from '@/types/api'
+
+interface DisplayLog {
+  id: string
+  title: string
+  comment: string
+  hours: number
+  dateLabel: string
+  initials: string
+  statusLabel: string
+  statusClasses: string
+  clientApproved: boolean
+  rejectionReason?: string | null
+  files: string[]
+}
 
 const router = useRouter()
-const currentView = ref('Daily')
-const projectName = ref('Mobile App Development')
+const route = useRoute()
 
-const workLogs = ref([
-  { 
-    id: 1, 
-    date: 'April 7, 2025', 
-    time: 'at 09:00 AM', 
-    task: 'Home screen UI/UX design completed with responsive layout', 
-    agentName: 'Sarah Johnson',
-    initials: 'SJ',
-    hours: 4.5,
-    category: 'Design',
-    status: 'Completed'
-  },
-  { 
-    id: 2, 
-    date: 'April 6, 2025', 
-    time: 'at 02:30 PM', 
-    task: 'Sign up and Login Screen implementation finished ahead of schedule', 
-    agentName: 'Mike Chen',
-    initials: 'MC',
-    hours: 6.0,
-    category: 'Development',
-    status: 'Completed'
-  },
-  { 
-    id: 3, 
-    date: 'April 8, 2025', 
-    time: 'at 11:00 AM', 
-    task: 'Home screen UI/UX done with modern design patterns', 
-    agentName: 'Sarah Johnson',
-    initials: 'SJ',
-    hours: 3.5,
-    category: 'Design',
-    status: 'Completed'
-  },
-  { 
-    id: 4, 
-    date: 'April 5, 2025', 
-    time: 'at 10:15 AM', 
-    task: 'Finished the Sign up and Login Screen early with authentication', 
-    agentName: 'Mike Chen',
-    initials: 'MC',
-    hours: 5.5,
-    category: 'Development',
-    status: 'Completed'
-  },
-  { 
-    id: 5, 
-    date: 'April 4, 2025', 
-    time: 'at 03:00 PM', 
-    task: 'Home screen UI/UX design with user research insights', 
-    agentName: 'Sarah Johnson',
-    initials: 'SJ',
-    hours: 4.0,
-    category: 'Design',
-    status: 'Completed'
-  },
-  { 
-    id: 6, 
-    date: 'April 3, 2025', 
-    time: 'at 09:00 AM', 
-    task: 'Finished the Sign up and Login Screen early with security features', 
-    agentName: 'Mike Chen',
-    initials: 'MC',
-    hours: 7.0,
-    category: 'Development',
-    status: 'Completed'
-  },
-  { 
-    id: 7, 
-    date: 'April 2, 2025', 
-    time: 'at 01:00 PM', 
-    task: 'Home screen UI/UX wireframes and prototyping', 
-    agentName: 'Sarah Johnson',
-    initials: 'SJ',
-    hours: 3.0,
-    category: 'Design',
-    status: 'Completed'
-  },
-  { 
-    id: 8, 
-    date: 'April 1, 2025', 
-    time: 'at 10:30 AM', 
-    task: 'Project setup and initial architecture planning', 
-    agentName: 'Mike Chen',
-    initials: 'MC',
-    hours: 2.5,
-    category: 'Planning',
-    status: 'Completed'
+const currentView = ref<'Daily' | 'Weekly'>('Daily')
+const projectName = ref('Project Work Log')
+const jobId = ref('')
+
+const loading = ref(false)
+const error = ref<string | null>(null)
+const actionError = ref<string | null>(null)
+const successMessage = ref<string | null>(null)
+const actionLoadingId = ref<string | null>(null)
+
+const rawLogs = ref<WorkLogOut[]>([])
+const agentDirectory = ref<Record<string, string>>({})
+
+const normalizeTimestamp = (timestamp?: number | null): number => {
+  if (!timestamp) return 0
+  return timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
+}
+
+const formatTimestamp = (timestamp?: number | null): string => {
+  if (!timestamp) return ''
+  const ms = normalizeTimestamp(timestamp)
+  const date = new Date(ms)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString()
+}
+
+const getInitials = (name: string): string => {
+  if (!name) return 'AG'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+const resolveAgentName = (agentId: string): string => {
+  return agentDirectory.value[agentId] || agentId || 'Assigned Agent'
+}
+
+const normalizeLog = (log: WorkLogOut): DisplayLog => {
+  const agentName = resolveAgentName(log.agent_id)
+  const clientApproved = Boolean(log.client_approved)
+  const rejected = Boolean(log.rejection_reason)
+
+  let statusLabel = 'Pending Approval'
+  let statusClasses = 'bg-yellow-100 text-yellow-800'
+
+  if (clientApproved) {
+    statusLabel = 'Approved'
+    statusClasses = 'bg-green-100 text-green-800'
+  } else if (rejected) {
+    statusLabel = 'Rejected'
+    statusClasses = 'bg-red-100 text-red-700'
   }
-])
 
-// Load project data from localStorage when component mounts
-onMounted(() => {
-  try {
-    const selectedProject = localStorage.getItem('selectedProject')
-    if (selectedProject) {
-      const project = JSON.parse(selectedProject)
-      projectName.value = project.title || 'Project Work Log'
+  const attachments = Array.isArray(log.files) ? log.files.filter(Boolean) : []
+
+  return {
+    id: log.id,
+    title: log.log_title || `Work log from ${agentName}`,
+    comment: log.log_comment || '',
+    hours: typeof log.hours === 'number' ? log.hours : 0,
+    dateLabel: formatTimestamp(log.date_created),
+    initials: getInitials(agentName),
+    statusLabel,
+    statusClasses,
+    clientApproved,
+    rejectionReason: log.rejection_reason,
+    files: attachments
+  }
+}
+
+const displayLogs = computed<DisplayLog[]>(() => rawLogs.value.map(normalizeLog))
+
+const totalLoggedHours = computed(() =>
+  rawLogs.value.reduce((sum, log) => sum + (typeof log.hours === 'number' ? log.hours : 0), 0)
+)
+
+const weeklyLoggedHours = computed(() => {
+  const now = Date.now()
+  const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000
+  return rawLogs.value.reduce((sum, log) => {
+    const timestamp = normalizeTimestamp(log.date_created)
+    if (timestamp >= oneWeekAgo) {
+      sum += typeof log.hours === 'number' ? log.hours : 0
     }
-  } catch (e) {
-    console.error('Error loading project data:', e)
-  }
+    return sum
+  }, 0)
 })
 
-const goToLogDetail = (log: any) => {
-  // Navigate to log dashboard page
-  console.log('Navigating to log dashboard for log:', log)
-  router.push('/client/work-log-dashboard')
+const fetchWorkLogs = async () => {
+  if (!jobId.value) {
+    error.value = 'No project selected'
+    return
+  }
+
+  loading.value = true
+  error.value = null
+  actionError.value = null
+  try {
+    const response = await workLogsService.listClientLogsForJob(jobId.value)
+    if (response.success && Array.isArray(response.data)) {
+      rawLogs.value = response.data
+    } else {
+      rawLogs.value = []
+      error.value = response.error || 'Failed to load work logs.'
+    }
+  } catch (err: any) {
+    rawLogs.value = []
+    error.value = err?.message || 'Failed to load work logs.'
+  } finally {
+    loading.value = false
+  }
 }
+
+const approveLog = async (logId: string) => {
+  actionError.value = null
+  successMessage.value = null
+  actionLoadingId.value = logId
+  try {
+    const response = await workLogsService.approveWorkLog(logId)
+    if (response.success) {
+      successMessage.value = 'Work log approved successfully.'
+      await fetchWorkLogs()
+    } else {
+      actionError.value = response.error || 'Failed to approve work log.'
+    }
+  } catch (err: any) {
+    actionError.value = err?.message || 'Failed to approve work log.'
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+const promptReject = async (logId: string) => {
+  const reason = window.prompt('Please provide a reason for rejecting this log:')
+  if (reason === null) {
+    return
+  }
+
+  const trimmed = reason.trim()
+  if (!trimmed) {
+    actionError.value = 'Rejection reason is required.'
+    return
+  }
+
+  await rejectLog(logId, trimmed)
+}
+
+const rejectLog = async (logId: string, reason: string) => {
+  actionError.value = null
+  successMessage.value = null
+  actionLoadingId.value = logId
+  try {
+    const response = await workLogsService.rejectWorkLog(logId, reason)
+    if (response.success) {
+      successMessage.value = 'Work log rejected successfully.'
+      await fetchWorkLogs()
+    } else {
+      actionError.value = response.error || 'Failed to reject work log.'
+    }
+  } catch (err: any) {
+    actionError.value = err?.message || 'Failed to reject work log.'
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+const goToLogDetail = (log: DisplayLog) => {
+  try {
+    localStorage.setItem('selectedWorkLog', JSON.stringify(log))
+  } catch (err) {
+    console.warn('Unable to cache selected work log', err)
+  }
+  router.push({ name: 'client-work-log-dashboard', params: { jobId: jobId.value } })
+}
+
+const loadProjectContext = () => {
+  try {
+    const storedProject = localStorage.getItem('selectedClientProject') || localStorage.getItem('selectedProject')
+    if (storedProject) {
+      const project = JSON.parse(storedProject) as Record<string, any>
+      if (project?.title) {
+        projectName.value = project.title
+      }
+
+      if (!jobId.value) {
+        const projectJobId = project?.job_id || project?.id || project?.project_id
+        if (typeof projectJobId === 'string') {
+          jobId.value = projectJobId
+        }
+      }
+
+      if (Array.isArray(project?.agents)) {
+        const directory: Record<string, string> = {}
+        project.agents.forEach((agent: any) => {
+          const id = String(agent?.id || agent?.agent_id || '')
+          if (id) {
+            directory[id] = agent?.name || agent?.full_name || id
+          }
+        })
+        agentDirectory.value = directory
+      }
+    }
+  } catch (e) {
+    console.error('Error loading project context:', e)
+  }
+}
+
+onMounted(async () => {
+  const paramJobId = route.params?.jobId
+  if (typeof paramJobId === 'string') {
+    jobId.value = paramJobId
+  } else if (Array.isArray(paramJobId) && paramJobId.length > 0 && typeof paramJobId[0] === 'string') {
+    jobId.value = paramJobId[0]
+  }
+
+  loadProjectContext()
+
+  await fetchWorkLogs()
+})
 </script>

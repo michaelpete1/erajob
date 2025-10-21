@@ -11,14 +11,14 @@
         <div class="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <div class="flex items-center gap-1">
             <router-link 
-              :to="'/agent/proposals'" 
-              :class="['relative', navLinkClass('/agent/proposals')]"
+              :to="'/agent/notifications'" 
+              :class="['relative', navLinkClass('/agent/notifications')]"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 100-2h-3z" clip-rule="evenodd" />
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
               </svg>
-              <span>Proposals</span>
+              <span>Notifications</span>
               <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
             </router-link>
             <router-link 
@@ -43,19 +43,6 @@
             >
               <ChartBarIcon :class="navIconClass('/agent/logging-dashboard')" />
               <span>Dashboard</span>
-            </router-link>
-
-            <!-- FIX: Changed /proposals to /agent/proposals -->
-            <router-link 
-              :to="'/agent/proposals'" 
-              :class="['relative', navLinkClass('/agent/proposals')]"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-              </svg>
-              <span>Proposals</span>
-              <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
             </router-link>
 
             <!-- FIX: Use global /settings since /agent/settings route does not exist -->
@@ -116,15 +103,6 @@
           <span>Projects</span>
         </router-link>
         
-        <router-link 
-          :to="'/agent/log-work'" 
-          :class="mobileNavLinkClass('/agent/log-work')"
-          @click="closeMobileMenu"
-        >
-          <PencilSquareIcon :class="mobileNavIconClass('/agent/log-work')" />
-          <span>Log Work</span>
-        </router-link>
-
         <router-link 
           :to="'/agent/logging-dashboard'" 
           :class="mobileNavLinkClass('/agent/logging-dashboard')"

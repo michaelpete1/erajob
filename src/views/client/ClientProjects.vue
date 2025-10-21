@@ -83,6 +83,27 @@
         <div class="mt-3 pt-3 border-t border-gray-100">
           <p class="text-sm text-gray-600 line-clamp-3">{{ project.description }}</p>
         </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button
+            class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg border border-teal-500 text-teal-600 hover:bg-teal-50 transition-colors"
+            @click.stop="goToProject(project)"
+          >
+            View Details
+          </button>
+          <button
+            class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
+            @click.stop="goToJobPage(project)"
+          >
+            View Job Page
+          </button>
+          <button
+            class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-colors"
+            @click.stop="goToProjectWorkLogs(project)"
+          >
+            Open Work Logs
+          </button>
+        </div>
       </div>
 
         <div v-if="activeTab === 'active' && activeProjects.length === 0 && !loading" class="md:col-span-2 lg:col-span-3">
@@ -138,7 +159,10 @@
               </p>
               <div class="flex items-center justify-between">
                 <span class="text-lg font-bold text-teal-600">${{ project.budget.toLocaleString() }}</span>
-                <button class="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm sm:text-base transition-colors">
+                <button
+                  class="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm sm:text-base transition-colors"
+                  @click.stop="goToProject(project)"
+                >
                   View Details
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -219,6 +243,7 @@ const formatDate = (timestamp: number | null | undefined) => {
 
 interface Project {
   id: string
+  admin_id?: string
   project_title: string
   category: string
   budget: number
@@ -257,8 +282,13 @@ const toProject = (jobPayload: unknown): Project => {
         ? timeline.endDate
         : 0
 
+  const adminId = job.id ?? job.admin_id ?? job.adminId
+  const agentId = job.job_id ?? job.agent_job_id ?? job.agentId
+  const resolvedId = (agentId ?? adminId ?? `temp-${Date.now()}`).toString()
+
   return {
-    id: (job.id ?? job.job_id ?? `temp-${Date.now()}`).toString(),
+    id: resolvedId,
+    admin_id: adminId ? adminId.toString() : undefined,
     project_title: typeof job.project_title === 'string' ? job.project_title : (typeof job.title === 'string' ? job.title : 'Untitled Project'),
     category: typeof job.category === 'string' ? job.category : 'Other',
     budget: typeof job.budget === 'number' ? job.budget : 0,
@@ -292,16 +322,28 @@ const fetchActiveProjects = async () => {
 
 const fetchBrowseProjects = async () => {
   try {
-    const response = await getAllJobs({
-      start: 0,
-      stop: 10
-    })
+    const role = localStorage.getItem('userRole') || ''
+
+    if (role === 'admin') {
+      const response = await getAllJobs({ start: 0, stop: 10 })
+      if (!response.success || !response.data) {
+        browseProjects.value = []
+        return
+      }
+      const jobsData = Array.isArray(response.data) ? response.data : [response.data]
+      browseProjects.value = jobsData.map((job) => toProject(job))
+      return
+    }
+
+    const response = await getClientJobs(0, 10)
     if (!response.success || !response.data) {
       browseProjects.value = []
       return
     }
+
     const jobsData = Array.isArray(response.data) ? response.data : [response.data]
-    browseProjects.value = jobsData.map(job => toProject(job))
+    const pendingJobs = jobsData.filter((job: any) => job?.admin_approved === false)
+    browseProjects.value = pendingJobs.map((job) => toProject(job))
   } catch (err) {
     console.error('Error fetching browse projects:', err)
     error.value = 'Failed to load available projects'
@@ -324,10 +366,49 @@ onMounted(() => {
   fetchProjects()
 })
 
-const goToProject = (project: Project) => {
-  if (project && project.id) {
-    router.push(`/client/project/${project.id}`)
+const cacheProjectContext = (project: Project) => {
+  const jobId = project?.id ? String(project.id) : ''
+  if (!jobId) return
+
+  const jobPayload = {
+    agent_job_id: jobId,
+    admin_job_id: project.admin_id || jobId,
+    project
   }
+
+  try {
+    localStorage.setItem('selectedJobContext', JSON.stringify(jobPayload))
+    localStorage.setItem('selectedClientProject', JSON.stringify(project))
+    localStorage.setItem(
+      'selectedProject',
+      JSON.stringify({
+        id: jobId,
+        job_id: jobId,
+        title: project.project_title,
+        agents: project.agents || []
+      })
+    )
+  } catch (err) {
+    console.warn('Unable to cache job context', err)
+  }
+}
+
+const goToProject = (project: Project) => {
+  if (!project?.id) return
+  cacheProjectContext(project)
+  router.push({ name: 'client-project-details', params: { id: String(project.id) } })
+}
+
+const goToJobPage = (project: Project) => {
+  if (!project?.id) return
+  cacheProjectContext(project)
+  router.push({ name: 'client-job-description', params: { id: String(project.id) } })
+}
+
+const goToProjectWorkLogs = (project: Project) => {
+  if (!project?.id) return
+  cacheProjectContext(project)
+  router.push({ name: 'client-work-log', params: { jobId: String(project.id) } })
 }
 
 const goToCreateProject = () => {

@@ -1,13 +1,12 @@
-import axios from 'axios'
-import type { AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios'
 
 // Base URL for the API
-const API_BASE_URL = 'https://eba-jobs.getxoxo.space'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,51 +31,64 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as any
     const status = error.response?.status
 
-    if (status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
-      try {
-        const role = localStorage.getItem('userRole') || ''
-        const refreshToken = localStorage.getItem('refresh_token') || ''
-        if (!refreshToken) throw new Error('No refresh token')
-
-        // Attempt appropriate refresh
-        let refreshed = null as null | AxiosResponse
-        // Prefer role; fallback to request URL inference
-        const isAdminRequest = role === 'admin' || (originalRequest?.url?.toString()?.includes('/v1/admins/'))
-        const expiredAccess = localStorage.getItem('access_token') || ''
-        const authHeader = expiredAccess ? { Authorization: `Bearer ${expiredAccess}` } : {}
-        if (isAdminRequest) {
-          refreshed = await apiClient.post('/v1/admins/refresh', { refresh_token: refreshToken }, { headers: { ...authHeader } })
-        } else {
-          // default to users refresh for client/agent flows
-          refreshed = await apiClient.post('/v1/users/refresh', { refresh_token: refreshToken }, { headers: { ...authHeader } })
-        }
-
-        const data = refreshed?.data?.data
-        const newAccess = data?.access_token
-        const newRefresh = data?.refresh_token
-        if (!newAccess) throw new Error('Refresh did not return access token')
-
-        localStorage.setItem('access_token', newAccess)
-        if (newRefresh) localStorage.setItem('refresh_token', newRefresh)
-
-        // Update auth header and retry
-        originalRequest.headers = originalRequest.headers || {}
-        originalRequest.headers['Authorization'] = `Bearer ${newAccess}`
-        return apiClient(originalRequest)
-      } catch (refreshErr) {
-        // fall through to logout
+    if (status === 401) {
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (!refreshToken) {
+        return Promise.reject(error)
       }
-      // After a failed refresh, perform logout/redirect
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('user-token')
-      localStorage.removeItem('userInfo')
-      localStorage.removeItem('userRole')
-      const isAdminPath = window.location.pathname.startsWith('/admin')
-      const target = isAdminPath ? '/admin/sign-in' : '/sign-in'
-      if (window.location.pathname !== target) {
-        window.location.href = target
+
+      if (!originalRequest._retry) {
+        originalRequest._retry = true
+        let shouldLogout = false
+        try {
+          const role = localStorage.getItem('userRole') || ''
+
+          // Attempt appropriate refresh
+          let refreshed = null as null | AxiosResponse
+          // Prefer role; fallback to request URL inference
+          const isAdminRequest = role === 'admin' || (originalRequest?.url?.toString()?.includes('/v1/admins/'))
+          const expiredAccess = localStorage.getItem('access_token') || ''
+          const authHeader = expiredAccess ? { Authorization: `Bearer ${expiredAccess}` } : {}
+          if (isAdminRequest) {
+            refreshed = await apiClient.post('/v1/admins/refresh', { refresh_token: refreshToken }, { headers: { ...authHeader } })
+          } else {
+            // default to users refresh for client/agent flows
+            refreshed = await apiClient.post('/v1/users/refresh', { refresh_token: refreshToken }, { headers: { ...authHeader } })
+          }
+
+          const data = refreshed?.data?.data
+          const newAccess = data?.access_token
+          const newRefresh = data?.refresh_token
+          if (!newAccess) throw new Error('Refresh did not return access token')
+
+          localStorage.setItem('access_token', newAccess)
+          if (newRefresh) {
+            localStorage.setItem('refresh_token', newRefresh)
+          } else {
+            localStorage.removeItem('refresh_token')
+          }
+
+          // Update auth header and retry
+          originalRequest.headers = originalRequest.headers || {}
+          originalRequest.headers['Authorization'] = `Bearer ${newAccess}`
+          return apiClient(originalRequest)
+        } catch (refreshErr) {
+          const refreshStatus = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined
+          shouldLogout = refreshStatus === 401 || refreshStatus === 403
+        } finally {
+          if (shouldLogout) {
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('refresh_token')
+            localStorage.removeItem('user-token')
+            localStorage.removeItem('userInfo')
+            localStorage.removeItem('userRole')
+            const isAdminPath = window.location.pathname.startsWith('/admin')
+            const target = isAdminPath ? '/admin/sign-in' : '/sign-in'
+            if (window.location.pathname !== target) {
+              window.location.href = target
+            }
+          }
+        }
       }
       return Promise.reject(error)
     }
@@ -108,6 +120,38 @@ import type {
 
 // API Service class
 class ApiService {
+  private async executeWithResilience<T>(action: () => Promise<ServiceResponse<T>>): Promise<ServiceResponse<T>> {
+    const maxAttempts = 2
+
+    if (typeof navigator !== 'undefined' && navigator && 'onLine' in navigator && !navigator.onLine) {
+      return { success: false, error: 'You appear to be offline. Please check your internet connection.' }
+    }
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        return await action()
+      } catch (err) {
+        const axiosError = err as AxiosError
+        const message = axiosError?.message ?? ''
+        const isNetworkError =
+          axiosError?.code === 'ERR_NETWORK' ||
+          axiosError?.code === 'ECONNABORTED' ||
+          message === 'Network Error' ||
+          message.toLowerCase().includes('timeout')
+
+        if (!isNetworkError || attempt === maxAttempts - 1) {
+          const responseData = axiosError?.response?.data as { detail?: string } | undefined
+          const friendlyMessage = responseData?.detail || axiosError?.message || 'Request failed'
+          return { success: false, error: friendlyMessage }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+      }
+    }
+
+    return { success: false, error: 'Request failed' }
+  }
+
   // Health endpoints
   async checkHealth(): Promise<ServiceResponse<null>> {
     try {
@@ -142,7 +186,11 @@ class ApiService {
       const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/users/login', credentials)
       if (response.data.data?.access_token) {
         localStorage.setItem('access_token', response.data.data.access_token)
-        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        if (response.data.data.refresh_token) {
+          localStorage.setItem('refresh_token', response.data.data.refresh_token)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
       }
       return { success: true, data: response.data.data }
     } catch (error: any) {
@@ -155,7 +203,11 @@ class ApiService {
       const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/users/refresh', refreshData)
       if (response.data.data?.access_token) {
         localStorage.setItem('access_token', response.data.data.access_token)
-        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        if (response.data.data.refresh_token) {
+          localStorage.setItem('refresh_token', response.data.data.refresh_token)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
       }
       return { success: true, data: response.data.data }
     } catch (error: any) {
@@ -169,7 +221,11 @@ class ApiService {
       const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/admins/refresh', refreshData)
       if (response.data.data?.access_token) {
         localStorage.setItem('access_token', response.data.data.access_token)
-        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        if (response.data.data.refresh_token) {
+          localStorage.setItem('refresh_token', response.data.data.refresh_token)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
       }
       return { success: true, data: response.data.data }
     } catch (error: any) {
@@ -188,7 +244,12 @@ class ApiService {
 
   async listUsers(start: number, stop: number): Promise<ServiceResponse<UserOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<UserOut[]>>(`/v1/users/${start}/${stop}`)
+      const response = await apiClient.get<EJApiResponse<UserOut[]>>('/v1/users', {
+        params: {
+          start,
+          stop
+        }
+      })
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to list users' }
@@ -228,7 +289,11 @@ class ApiService {
       const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/admins/login', credentials)
       if (response.data.data?.access_token) {
         localStorage.setItem('access_token', response.data.data.access_token)
-        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        if (response.data.data.refresh_token) {
+          localStorage.setItem('refresh_token', response.data.data.refresh_token)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
         localStorage.setItem('userRole', 'admin')
       }
       return { success: true, data: response.data.data }
@@ -257,17 +322,19 @@ class ApiService {
 
   // Agent endpoints
   async agentLogin(credentials: UserLogin): Promise<ServiceResponse<UserOut>> {
-    try {
+    return this.executeWithResilience(async () => {
       const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/agents/login', credentials)
       if (response.data.data?.access_token) {
         localStorage.setItem('access_token', response.data.data.access_token)
-        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        if (response.data.data.refresh_token) {
+          localStorage.setItem('refresh_token', response.data.data.refresh_token)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
         localStorage.setItem('userRole', 'agent')
       }
       return { success: true, data: response.data.data }
-    } catch (error: any) {
-      return { success: false, error: error.response?.data?.detail || 'Agent login failed' }
-    }
+    })
   }
 
   async getCurrentAgent(): Promise<ServiceResponse<UserOut>> {
@@ -290,17 +357,19 @@ class ApiService {
 
   // Client endpoints
   async clientLogin(credentials: UserLogin): Promise<ServiceResponse<UserOut>> {
-    try {
+    return this.executeWithResilience(async () => {
       const response = await apiClient.post<EJApiResponse<UserOut>>('/v1/clients/login', credentials)
       if (response.data.data?.access_token) {
         localStorage.setItem('access_token', response.data.data.access_token)
-        localStorage.setItem('refresh_token', response.data.data.refresh_token || '')
+        if (response.data.data.refresh_token) {
+          localStorage.setItem('refresh_token', response.data.data.refresh_token)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
         localStorage.setItem('userRole', 'client')
       }
       return { success: true, data: response.data.data }
-    } catch (error: any) {
-      return { success: false, error: error.response?.data?.detail || 'Client login failed' }
-    }
+    })
   }
 
   async getCurrentClient(): Promise<ServiceResponse<UserOut>> {
@@ -379,6 +448,24 @@ class ApiService {
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to list available jobs' }
+    }
+  }
+
+  async updateJob(jobId: string, updates: Partial<JobsBase> & Record<string, any> = {}): Promise<ServiceResponse<JobsOut>> {
+    try {
+      const response = await apiClient.patch<EJApiResponse<JobsOut>>(`/v1/jobss/${jobId}`, updates)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to update job' }
+    }
+  }
+
+  async deleteJob(jobId: string): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.delete<EJApiResponse<null>>(`/v1/jobss/${jobId}`)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to delete job' }
     }
   }
 
@@ -515,7 +602,9 @@ export const api = {
     listClientJobs: (start: number, stop: number) => apiService.listClientJobs(start, stop),
     listAgentAvailableJobs: (start: number, stop: number) => apiService.listAgentAvailableJobs(start, stop),
     approveJob: (jobId: string) => apiService.approveJob(jobId),
-    rejectJob: (jobId: string, reason?: string) => apiService.rejectJob(jobId, reason)
+    rejectJob: (jobId: string, reason?: string) => apiService.rejectJob(jobId, reason),
+    updateJob: (jobId: string, updates: Partial<JobsBase> & Record<string, any>) => apiService.updateJob(jobId, updates),
+    deleteJob: (jobId: string) => apiService.deleteJob(jobId)
   },
   alerts: {
     getAlerts: (userType: 'client' | 'agent' | 'admin') => apiService.getAlerts(userType),
@@ -528,7 +617,11 @@ export const api = {
     storeAuthData: (userData: UserOut) => {
       if (userData.access_token) {
         localStorage.setItem('access_token', userData.access_token)
-        localStorage.setItem('refresh_token', userData.refresh_token || '')
+        if (userData.refresh_token) {
+          localStorage.setItem('refresh_token', userData.refresh_token)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
         localStorage.setItem('userInfo', JSON.stringify(userData))
         localStorage.setItem('userRole', String(userData.role) || 'client')
       }

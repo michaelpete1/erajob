@@ -127,8 +127,9 @@
 
               <div v-if="approvedLoading" class="text-sm text-gray-600">Loading approved users...</div>
               <div v-else>
-                <ul class="divide-y divide-gray-200 bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100">
-                  <li v-for="u in approvedUsers.slice(0, 8)" :key="u.id" class="p-3 sm:p-4 flex items-center justify-between">
+                <div v-if="approvedUsers.length === 0" class="text-sm text-gray-600">No approved users yet.</div>
+                <ul v-else class="divide-y divide-gray-200 bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100 max-h-80 overflow-y-auto">
+                  <li v-for="u in approvedUsers" :key="u.id" class="p-3 sm:p-4 flex items-center justify-between">
                     <div class="flex items-center gap-3 min-w-0">
                       <div class="w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-semibold">
                         {{ computeInitials(u.full_name || u.name || u.email || '') }}
@@ -143,8 +144,38 @@
                     </div>
                   </li>
                 </ul>
-                <div class="mt-3 flex justify-end">
-                  <button @click="$router.push('/admin/user-approvals')" class="inline-flex items-center px-3 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-md border border-teal-200">View All</button>
+              </div>
+            </div>
+
+            <!-- Approved Jobs -->
+            <div class="border-t border-gray-200 pt-4">
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">Approved Jobs</h3>
+              <div v-if="jobsLoading" class="text-sm text-gray-600">Loading approved jobs...</div>
+              <div v-else-if="jobsError" class="text-sm text-red-600">{{ jobsError }}</div>
+              <div v-else>
+                <div v-if="approvedJobs.length === 0" class="text-sm text-gray-600">No approved jobs yet.</div>
+                <div v-else class="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100">
+                  <div class="hidden sm:grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <span>Project</span>
+                    <span>Category</span>
+                    <span>Budget</span>
+                    <span>Approved On</span>
+                  </div>
+                  <ul class="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+                    <li
+                      v-for="job in approvedJobs"
+                      :key="job.id"
+                      class="flex flex-col sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-4 py-3"
+                    >
+                      <div>
+                        <p class="text-sm font-medium text-gray-900">{{ job.project_title || job.title || 'Untitled Project' }}</p>
+                        <p class="text-xs text-gray-500">{{ job.client_name || job.client || 'Client not specified' }}</p>
+                      </div>
+                      <div class="text-sm text-gray-700">{{ job.category || 'Other' }}</div>
+                      <div class="text-sm font-semibold text-teal-600">{{ formatCurrency(job.budget) }}</div>
+                      <div class="text-sm text-gray-700">{{ formatDate(job.last_updated || job.date_created || job.created_at) }}</div>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -192,6 +223,10 @@ const approvedUsers = ref<any[]>([])
 const approvedCounts = ref<{ total: number; clients: number; agents: number }>({ total: 0, clients: 0, agents: 0 })
 const approvedLoading = ref(false)
 
+const approvedJobs = ref<any[]>([])
+const jobsLoading = ref(false)
+const jobsError = ref<string | null>(null)
+
 const goBack = () => {
   router.push('/admin/job-approval')
 }
@@ -219,17 +254,31 @@ const loadAdmin = async () => {
 }
 
 const loadStats = async () => {
+  jobsLoading.value = true
+  jobsError.value = null
   try {
     const resp = await api.jobs.listAdminJobs(0, 200)
     if (resp.success && Array.isArray(resp.data)) {
       const jobs: any[] = resp.data
+      const approvedList = jobs.filter(job => job.admin_approved === true || job.status === 'approved')
+      const rejectedList = jobs.filter(job => job.admin_approved === false || job.status === 'rejected')
       const total = jobs.length
-      const approved = jobs.filter(j => j.status === 'approved' || j.approved === true).length
-      const rejected = jobs.filter(j => j.status === 'rejected').length
+      const approved = approvedList.length
+      const rejected = rejectedList.length
       const pending = Math.max(0, total - approved - rejected)
+
       stats.value = { total, approved, pending, rejected }
+      approvedJobs.value = approvedList
+    } else {
+      jobsError.value = resp.error || 'Failed to fetch jobs'
+      approvedJobs.value = []
     }
-  } catch {}
+  } catch (error: any) {
+    jobsError.value = error?.message || 'Failed to fetch jobs'
+    approvedJobs.value = []
+  } finally {
+    jobsLoading.value = false
+  }
 }
 
 const primaryRole = (u: any) => {
@@ -248,13 +297,46 @@ const roleBadgeClass = (u: any) => {
   return 'bg-gray-100 text-gray-700'
 }
 
+const formatDate = (timestamp: any): string => {
+  if (!timestamp) return '—'
+
+  if (typeof timestamp === 'number') {
+    const ms = timestamp > 1e12 ? timestamp : timestamp * 1000
+    return new Date(ms).toLocaleDateString()
+  }
+
+  if (typeof timestamp === 'string') {
+    const parsed = Date.parse(timestamp)
+    if (!Number.isNaN(parsed)) {
+      return new Date(parsed).toLocaleDateString()
+    }
+  }
+
+  return '—'
+}
+
+const formatCurrency = (value: unknown): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+  }
+
+  if (typeof value === 'string') {
+    const numeric = Number.parseFloat(value)
+    if (Number.isFinite(numeric)) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric)
+    }
+  }
+
+  return '—'
+}
+
 const loadApprovedUsers = async () => {
   approvedLoading.value = true
   try {
     const resp = await api.user.listUsers(0, 200)
     if ((resp as any).success && Array.isArray((resp as any).data)) {
       const users: any[] = (resp as any).data
-      const approved = users.filter(u => u.admin_approved === true)
+      const approved = users.filter(u => isAdminApprovedUser(u))
       approvedUsers.value = approved
       const clients = approved.filter(u => Object.values(u.role || {}).includes('client')).length
       const agents = approved.filter(u => Object.values(u.role || {}).includes('agent')).length
@@ -264,6 +346,22 @@ const loadApprovedUsers = async () => {
   finally {
     approvedLoading.value = false
   }
+}
+
+const isAdminApprovedUser = (user: any): boolean => {
+  const flags = [user?.admin_approved, user?.adminApproved, user?.is_admin_approved, user?.approved_by_admin]
+  if (flags.some(value => value === true || value === 1 || (typeof value === 'string' && ['true', 'yes', '1'].includes(value.trim().toLowerCase())))) {
+    return true
+  }
+  const status = typeof user?.status === 'string' ? user.status.trim().toLowerCase() : ''
+  if (['approved', 'active'].includes(status)) {
+    return true
+  }
+  const profileStatus = typeof user?.profile_status === 'string' ? user.profile_status.trim().toLowerCase() : ''
+  if (['approved', 'active'].includes(profileStatus)) {
+    return true
+  }
+  return false
 }
 
 onMounted(async () => {

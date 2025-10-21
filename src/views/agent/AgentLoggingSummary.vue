@@ -11,6 +11,13 @@
 
     <main class="flex-grow p-4">
       <div class="bg-white rounded-xl shadow-sm p-6">
+        <div v-if="error" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-600 text-sm">
+          {{ error }}
+        </div>
+        <div v-if="successMessage" class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-600 text-sm">
+          {{ successMessage }}
+        </div>
+
         <h2 class="text-lg font-semibold text-gray-800 mb-4">Work Summary</h2>
         
         <div v-if="workDetails" class="space-y-4">
@@ -59,8 +66,12 @@
     </main>
 
     <footer class="p-4 bg-white shadow-lg">
-      <button @click="submitWork" class="w-full bg-teal-500 text-white py-3 rounded-full text-lg font-semibold mb-3 hover:bg-teal-600 transition-colors duration-200">
-        Submit Work Log
+      <button
+        @click="submitWork"
+        :disabled="loading"
+        class="w-full bg-teal-500 text-white py-3 rounded-full text-lg font-semibold mb-3 hover:bg-teal-600 transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {{ loading ? 'Submitting...' : 'Submit Work Log' }}
       </button>
       <button @click="goBack" class="w-full text-gray-600 py-3 rounded-full text-lg font-semibold hover:bg-gray-100 transition-colors duration-200">
         Back
@@ -70,48 +81,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { workLogsService } from '@/services/workLogsService'
+import type { WorkLogPostPayload } from '@/types/api'
 
-const router = useRouter();
-const workDetails = ref<any>(null);
-const selectedGig = ref<any>(null);
-const loading = ref(false);
-const error = ref<string | null>(null);
-
-// Work logs data with proper typing
-interface WorkLog {
-  id: string
-  title: string
-  hours: number
-  date: string
-  comment: string
-  files?: any[]
-  projectId?: string
-  gigId?: string
-  status: 'draft' | 'submitted' | 'approved'
-}
-
-// Simulate API call for submitting work log (replace with real API call)
-const submitWorkLogToAPI = async (logData: Omit<WorkLog, 'id' | 'status'>): Promise<{ success: boolean; data?: WorkLog; error?: string }> => {
-  // In a real implementation, this would call:
-  // const result = await workLogsService.createWorkLog(logData)
-
-  // For now, simulate successful API response
-  const mockApiResponse = {
-    success: true,
-    data: {
-      id: Date.now().toString(),
-      status: 'submitted' as const,
-      ...logData
-    }
-  }
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  return mockApiResponse
-}
+const router = useRouter()
+const workDetails = ref<any>(null)
+const selectedGig = ref<any>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
+const successMessage = ref<string | null>(null)
 
 const formattedDate = computed(() => {
   if (!workDetails.value?.timestamp) return '';
@@ -119,22 +99,21 @@ const formattedDate = computed(() => {
 });
 
 onMounted(() => {
-  // Retrieve work details from localStorage
-  const storedWork = localStorage.getItem('workDetails');
+  const storedWork = localStorage.getItem('workDetails')
   if (storedWork) {
-    workDetails.value = JSON.parse(storedWork);
+    workDetails.value = JSON.parse(storedWork)
   }
 
-  // Retrieve selected gig from localStorage
-  const storedGig = localStorage.getItem('selectedGig');
+  const storedGig = localStorage.getItem('selectedGig')
   if (storedGig) {
-    selectedGig.value = JSON.parse(storedGig);
+    selectedGig.value = JSON.parse(storedGig)
   }
-});
+})
 
 const submitWork = async () => {
   loading.value = true
   error.value = null
+  successMessage.value = null
 
   try {
     if (!workDetails.value) {
@@ -142,85 +121,44 @@ const submitWork = async () => {
       return
     }
 
-    // Prepare work log data
-    const logData = {
-      title: workDetails.value.title || 'Work Session',
-      comment: workDetails.value.description || 'No description provided',
-      hours: workDetails.value.hours || 0,
-      date: workDetails.value.timestamp || new Date().toISOString(),
-      projectId: selectedGig.value?.id,
-      gigId: selectedGig.value?.id,
-      files: workDetails.value.files || []
+    if (!selectedGig.value?.id) {
+      error.value = 'Unable to determine the related job. Please reopen the gig and try again.'
+      return
     }
 
-    // Try to submit to API first
-    try {
-      const result = await submitWorkLogToAPI(logData)
-
-      if (result.success && result.data) {
-        console.log('Work log submitted to API successfully:', result.data)
-
-        // Also save to localStorage as backup (optional)
-        try {
-          const existingLogs = JSON.parse(localStorage.getItem('workLogs') || '[]')
-          existingLogs.unshift(result.data)
-          localStorage.setItem('workLogs', JSON.stringify(existingLogs))
-        } catch (e) {
-          console.warn('Could not save to localStorage:', e)
-        }
-
-        // Clear the work details from localStorage
-        localStorage.removeItem('workDetails')
-
-        // Show success message and navigate
-        alert('Work log submitted successfully!')
-        router.push('/agent/gigs-listing')
-        return
-      }
-    } catch (apiError) {
-      console.error('API submission failed:', apiError)
-      error.value = 'Failed to submit to server. Saving locally...'
+    const payload: WorkLogPostPayload = {
+      job_id: selectedGig.value.id,
+      log_title: workDetails.value.title || 'Work Session',
+      log_comment: workDetails.value.description || 'No description provided',
+      hours: Number(workDetails.value.hours) || 0,
+      files: Array.isArray(workDetails.value.files) ? workDetails.value.files : []
     }
 
-    // Fallback to localStorage if API fails
-    try {
-      const logEntry = {
-        id: Date.now().toString(),
-        status: 'draft' as const,
-        ...logData
-      }
-
-      const existingLogs = JSON.parse(localStorage.getItem('workLogs') || '[]')
-      existingLogs.unshift(logEntry)
-      localStorage.setItem('workLogs', JSON.stringify(existingLogs))
-      console.log('Work log saved to localStorage')
-
-      // Clear the work details from localStorage
+    const response = await workLogsService.postWorkLog(payload)
+    if (response.success && response.data) {
+      successMessage.value = 'Work log submitted successfully.'
       localStorage.removeItem('workDetails')
-
-      // Show success message and navigate
-      alert('Work log submitted successfully!')
-      router.push('/agent/gigs-listing')
-    } catch (localStorageError) {
-      console.error('Error saving log locally:', localStorageError)
-      error.value = 'Failed to save work log. Please try again.'
+      try {
+        localStorage.setItem('lastSubmittedLog', JSON.stringify(response.data))
+      } catch (storageError) {
+        console.warn('Unable to cache submitted log', storageError)
+      }
+      router.push('/agent/log-work')
+      return
     }
+
+    error.value = response.error || 'Failed to submit work log. Please try again.'
   } catch (caughtError) {
     console.error('Error in submitWork:', caughtError)
-    // Type-safe error handling
-    if (caughtError instanceof Error) {
-      error.value = `Failed to submit work log: ${caughtError.message}`
-    } else {
-      error.value = 'Failed to submit work log'
-    }
+    error.value = caughtError instanceof Error ? `Failed to submit work log: ${caughtError.message}` : 'Failed to submit work log'
   } finally {
     loading.value = false
   }
-};
+}
 
 const goBack = () => {
-  router.back();
-};
+  router.back()
+}
 </script>
 
 <style scoped>

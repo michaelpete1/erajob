@@ -105,6 +105,7 @@
           <div class="mt-4 pt-4 border-t border-gray-100">
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
+                v-if="!job.admin_approved"
                 @click="approveJob(job.id!)"
                 :disabled="approvingJobs.has(job.id!)"
                 class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
@@ -118,6 +119,7 @@
                 {{ approvingJobs.has(job.id!) ? 'Approving...' : 'Approve' }}
               </button>
               <button
+                v-if="!job.admin_approved"
                 @click="rejectJob(job)"
                 class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
               >
@@ -167,9 +169,6 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const approvingJobs = ref<Set<string>>(new Set());
 
-const ADMIN_JOBS_STORAGE_KEY = 'adminJobs';
-const SELECTED_ADMIN_JOB_STORAGE_KEY = 'selectedAdminJob';
-
 const APPROVED_STATUS_LABEL = 'Approved';
 const PENDING_STATUS_LABEL = 'Pending';
 
@@ -183,26 +182,6 @@ const normaliseJob = (job: AdminJob): AdminJob => {
     };
 };
 
-const persistAdminJobs = () => {
-    try {
-        localStorage.setItem(ADMIN_JOBS_STORAGE_KEY, JSON.stringify(allJobs.value));
-    } catch (storageError) {
-        console.error('Error persisting admin jobs to storage:', storageError);
-    }
-};
-
-const loadJobsFromStorage = () => {
-    try {
-        const storedJobs = localStorage.getItem(ADMIN_JOBS_STORAGE_KEY);
-        if (storedJobs) {
-            const parsedJobs: AdminJob[] = JSON.parse(storedJobs);
-            allJobs.value = parsedJobs.map(job => normaliseJob(job));
-        }
-    } catch (storageError) {
-        console.error('Error loading admin jobs from storage:', storageError);
-    }
-};
-
 // Fetch jobs on component mount
 const fetchJobs = async () => {
     loading.value = true;
@@ -211,7 +190,6 @@ const fetchJobs = async () => {
         const response = await api.jobs.listAdminJobs(0, 50);
         if (response.success && response.data) {
             allJobs.value = response.data.map(job => normaliseJob(job as AdminJob));
-            persistAdminJobs();
         } else {
             error.value = response.error || 'Failed to fetch jobs';
         }
@@ -231,41 +209,29 @@ const filteredJobs = computed<AdminJob[]>(() => {
 
 // Admin action functions
 const approveJob = async (jobId: string) => {
-    if (!jobId) return;
+    if (!jobId) {
+        alert('Cannot approve job: missing job ID from server.');
+        return;
+    }
 
     const jobIdStr = String(jobId);
 
     approvingJobs.value.add(jobIdStr);
 
-    const markApprovedLocally = (message?: string) => {
-        allJobs.value = allJobs.value.map(job => {
-            if (String(job.id) === jobIdStr) {
-                return normaliseJob({
-                    ...job,
-                    admin_approved: true,
-                    status: APPROVED_STATUS_LABEL
-                });
-            }
-            return job;
-        });
-        persistAdminJobs();
-        currentTab.value = 'Approved';
-        if (message) {
-            alert(message);
-        }
-    };
-
     try {
         const response = await api.jobs.approveJob(jobId);
-        if (response.success) {
-            markApprovedLocally('Job approved successfully');
-        } else {
+        if (!response.success) {
             console.error('Approve job failed with response:', response.error);
-            markApprovedLocally('Job approved locally (API request failed).');
+            alert(response.error || 'Failed to approve job.');
+            return;
         }
+
+        alert('Job approved successfully');
+        currentTab.value = 'Approved';
+        await fetchJobs();
     } catch (error: any) {
         console.error('Error approving job:', error);
-        markApprovedLocally(`Job approved locally (API error: ${error?.message || 'unknown error'}).`);
+        alert(error?.message || 'Failed to approve job.');
     } finally {
         approvingJobs.value.delete(jobIdStr);
     }
@@ -274,29 +240,16 @@ const approveJob = async (jobId: string) => {
 const rejectJob = (job: AdminJob) => {
     if (!job?.id) return;
 
-    try {
-        localStorage.setItem(SELECTED_ADMIN_JOB_STORAGE_KEY, JSON.stringify(job));
-    } catch (storageError) {
-        console.error('Error storing selected admin job for rejection:', storageError);
-    }
-
     router.push(`/admin/job/${job.id}/reject`);
 };
 
 const viewJobDetails = (job: AdminJob) => {
     if (!job?.id) return;
 
-    try {
-        localStorage.setItem(SELECTED_ADMIN_JOB_STORAGE_KEY, JSON.stringify(job));
-    } catch (storageError) {
-        console.error('Error storing selected admin job for details view:', storageError);
-    }
-
-    console.log('Viewing details for job:', job.id);
     router.push(`/admin/job/${job.id}`);
 };
 
-const deleteSelectedJobs = () => {
+const deleteSelectedJobs = async () => {
     const jobsToDelete = filteredJobs.value;
 
     if (jobsToDelete.length === 0) {
@@ -308,24 +261,8 @@ const deleteSelectedJobs = () => {
 
     if (confirm(confirmMessage)) {
         // Remove jobs from the current tab
-        jobsToDelete.forEach(job => {
-            if (job.id) {
-                const jobIndex = allJobs.value.findIndex(j => j.id === job.id);
-                if (jobIndex !== -1) {
-                    allJobs.value.splice(jobIndex, 1);
-                }
-            }
-        });
-
-        persistAdminJobs();
-
-        // Show success message
-        const successMessage = `Successfully deleted ${jobsToDelete.length} job offer${jobsToDelete.length > 1 ? 's' : ''}.`;
-
-        // You could replace this with a toast notification in a real app
-        alert(successMessage);
-
-        console.log('Deleted jobs:', jobsToDelete.map(job => job.id));
+        await fetchJobs();
+        alert(`Successfully deleted ${jobsToDelete.length} job offer${jobsToDelete.length > 1 ? 's' : ''}.`);
     }
 };
 
@@ -343,7 +280,6 @@ const confirmLogout = () => {
 
 // Initialize component
 onMounted(() => {
-    loadJobsFromStorage();
     fetchJobs();
 });
 </script>

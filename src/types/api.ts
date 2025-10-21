@@ -63,10 +63,11 @@ export interface EJAlertsOut {
   alert_type: string;
   alert_title: string;
   alert_description: string;
-  alert_primary_action: string;
-  alert_secondary_action: string;
+  alert_primary_action: string | null;
+  alert_secondary_action: string | null;
   date_created?: number | null;
   last_updated?: number | null;
+  is_read?: boolean | null;
 }
 
 export interface EJPaginationParams {
@@ -140,6 +141,74 @@ export interface JobApprovalData {
   reason?: string; // Added for consistency with apiService.approveJob
 }
 
+export type ApplicationStatus =
+  | 'pending_review'
+  | 'accepted'
+  | 'rejected'
+  | string
+
+export interface ApplicationOut {
+  job_id: string
+  proposal: string
+  id: string
+  proposal_status: ApplicationStatus
+  agent_id: string
+  date_created: number
+  last_updated: number
+}
+
+export interface ApplicationListParams {
+  start: number
+  stop: number
+}
+
+export interface ApplicationApplyPayload {
+  job_id: string
+  proposal: string
+}
+
+export interface ApplicationApprovePayload {
+  id: string
+}
+
+export interface ApplicationRejectPayload {
+  application_id: string
+  rejection_reason: string
+}
+
+// ===========================
+// WORK LOG TYPES
+// ===========================
+
+export type WorkLogStatus = 'pending_review' | 'submitted' | 'approved' | 'rejected' | string
+
+export interface WorkLogOut {
+  job_id: string
+  log_comment: string
+  files: string[]
+  hours: number
+  log_title: string
+  agent_id: string
+  client_approved: boolean
+  id: string
+  date_created: number
+  last_updated: number
+  rejection_reason?: string | null
+}
+
+export interface WorkLogListParams {
+  start: number
+  stop: number
+}
+
+export interface WorkLogPostPayload {
+  job_id: string
+  log_comment: string
+  log_title: string
+  hours: number
+  files?: string[]
+}
+
 // ===========================
 // USER-RELATED TYPES
 
@@ -174,27 +243,24 @@ export interface AgentFilters {
   status?: string;
 }
 
-// Notification types
-export interface NotificationOut {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  type: 'priority' | 'project' | 'agent' | 'general';
-  is_read: boolean;
-  created_at: number;
-  description?: string;
-  actions?: any[];
+// Alert types
+export interface AlertOut {
+  id?: string | null;
+  user_type: string;
+  user_id: string;
+  priority: string;
+  alert_type: string;
+  alert_title: string;
+  alert_description: string;
+  alert_primary_action: string | null;
+  alert_secondary_action: string | null;
+  date_created?: number | null;
+  last_updated?: number | null;
+  is_read?: boolean | null;
 }
 
-export interface NotificationBase {
-  title: string;
-  message: string;
-  type: 'priority' | 'project' | 'agent' | 'general';
-}
-
-export interface NotificationState {
-  notifications: NotificationOut[];
+export interface AlertState {
+  alerts: AlertOut[];
   loading: boolean;
   error: string | null;
   unreadCount: number;
@@ -205,9 +271,10 @@ export interface NotificationState {
   };
 }
 
-export interface NotificationFilters {
-  read?: boolean;
-  type?: string;
+export interface AlertFilters {
+  priority?: string;
+  alert_type?: string;
+  is_read?: boolean;
 }
 
 

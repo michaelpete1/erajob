@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import AgentNavbar from './components/AgentNavbar.vue'
 import ClientNavbar from './components/navbar/ClientNavbar.vue'
 import ClientBottomNav from './components/ClientBottomNav.vue'
+import AgentBottomNav from './components/AgentBottomNavUpdated.vue'
 import AdminBottomNav from './components/AdminBottomNav.vue'
 
 const AUTH_BASE_ROUTES = [
@@ -114,10 +115,10 @@ function updateUserRole() {
 
   if (userRole.value === 'client' && currentPath.startsWith('/agent')) {
     // Redirect to client dashboard if trying to access agent routes as client
-    window.location.href = '/client/dashboard';
+    window.location.href = '/client-dashboard';
   } else if (userRole.value === 'agent' && currentPath.startsWith('/client')) {
     // Redirect to agent dashboard if trying to access client routes as agent
-    window.location.href = '/agent/dashboard';
+    window.location.href = '/agent/explore-gigs';
   } else if (userRole.value === 'admin' && !currentPath.startsWith('/admin')) {
     // Redirect to admin dashboard if trying to access non-admin routes as admin
     window.location.href = '/admin/job-approval';
@@ -156,6 +157,7 @@ function reloadApp() {
     
     <!-- Role-specific Bottom Navigation (Mobile Only) -->
     <ClientBottomNav v-if="shouldShowNavbar && userRole === 'client'" />
+    <AgentBottomNav v-if="shouldShowNavbar && userRole === 'agent'" />
     <AdminBottomNav v-if="shouldShowNavbar && userRole === 'admin'" />
     <template v-if="!routeError">
       <router-view v-slot="{ Component }">

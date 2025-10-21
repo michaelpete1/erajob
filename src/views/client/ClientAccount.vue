@@ -146,14 +146,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { apiService } from '../../services/api'
 
-const router = useRouter()
-
 // User data
-const userName = ref('John Doe')
-const userEmail = ref('john.doe@example.com')
+const userName = ref('')
+const userEmail = ref('')
 
 // User profile data
 const userProfile = ref({
@@ -164,7 +161,7 @@ const userProfile = ref({
 })
 
 // Member since date
-const memberSince = ref('January 2024')
+const memberSince = ref('')
 
 // Computed user initials
 const userInitials = computed(() => {
@@ -252,5 +249,10 @@ async function fetchClientProfile() {
   } catch (e) {
     console.error('Error fetching client profile:', e)
   }
+}
+
+// Graceful fallback if join date unavailable
+if (!memberSince.value) {
+  memberSince.value = 'Not available'
 }
 </script>
