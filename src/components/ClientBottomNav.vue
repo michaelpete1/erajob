@@ -62,19 +62,32 @@
 </template>
 
 <script setup lang="ts">
-import { 
-  PencilSquareIcon, 
+import {
+  PencilSquareIcon,
   AdjustmentsHorizontalIcon,
   DocumentTextIcon
 } from '@heroicons/vue/24/outline'
-import { 
+import {
   CheckCircleIcon
 } from '@heroicons/vue/24/solid'
 import { useRoute, useRouter } from 'vue-router'
-import { computed } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
+const BODY_CLASS = 'client-bottom-nav-safe'
+
+onMounted(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.add(BODY_CLASS)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.remove(BODY_CLASS)
+  }
+})
 
 // Check if plus button should be shown (only for clients on project-related pages)
 const showPlusButton = computed(() => {

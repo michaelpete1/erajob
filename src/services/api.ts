@@ -262,7 +262,13 @@ export const apiService = {
   // Jobs endpoints
   async getJobs(params?: { start?: number; stop?: number }): Promise<ServiceResponse<Job[]>> { // Use ApiResponse<Job[]>
     try {
-      const response = await api.get(`${API_VERSION}/jobss/admin/${params?.start || 0}/${params?.stop || 100}`)
+      const { start = 0, stop = 100 } = params || {}
+      const response = await api.get(`${API_VERSION}/jobss/admin/`, {
+        params: {
+          start,
+          stop
+        }
+      })
       return {
         success: true,
         data: response.data

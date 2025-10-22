@@ -263,21 +263,63 @@ interface Project {
 const activeProjects = ref<Project[]>([])
 const browseProjects = ref<Project[]>([])
 
+const suspiciousPatterns = [
+  /return\s+[A-Za-z0-9_]/i,
+  /await\s+/i,
+  /function\s*\(/i,
+  /=>/,
+  /\bconst\b/i,
+  /\blet\b/i,
+  /\bvar\b/i,
+  /APIResponse/i,
+  /\bdef\b/i,
+  /[{;}]/
+]
+
+const stripCodeLikeLines = (value: string): string => {
+  const lines = value.replace(/\r\n?/g, '\n').split('\n')
+  const safeLines = lines
+    .map(line => line.trim())
+    .filter(line => line.length > 0 && !suspiciousPatterns.some(pattern => pattern.test(line)))
+
+  if (safeLines.length > 0) {
+    return safeLines.join('\n').trim()
+  }
+
+  const cleaned = value
+    .replace(/[{};]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (cleaned && !suspiciousPatterns.some(pattern => pattern.test(cleaned))) {
+    return cleaned
+  }
+
+  return ''
+}
+
+const sanitizeTextValue = (input: unknown): string => {
+  if (typeof input !== 'string') return ''
+  const trimmed = input.trim()
+  if (!trimmed) return ''
+  return stripCodeLikeLines(trimmed)
+}
+
 const parseSkillsList = (input: unknown): string[] => {
   if (!input) return []
   if (Array.isArray(input)) {
     return input
-      .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .map(item => sanitizeTextValue(item))
       .filter(Boolean)
   }
   if (typeof input === 'string') {
-    const trimmed = input.trim()
+    const trimmed = sanitizeTextValue(input)
     if (!trimmed) return []
     try {
       const parsed = JSON.parse(trimmed)
       if (Array.isArray(parsed)) {
         return parsed
-          .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+          .map(item => sanitizeTextValue(item))
           .filter(Boolean)
       }
     } catch (_) {
@@ -285,7 +327,7 @@ const parseSkillsList = (input: unknown): string[] => {
     }
     return trimmed
       .split(/[,;\n]/)
-      .map(part => part.trim())
+      .map(part => sanitizeTextValue(part))
       .filter(Boolean)
   }
   return []
@@ -295,11 +337,11 @@ const parseRequirementText = (input: unknown): string => {
   if (!input) return ''
   if (Array.isArray(input)) {
     return input
-      .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .map(item => sanitizeTextValue(item))
       .filter(Boolean)
       .join('\n')
   }
-  if (typeof input === 'string') return input
+  if (typeof input === 'string') return sanitizeTextValue(input)
   return ''
 }
 
@@ -323,13 +365,23 @@ const toProject = (jobPayload: unknown): Project => {
   const agentId = job.job_id ?? job.agent_job_id ?? job.agentId
   const resolvedId = (job.id ?? agentId ?? adminId ?? `temp-${Date.now()}`).toString()
 
-  const description = [
+  const descriptionCandidates = [
     job.description,
     job.project_description,
     job.project_desc,
     job.job_description,
-    job.summary
-  ].find(value => typeof value === 'string' && value.trim()) || ''
+    job.job_overview,
+    job.brief
+  ]
+
+  let description = ''
+  for (const candidate of descriptionCandidates) {
+    const sanitized = sanitizeTextValue(candidate)
+    if (sanitized) {
+      description = sanitized
+      break
+    }
+  }
 
   const requirementSource =
     job.requirement ??
@@ -345,7 +397,7 @@ const toProject = (jobPayload: unknown): Project => {
     job.skills_required ??
     job.skillset
 
-  const rawAgents = Array.isArray(job.agents)
+  const rawAgentsBase = Array.isArray(job.agents)
     ? job.agents
     : Array.isArray(job.assigned_agents)
       ? job.assigned_agents
@@ -353,62 +405,123 @@ const toProject = (jobPayload: unknown): Project => {
         ? job.agent_details
         : []
 
+  const gatherAgentCandidates = (): Record<string, any>[] => {
+    const candidates: unknown[] = [
+      job.assigned_agent,
+      job.agent,
+      job.primary_agent,
+      job.selected_agent,
+      job.accepted_agent,
+      job.approved_agent,
+      job.accepted_proposal,
+      job.acceptedProposal,
+      job.approved_proposal,
+      job.approvedProposal,
+      job.current_agent,
+      job.agent_info,
+      job.agentProfile
+    ]
+
+    const records: Record<string, any>[] = []
+    for (const candidate of candidates) {
+      if (!candidate) continue
+      if (Array.isArray(candidate)) {
+        for (const item of candidate) {
+          if (item && typeof item === 'object') {
+            records.push(item as Record<string, any>)
+            const nested = (item as any).agent
+            if (nested && typeof nested === 'object') {
+              records.push(nested as Record<string, any>)
+            }
+          }
+        }
+      } else if (typeof candidate === 'object') {
+        records.push(candidate as Record<string, any>)
+        const nested = (candidate as any).agent
+        if (nested && typeof nested === 'object') {
+          records.push(nested as Record<string, any>)
+        }
+      }
+    }
+
+    const singleName = sanitizeTextValue(job.agent_name) || sanitizeTextValue(job.approved_agent_name) || sanitizeTextValue(job.accepted_agent_name)
+    const singleEmail = sanitizeTextValue(job.agent_email) || sanitizeTextValue(job.approved_agent_email) || sanitizeTextValue(job.accepted_agent_email)
+    const singleId = job.agent_id ?? job.approved_agent_id ?? job.accepted_agent_id
+    if (singleName || singleEmail) {
+      records.push({ id: singleId, name: singleName, email: singleEmail })
+    }
+
+    return records
+  }
+
+  const rawAgents = rawAgentsBase.concat(gatherAgentCandidates())
+
   const agents = rawAgents.reduce<{ id: string; name: string; email?: string; avatar?: string }[]>((acc, agent) => {
     const raw = agent as Record<string, any>
     const idValue = raw?.id ?? raw?.agent_id ?? raw?.user_id ?? raw?.agentId ?? ''
     const id = idValue ? String(idValue) : ''
-    if (!id) return acc
-    const name =
-      (typeof raw?.name === 'string' && raw.name.trim())
-        ? raw.name.trim()
-        : (typeof raw?.full_name === 'string' && raw.full_name.trim())
-          ? raw.full_name.trim()
-          : (typeof raw?.display_name === 'string' && raw.display_name.trim())
-            ? raw.display_name.trim()
-            : (typeof raw?.username === 'string' && raw.username.trim())
-              ? raw.username.trim()
-              : (typeof raw?.agent_name === 'string' && raw.agent_name.trim())
-                ? raw.agent_name.trim()
-                : 'Assigned Agent'
-    const email =
-      (typeof raw?.email === 'string' && raw.email.trim())
-        ? raw.email.trim()
-        : (typeof raw?.agent_email === 'string' && raw.agent_email.trim())
-          ? raw.agent_email.trim()
-          : (typeof raw?.contact_email === 'string' && raw.contact_email.trim())
-            ? raw.contact_email.trim()
-            : (typeof raw?.user_email === 'string' && raw.user_email.trim())
-              ? raw.user_email.trim()
-              : undefined
+    const name = sanitizeTextValue(
+      raw?.name ??
+      raw?.full_name ??
+      raw?.display_name ??
+      raw?.username ??
+      raw?.agent_name
+    ) || 'Assigned Agent'
+
+    const email = sanitizeTextValue(
+      raw?.email ??
+      raw?.agent_email ??
+      raw?.contact_email ??
+      raw?.user_email
+    ) || undefined
+
+    const avatar = raw?.avatar || raw?.profile_image || raw?.avatar_url
+
+    const resolvedId = id || (name ? `agent-${acc.length + 1}-${Date.now()}` : '')
+    if (!resolvedId && !name) {
+      return acc
+    }
+
+    const existingIndex = resolvedId ? acc.findIndex(existing => existing.id === resolvedId) : -1
+    if (existingIndex >= 0) {
+      const existing = acc[existingIndex]
+      if (!existing.email && email) {
+        existing.email = email
+      }
+      if (existing.name === 'Assigned Agent' && name) {
+        existing.name = name
+      }
+      if (!existing.avatar && avatar) {
+        existing.avatar = avatar
+      }
+      return acc
+    }
+
     acc.push({
-      id,
+      id: resolvedId,
       name,
       email,
-      avatar: raw?.avatar || raw?.profile_image || raw?.avatar_url
+      avatar
     })
     return acc
   }, [])
 
-  const category =
-    (typeof job.category === 'string' && job.category.trim())
-      ? job.category.trim()
-      : (typeof job.project_category === 'string' && job.project_category.trim())
-        ? job.project_category.trim()
-        : 'General'
+  const categoryCandidate = sanitizeTextValue(job.category) || sanitizeTextValue(job.project_category)
+  const category = categoryCandidate || 'General'
 
   const budget = typeof job.budget === 'number' ? job.budget : Number(job.budget ?? 0)
   const requirementText = parseRequirementText(requirementSource)
   const skills = parseSkillsList(skillsSource)
 
+  const projectTitleCandidate =
+    sanitizeTextValue(job.project_title) ||
+    sanitizeTextValue(job.title)
+  const projectTitle = projectTitleCandidate || 'Untitled Project'
+
   return {
     id: resolvedId,
     admin_id: adminId ? adminId.toString() : undefined,
-    project_title:
-      typeof job.project_title === 'string'
-        ? job.project_title
-        : typeof job.title === 'string'
-          ? job.title
-          : 'Untitled Project',
+    project_title: projectTitle,
     category,
     budget: Number.isFinite(budget) ? budget : 0,
     description,

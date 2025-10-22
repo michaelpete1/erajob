@@ -112,7 +112,7 @@
                 Payment Amount
               </label>
               <div v-if="job?.status !== 'Pending' || !isEditing" class="relative">
-                <p class="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-md font-semibold">
+                <p class="text-sm sm:text-base bg-gray-50 px-3 py-2 rounded-md font-semibold text-gray-900">
                   {{ job.pay }}
                 </p>
               </div>

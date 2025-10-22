@@ -314,7 +314,7 @@ const agentDirectory = ref<Record<string, { name: string; email?: string }>>({})
 const cachedProject = ref<ExtendedJobOut | null>(null)
 
 const projectTitle = computed(() => project.value?.project_title?.trim() || '—')
-const projectDescription = computed(() => project.value?.description?.trim() || '')
+const projectDescription = computed(() => sanitizeDescriptionValue(project.value?.description) || '')
 const projectCategory = computed(() => project.value?.category?.trim() || '')
 const projectBudget = computed(() => {
   const budget = project.value?.budget
@@ -330,33 +330,23 @@ const projectBudget = computed(() => {
 const rawStatus = computed(() => project.value?.status?.toLowerCase() || '')
 const projectStatus = computed(() => {
   if (!rawStatus.value) return ''
-  const formatted = rawStatus.value.replace(/_/g, ' ')
+  const formatted = sanitizeDescriptionValue(rawStatus.value.replace(/_/g, ' '))
   return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 })
 
-const toStringArray = (input: unknown, delimiters = /[,;\n]/): string[] => {
+const toStringArray = (input: unknown, delimiters = /[,;\n]/) => {
   if (!input) return []
   if (Array.isArray(input)) {
     return input
-      .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .map(item => sanitizeDescriptionValue(item))
       .filter(Boolean)
   }
   if (typeof input === 'string') {
-    const trimmed = input.trim()
+    const trimmed = sanitizeDescriptionValue(input)
     if (!trimmed) return []
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
-          .filter(Boolean)
-      }
-    } catch (_) {
-      // not JSON, continue with delimiter split
-    }
     return trimmed
       .split(delimiters)
-      .map(part => part.trim())
+      .map(part => sanitizeDescriptionValue(part))
       .filter(Boolean)
   }
   return []
@@ -364,6 +354,36 @@ const toStringArray = (input: unknown, delimiters = /[,;\n]/): string[] => {
 
 const parseSkillsList = (input: unknown): string[] => toStringArray(input)
 const parseRequirementList = (input: unknown): string[] => toStringArray(input, /\n|[,;]/)
+
+const isLikelyCodeSnippet = (value: string): boolean => {
+  const patterns = [
+    /return\s+[A-Za-z0-9_]/i,
+    /await\s+/i,
+    /function\s*\(/i,
+    /=>/,
+    /\bconst\b/i,
+    /\blet\b/i,
+    /\bvar\b/i,
+    /APIResponse/i,
+    /\bdef\b/i,
+    /[{;}]/
+  ]
+  let matches = 0
+  for (const pattern of patterns) {
+    if (pattern.test(value)) {
+      matches += 1
+      if (matches >= 2) return true
+    }
+  }
+  return false
+}
+
+const sanitizeDescriptionValue = (input: unknown): string => {
+  if (typeof input !== 'string') return ''
+  const trimmed = input.trim()
+  if (!trimmed) return ''
+  return isLikelyCodeSnippet(trimmed) ? '' : trimmed
+}
 
 interface AgentDirectoryEntry {
   id: string
@@ -375,31 +395,22 @@ const mapAgents = (input: unknown): AgentDirectoryEntry[] => {
   if (!Array.isArray(input)) return []
   return input.reduce<AgentDirectoryEntry[]>((acc, agent) => {
     const raw = agent as Record<string, any>
-    const idValue = raw?.id ?? raw?.agent_id ?? raw?.user_id ?? raw?.agentId ?? ''
-    const id = idValue ? String(idValue) : ''
+    const idCandidate = raw?.id ?? raw?.agent_id ?? raw?.user_id ?? raw?.uuid
+    const id = idCandidate ? String(idCandidate) : ''
     if (!id) return acc
-    const name =
-      (typeof raw?.name === 'string' && raw.name.trim())
-        ? raw.name.trim()
-        : (typeof raw?.full_name === 'string' && raw.full_name.trim())
-          ? raw.full_name.trim()
-          : (typeof raw?.display_name === 'string' && raw.display_name.trim())
-            ? raw.display_name.trim()
-            : (typeof raw?.username === 'string' && raw.username.trim())
-              ? raw.username.trim()
-              : (typeof raw?.agent_name === 'string' && raw.agent_name.trim())
-                ? raw.agent_name.trim()
-                : 'Assigned Agent'
-    const email =
-      (typeof raw?.email === 'string' && raw.email.trim())
-        ? raw.email.trim()
-        : (typeof raw?.agent_email === 'string' && raw.agent_email.trim())
-          ? raw.agent_email.trim()
-          : (typeof raw?.contact_email === 'string' && raw.contact_email.trim())
-            ? raw.contact_email.trim()
-            : (typeof raw?.user_email === 'string' && raw.user_email.trim())
-              ? raw.user_email.trim()
-              : undefined
+    const nameCandidate =
+      sanitizeDescriptionValue(raw?.name) ||
+      sanitizeDescriptionValue(raw?.full_name) ||
+      sanitizeDescriptionValue(raw?.display_name) ||
+      sanitizeDescriptionValue(raw?.username) ||
+      sanitizeDescriptionValue(raw?.agent_name)
+    const name = nameCandidate || 'Assigned Agent'
+    const emailCandidate =
+      sanitizeDescriptionValue(raw?.email) ||
+      sanitizeDescriptionValue(raw?.agent_email) ||
+      sanitizeDescriptionValue(raw?.contact_email) ||
+      sanitizeDescriptionValue(raw?.user_email)
+    const email = emailCandidate || undefined
     acc.push({ id, name, email })
     return acc
   }, [])
@@ -533,7 +544,7 @@ const loadProjectContext = () => {
       cachedProject.value = {
         id: parsed.id,
         project_title: parsed.project_title || parsed.title || '',
-        description: parsed.description || parsed.project_description || '',
+        description: sanitizeDescriptionValue(parsed.description) || sanitizeDescriptionValue(parsed.project_description) || '',
         category: parsed.category || parsed.project_category || 'General',
         budget: typeof parsed.budget === 'number' ? parsed.budget : Number(parsed.budget ?? 0),
         requirement: parsed.requirement || parsed.requirements || parsed.project_requirement || '',
@@ -579,7 +590,7 @@ const fetchProject = async () => {
       project.value = {
         id: data.id,
         project_title: data.project_title || data.title || '',
-        description: data.description || data.project_description || '',
+        description: sanitizeDescriptionValue(data.description) || sanitizeDescriptionValue(data.project_description) || '',
         category: data.category || data.project_category || 'General',
         budget: typeof data.budget === 'number' ? data.budget : Number(data.budget ?? 0),
         requirement: data.requirement || data.requirements || data.project_requirement || '',

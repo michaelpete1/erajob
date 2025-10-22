@@ -36,9 +36,25 @@
 </template>
 
 <script setup lang="ts">
-// Profile functionality now handled by router-link
+import { onMounted, onBeforeUnmount } from 'vue'
+
+const BODY_CLASS = 'admin-bottom-nav-safe'
+
+onMounted(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.add(BODY_CLASS)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.remove(BODY_CLASS)
+  }
+})
 </script>
 
 <style scoped>
-/* Scoped styles can be added here */
+.admin-bottom-nav-safe {
+  padding-bottom: 80px;
+}
 </style>

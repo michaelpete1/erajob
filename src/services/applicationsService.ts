@@ -52,9 +52,49 @@ export const listClientApplications = async (
       params: { job_id: jobId, ...query }
     })
     if (response.data.status_code === 200 || response.data.status_code === 0) {
+      const payload = Array.isArray(response.data.data) ? response.data.data : []
+      const mapped = payload.map(application => {
+        if (application.agent_name && application.agent_email) {
+          return application
+        }
+
+        const raw = application as Record<string, any>
+        const agentSource =
+          raw.agent ||
+          raw.agent_profile ||
+          raw.agent_details ||
+          raw.agentInfo ||
+          raw.agent_data ||
+          raw.agentData
+
+        const resolvedName =
+          application.agent_name ||
+          (typeof raw.agent_name === 'string' ? raw.agent_name : undefined) ||
+          (agentSource && typeof agentSource === 'object'
+            ? (agentSource.full_name ||
+                agentSource.name ||
+                agentSource.display_name ||
+                agentSource.username ||
+                agentSource.email)
+            : undefined)
+
+        const resolvedEmail =
+          application.agent_email ||
+          (typeof raw.agent_email === 'string' ? raw.agent_email : undefined) ||
+          (agentSource && typeof agentSource === 'object'
+            ? (agentSource.email || agentSource.contact_email || agentSource.user_email)
+            : undefined)
+
+        return {
+          ...application,
+          agent_name: resolvedName,
+          agent_email: resolvedEmail
+        }
+      })
+
       return {
         success: true,
-        data: response.data.data ?? []
+        data: mapped
       }
     }
     return {
