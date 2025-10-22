@@ -145,8 +145,16 @@ const formatDate = (timestamp?: number | null) => {
   if (!timestamp) return '—'
   const ms = timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
   const date = new Date(ms)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleDateString()
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
 }
 
 const formatStatus = (status?: string | null) => {

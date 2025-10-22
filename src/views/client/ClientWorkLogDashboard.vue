@@ -105,12 +105,16 @@ const error = ref<string>('')
 
 const formatDate = (timestamp: number | null | undefined): string => {
   if (!timestamp) return ''
-  const date = new Date(timestamp * 1000)
-  return date.toLocaleDateString('en-US', {
+  const ms = timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
+  const date = new Date(ms)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  return date.toLocaleString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit'
   })
 }

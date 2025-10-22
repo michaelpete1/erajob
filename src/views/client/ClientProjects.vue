@@ -149,7 +149,7 @@
                   <span class="text-lg">⏰</span>
                   <span>{{ formatDate(project.date_created) }}</span>
                 </span>
-                <span class="px-2 py-1 bg-green-100 text-green-600 text-xs font-semibold rounded-full">{{ project.category }}</span>
+                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full">Pending Approval</span>
               </div>
               <h2 class="font-semibold text-gray-800 text-base sm:text-lg mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors">
                 {{ project.project_title }}
@@ -157,6 +157,7 @@
               <p class="text-sm text-gray-600 mb-4 line-clamp-3">
                 {{ project.description }}
               </p>
+              <p class="text-xs font-medium text-yellow-700 mb-3">Awaiting admin approval before work can begin.</p>
               <div class="flex items-center justify-between">
                 <span class="text-lg font-bold text-teal-600">${{ project.budget.toLocaleString() }}</span>
                 <button
@@ -221,24 +222,18 @@ const error = ref<string | null>(null)
 
 const formatDate = (timestamp: number | null | undefined) => {
   if (!timestamp) return 'N/A'
-  const date = new Date(timestamp * 1000)
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - date.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
-  if (diffDays === 0) {
-    return 'Today'
-  } else if (diffDays === 1) {
-    return 'Yesterday'
-  } else if (diffDays <= 7) {
-    return `${diffDays} days ago`
-  } else {
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    })
+  const ms = timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
+  const date = new Date(ms)
+  if (Number.isNaN(date.getTime())) {
+    return 'N/A'
   }
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
 }
 
 interface Project {
@@ -248,7 +243,8 @@ interface Project {
   category: string
   budget: number
   description: string
-  requirement?: string
+  requirement?: string | string[]
+  skills_needed?: string[]
   date_created: number
   timeline: {
     start_date: number
@@ -257,6 +253,7 @@ interface Project {
   agents?: Array<{
     id: string
     name: string
+    email?: string
     avatar?: string
   }>
   status?: string
@@ -265,6 +262,46 @@ interface Project {
 
 const activeProjects = ref<Project[]>([])
 const browseProjects = ref<Project[]>([])
+
+const parseSkillsList = (input: unknown): string[] => {
+  if (!input) return []
+  if (Array.isArray(input)) {
+    return input
+      .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .filter(Boolean)
+  }
+  if (typeof input === 'string') {
+    const trimmed = input.trim()
+    if (!trimmed) return []
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+          .filter(Boolean)
+      }
+    } catch (_) {
+      // not JSON, fall through
+    }
+    return trimmed
+      .split(/[,;\n]/)
+      .map(part => part.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+const parseRequirementText = (input: unknown): string => {
+  if (!input) return ''
+  if (Array.isArray(input)) {
+    return input
+      .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .filter(Boolean)
+      .join('\n')
+  }
+  if (typeof input === 'string') return input
+  return ''
+}
 
 const toProject = (jobPayload: unknown): Project => {
   const job = (jobPayload || {}) as Record<string, any>
@@ -284,22 +321,105 @@ const toProject = (jobPayload: unknown): Project => {
 
   const adminId = job.id ?? job.admin_id ?? job.adminId
   const agentId = job.job_id ?? job.agent_job_id ?? job.agentId
-  const resolvedId = (agentId ?? adminId ?? `temp-${Date.now()}`).toString()
+  const resolvedId = (job.id ?? agentId ?? adminId ?? `temp-${Date.now()}`).toString()
+
+  const description = [
+    job.description,
+    job.project_description,
+    job.project_desc,
+    job.job_description,
+    job.summary
+  ].find(value => typeof value === 'string' && value.trim()) || ''
+
+  const requirementSource =
+    job.requirement ??
+    job.requirements ??
+    job.project_requirement ??
+    job.job_requirement ??
+    job.project_requirements
+
+  const skillsSource =
+    job.skills_needed ??
+    job.skills ??
+    job.required_skills ??
+    job.skills_required ??
+    job.skillset
+
+  const rawAgents = Array.isArray(job.agents)
+    ? job.agents
+    : Array.isArray(job.assigned_agents)
+      ? job.assigned_agents
+      : Array.isArray(job.agent_details)
+        ? job.agent_details
+        : []
+
+  const agents = rawAgents.reduce<{ id: string; name: string; email?: string; avatar?: string }[]>((acc, agent) => {
+    const raw = agent as Record<string, any>
+    const idValue = raw?.id ?? raw?.agent_id ?? raw?.user_id ?? raw?.agentId ?? ''
+    const id = idValue ? String(idValue) : ''
+    if (!id) return acc
+    const name =
+      (typeof raw?.name === 'string' && raw.name.trim())
+        ? raw.name.trim()
+        : (typeof raw?.full_name === 'string' && raw.full_name.trim())
+          ? raw.full_name.trim()
+          : (typeof raw?.display_name === 'string' && raw.display_name.trim())
+            ? raw.display_name.trim()
+            : (typeof raw?.username === 'string' && raw.username.trim())
+              ? raw.username.trim()
+              : (typeof raw?.agent_name === 'string' && raw.agent_name.trim())
+                ? raw.agent_name.trim()
+                : 'Assigned Agent'
+    const email =
+      (typeof raw?.email === 'string' && raw.email.trim())
+        ? raw.email.trim()
+        : (typeof raw?.agent_email === 'string' && raw.agent_email.trim())
+          ? raw.agent_email.trim()
+          : (typeof raw?.contact_email === 'string' && raw.contact_email.trim())
+            ? raw.contact_email.trim()
+            : (typeof raw?.user_email === 'string' && raw.user_email.trim())
+              ? raw.user_email.trim()
+              : undefined
+    acc.push({
+      id,
+      name,
+      email,
+      avatar: raw?.avatar || raw?.profile_image || raw?.avatar_url
+    })
+    return acc
+  }, [])
+
+  const category =
+    (typeof job.category === 'string' && job.category.trim())
+      ? job.category.trim()
+      : (typeof job.project_category === 'string' && job.project_category.trim())
+        ? job.project_category.trim()
+        : 'General'
+
+  const budget = typeof job.budget === 'number' ? job.budget : Number(job.budget ?? 0)
+  const requirementText = parseRequirementText(requirementSource)
+  const skills = parseSkillsList(skillsSource)
 
   return {
     id: resolvedId,
     admin_id: adminId ? adminId.toString() : undefined,
-    project_title: typeof job.project_title === 'string' ? job.project_title : (typeof job.title === 'string' ? job.title : 'Untitled Project'),
-    category: typeof job.category === 'string' ? job.category : 'Other',
-    budget: typeof job.budget === 'number' ? job.budget : 0,
-    description: typeof job.description === 'string' ? job.description : '',
-    requirement: typeof job.requirement === 'string' ? job.requirement : '',
+    project_title:
+      typeof job.project_title === 'string'
+        ? job.project_title
+        : typeof job.title === 'string'
+          ? job.title
+          : 'Untitled Project',
+    category,
+    budget: Number.isFinite(budget) ? budget : 0,
+    description,
+    requirement: requirementText,
+    skills_needed: skills,
     date_created: typeof job.date_created === 'number' ? job.date_created : 0,
     timeline: {
       start_date: startDate,
       deadline: deadline
     },
-    agents: Array.isArray(job.agents) ? job.agents : [],
+    agents,
     status: typeof job.status === 'string' ? job.status : undefined,
     admin_approved: typeof job.admin_approved === 'boolean' ? job.admin_approved : undefined
   }
@@ -313,7 +433,8 @@ const fetchActiveProjects = async () => {
       return
     }
     const jobsData = Array.isArray(response.data) ? response.data : [response.data]
-    activeProjects.value = jobsData.map(job => toProject(job))
+    const approvedJobs = jobsData.filter((job: any) => job?.admin_approved === true)
+    activeProjects.value = approvedJobs.map(job => toProject(job))
   } catch (err) {
     console.error('Error fetching active projects:', err)
     error.value = 'Failed to load active projects'
@@ -378,13 +499,27 @@ const cacheProjectContext = (project: Project) => {
 
   try {
     localStorage.setItem('selectedJobContext', JSON.stringify(jobPayload))
-    localStorage.setItem('selectedClientProject', JSON.stringify(project))
+    localStorage.setItem(
+      'selectedClientProject',
+      JSON.stringify({
+        ...project,
+        requirement: project.requirement,
+        skills_needed: project.skills_needed,
+        agents: project.agents
+      })
+    )
     localStorage.setItem(
       'selectedProject',
       JSON.stringify({
         id: jobId,
         job_id: jobId,
         title: project.project_title,
+        requirement: project.requirement,
+        skills_needed: project.skills_needed,
+        description: project.description,
+        category: project.category,
+        budget: project.budget,
+        timeline: project.timeline,
         agents: project.agents || []
       })
     )

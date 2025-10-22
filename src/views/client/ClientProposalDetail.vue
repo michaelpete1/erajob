@@ -36,33 +36,25 @@
           <p class="proposal-text">{{ proposal.proposal }}</p>
         </section>
 
-        <section v-if="agentProfile" class="agent-summary">
+        <section class="agent-summary">
           <h3>Agent Overview</h3>
           <div class="agent-details">
             <div>
               <h4>Name</h4>
-              <p>{{ agentProfile.full_name || 'Not provided' }}</p>
+              <p>{{ agentName }}</p>
             </div>
             <div>
               <h4>Email</h4>
-              <p>{{ agentProfile.email || 'Not provided' }}</p>
+              <p>{{ agentEmail }}</p>
             </div>
             <div>
               <h4>Status</h4>
-              <p>{{ agentProfile.status || 'Unknown' }}</p>
+              <p>{{ agentProfile?.status || 'Unknown' }}</p>
             </div>
           </div>
         </section>
 
         <section class="detail-grid">
-          <div class="detail-box">
-            <h4>Proposal ID</h4>
-            <p>{{ proposal.id }}</p>
-          </div>
-          <div class="detail-box">
-            <h4>Agent ID</h4>
-            <p>{{ proposal.agent_id || 'Not provided' }}</p>
-          </div>
           <div class="detail-box">
             <h4>Submitted</h4>
             <p>{{ formatTimestamp(proposal.date_created) }}</p>
@@ -115,7 +107,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { applicationsService } from '@/services/applicationsService'
-import { agentsService } from '@/services/agentsService'
 import type { ApplicationOut, AgentOut } from '@/types/api'
 
 const route = useRoute()
@@ -125,18 +116,42 @@ const jobId = ref('')
 const proposalId = ref('')
 const proposal = ref<ApplicationOut | null>(null)
 const agentProfile = ref<AgentOut | null>(null)
+const storedProposalMeta = ref<{ id?: string; job_id?: string; agent_name?: string; agent_email?: string; agent_directory?: Record<string, { name?: string; email?: string }> } | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const actionLoading = ref(false)
 const actionError = ref<string | null>(null)
 const actionSuccess = ref<string | null>(null)
 
-const proposalTitle = computed(() => `Proposal ${proposal.value?.id ?? ''}`)
+const proposalTitle = computed(() => {
+  const name = agentName.value
+  if (name && name !== 'Not provided') {
+    return `Proposal from ${name}`
+  }
+  return 'Proposal'
+})
 
 const syncRouteParams = () => {
   const jobValue = route.query.jobId
   jobId.value = typeof jobValue === 'string' ? jobValue : Array.isArray(jobValue) ? jobValue[0] ?? '' : ''
   proposalId.value = typeof route.params.id === 'string' ? route.params.id : ''
+
+  try {
+    const stored = localStorage.getItem('selectedClientProposal')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (parsed && typeof parsed === 'object') {
+        if (!proposalId.value || parsed.id === proposalId.value) {
+          storedProposalMeta.value = parsed
+        }
+      }
+    } else {
+      storedProposalMeta.value = null
+    }
+  } catch (err) {
+    console.warn('ClientProposalDetail: unable to read stored proposal metadata', err)
+    storedProposalMeta.value = null
+  }
 }
 
 const loadProposal = async () => {
@@ -152,8 +167,13 @@ const loadProposal = async () => {
   try {
     const response = await applicationsService.getClientApplicationById({ id: proposalId.value, job_id: jobId.value })
     if (response.success && response.data) {
-      proposal.value = response.data
-      if (response.data.agent_id) loadAgentProfile(response.data.agent_id)
+      const base = response.data
+      const meta = storedProposalMeta.value
+      proposal.value = {
+        ...base,
+        agent_name: base.agent_name || meta?.agent_name,
+        agent_email: base.agent_email || meta?.agent_email
+      }
     } else {
       error.value = response.error || 'Failed to load proposal details.'
     }
@@ -164,12 +184,27 @@ const loadProposal = async () => {
   }
 }
 
-const loadAgentProfile = async (agentId: string) => {
-  const agentResp = await agentsService.getAgentById(agentId)
-  if (agentResp.success && agentResp.data) {
-    agentProfile.value = agentResp.data
+const agentName = computed(() => {
+  if (agentProfile.value?.full_name) return agentProfile.value.full_name
+  if (proposal.value?.agent_name) return proposal.value.agent_name
+  if (storedProposalMeta.value?.agent_name) return storedProposalMeta.value.agent_name
+  const directory = storedProposalMeta.value?.agent_directory
+  if (directory && proposal.value?.agent_id && directory[proposal.value.agent_id]?.name) {
+    return directory[proposal.value.agent_id]?.name as string
   }
-}
+  return 'Not provided'
+})
+
+const agentEmail = computed(() => {
+  if (agentProfile.value?.email) return agentProfile.value.email
+  if (proposal.value?.agent_email) return proposal.value.agent_email
+  if (storedProposalMeta.value?.agent_email) return storedProposalMeta.value.agent_email
+  const directory = storedProposalMeta.value?.agent_directory
+  if (directory && proposal.value?.agent_id && directory[proposal.value.agent_id]?.email) {
+    return directory[proposal.value.agent_id]?.email as string
+  }
+  return 'Not provided'
+})
 
 const approveProposal = async () => {
   if (!jobId.value || !proposalId.value) return
@@ -248,11 +283,22 @@ const statusClass = (status: string) => {
   return 'pending'
 }
 
+const normalizeTimestamp = (timestamp?: number | null) => {
+  if (!timestamp) return 0
+  return timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
+}
+
 const formatTimestamp = (timestamp?: number | null) => {
   if (!timestamp) return '—'
-  const date = new Date(timestamp)
+  const date = new Date(normalizeTimestamp(timestamp))
   if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleString()
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
 }
 
 onMounted(() => {

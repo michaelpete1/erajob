@@ -86,11 +86,16 @@ export class AlertsService {
       }
     } catch (error: any) {
       this.notificationState.loading = false
-      this.notificationState.error = error?.response?.data?.detail || error?.message || 'Failed to fetch alerts'
+      const message = error?.response?.data?.detail || error?.message || 'Failed to fetch alerts'
+      this.notificationState.error = message
+
+      if (typeof window !== 'undefined') {
+        console.error('[AlertsService] getAlerts error:', message)
+      }
 
       return {
         success: false,
-        error: this.notificationState.error || undefined
+        error: message
       }
     }
   }
@@ -115,7 +120,11 @@ export class AlertsService {
       }
       throw new Error((response.data as any).detail || 'Failed to fetch alert')
     } catch (error: any) {
-      return { success: false, error: error?.response?.data?.detail || error?.message || 'Failed to fetch alert' }
+      const message = error?.response?.data?.detail || error?.message || 'Failed to fetch alert'
+      if (typeof window !== 'undefined') {
+        console.error('[AlertsService] getAlertById error:', message)
+      }
+      return { success: false, error: message }
     }
   }
 
@@ -128,8 +137,13 @@ export class AlertsService {
     if (alert) {
       ;(alert as any).is_read = true
       this.notificationState.unreadCount = Math.max(0, this.notificationState.unreadCount - 1)
+      return { success: true, message: 'Alert marked as read (local)' }
     }
-    return { success: true, message: 'Alert marked as read (local)' }
+    const message = 'Alert not found'
+    if (typeof window !== 'undefined') {
+      console.warn('[AlertsService] markAsRead:', message, alertId)
+    }
+    return { success: false, error: message }
   }
 
   /**
@@ -137,9 +151,17 @@ export class AlertsService {
    */
   async markAllAsRead(): Promise<ServiceResponse<void>> {
     // No mark-all endpoint in spec; update locally
-    this.notificationState.alerts.forEach((n: any) => { n.is_read = true })
-    this.notificationState.unreadCount = 0
-    return { success: true, message: 'All alerts marked as read (local)' }
+    try {
+      this.notificationState.alerts.forEach((n: any) => { n.is_read = true })
+      this.notificationState.unreadCount = 0
+      return { success: true, message: 'All alerts marked as read (local)' }
+    } catch (error: any) {
+      const message = error?.message || 'Failed to mark all alerts as read'
+      if (typeof window !== 'undefined') {
+        console.error('[AlertsService] markAllAsRead error:', message)
+      }
+      return { success: false, error: message }
+    }
   }
 
   /**
@@ -147,13 +169,26 @@ export class AlertsService {
    */
   async deleteAlert(alertId: string): Promise<ServiceResponse<void>> {
     // No delete endpoint in spec; update locally
-    const idx = this.notificationState.alerts.findIndex((n: any) => n.id === alertId)
-    if (idx !== -1) {
-      const wasUnread = !(this.notificationState.alerts[idx] as any).is_read
-      this.notificationState.alerts.splice(idx, 1)
-      if (wasUnread) this.notificationState.unreadCount = Math.max(0, this.notificationState.unreadCount - 1)
+    try {
+      const idx = this.notificationState.alerts.findIndex((n: any) => n.id === alertId)
+      if (idx !== -1) {
+        const wasUnread = !(this.notificationState.alerts[idx] as any).is_read
+        this.notificationState.alerts.splice(idx, 1)
+        if (wasUnread) this.notificationState.unreadCount = Math.max(0, this.notificationState.unreadCount - 1)
+        return { success: true, message: 'Alert deleted (local)' }
+      }
+      const message = 'Alert not found'
+      if (typeof window !== 'undefined') {
+        console.warn('[AlertsService] deleteAlert:', message, alertId)
+      }
+      return { success: false, error: message }
+    } catch (error: any) {
+      const message = error?.message || 'Failed to delete alert'
+      if (typeof window !== 'undefined') {
+        console.error('[AlertsService] deleteAlert error:', message)
+      }
+      return { success: false, error: message }
     }
-    return { success: true, message: 'Alert deleted (local)' }
   }
 
   /**
@@ -161,12 +196,28 @@ export class AlertsService {
    */
   async handleAlertAction(alertId: string, action: string): Promise<ServiceResponse<any>> {
     // No action endpoint in spec; treat as mark-read locally
-    const alert = this.notificationState.alerts.find((n: any) => (n as any).id === alertId)
-    if (alert && !((alert as any).is_read)) {
-      ;(alert as any).is_read = true
-      this.notificationState.unreadCount = Math.max(0, this.notificationState.unreadCount - 1)
+    try {
+      const alert = this.notificationState.alerts.find((n: any) => (n as any).id === alertId)
+      if (alert) {
+        if (!((alert as any).is_read)) {
+          ;(alert as any).is_read = true
+          this.notificationState.unreadCount = Math.max(0, this.notificationState.unreadCount - 1)
+        }
+        return { success: true, message: `Action "${action}" handled locally` }
+      }
+
+      const message = 'Alert not found'
+      if (typeof window !== 'undefined') {
+        console.warn('[AlertsService] handleAlertAction:', message, { alertId, action })
+      }
+      return { success: false, error: message }
+    } catch (error: any) {
+      const message = error?.message || 'Failed to handle alert action'
+      if (typeof window !== 'undefined') {
+        console.error('[AlertsService] handleAlertAction error:', message)
+      }
+      return { success: false, error: message }
     }
-    return { success: true, message: `Action "${action}" handled locally` }
   }
 
   /**

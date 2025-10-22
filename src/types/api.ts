@@ -153,6 +153,8 @@ export interface ApplicationOut {
   id: string
   proposal_status: ApplicationStatus
   agent_id: string
+  agent_name?: string
+  agent_email?: string
   date_created: number
   last_updated: number
 }
@@ -189,6 +191,8 @@ export interface WorkLogOut {
   hours: number
   log_title: string
   agent_id: string
+  agent_name?: string
+  agent_email?: string
   client_approved: boolean
   id: string
   date_created: number

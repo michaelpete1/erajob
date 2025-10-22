@@ -1,8 +1,8 @@
 import apiClient from './apiClient'
 import type { AlertApiResponse, AlertListApiResponse } from '../types/api/alerts'
 
-// Note: Using '/v1/alerts' assuming 'alertss' in the documentation is a typo.
-const BASE_URL = '/v1/alerts'
+// API specification exposes endpoints under `/v1/alertss`
+const BASE_URL = '/v1/alertss'
 
 /**
  * Fetches all alerts that belong to an authenticated agent.

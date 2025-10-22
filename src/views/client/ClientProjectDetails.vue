@@ -55,7 +55,10 @@
               <p v-if="projectDescription" class="text-gray-700 leading-relaxed">{{ projectDescription }}</p>
               <p v-else class="text-sm text-gray-500">Project description not provided.</p>
             </div>
-            <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 min-w-[220px]">
+            <div
+              v-if="projectBudget !== '—' || projectStartDate !== '—' || projectDeadline !== '—'"
+              class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 min-w-[220px]"
+            >
               <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Budget</p>
               <p class="text-xl font-bold text-gray-900 mt-1">{{ projectBudget }}</p>
               <div class="mt-4 space-y-2 text-xs text-gray-500">
@@ -95,18 +98,23 @@
             </div>
           </div>
 
-          <div v-if="agentNames.length" class="mt-6">
+          <div class="mt-6">
             <h2 class="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Assigned Agents</h2>
-            <div class="flex flex-wrap gap-2">
-              <span
-                v-for="(name, idx) in agentNames"
-                :key="`agent-${idx}`"
-                class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-teal-50 text-teal-700 border border-teal-100"
+            <div v-if="assignedAgents.length" class="flex flex-col gap-2">
+              <div
+                v-for="agent in assignedAgents"
+                :key="agent.id"
+                class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-teal-100 bg-teal-50 text-sm text-teal-700"
               >
-                <span class="w-2 h-2 rounded-full bg-teal-500 mr-2"></span>
-                {{ name }}
-              </span>
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                  <span class="font-medium">{{ agent.name }}</span>
+                </div>
+                <span v-if="agent.email" class="text-xs text-teal-600">{{ agent.email }}</span>
+                <span v-else class="text-xs text-teal-600 italic">Email not provided</span>
+              </div>
             </div>
+            <p v-else class="text-sm text-gray-500">No agents assigned yet.</p>
           </div>
         </div>
       </section>
@@ -302,7 +310,8 @@ const logsError = ref<string | null>(null)
 const actionError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const actionLoadingId = ref<string | null>(null)
-const agentDirectory = ref<Record<string, string>>({})
+const agentDirectory = ref<Record<string, { name: string; email?: string }>>({})
+const cachedProject = ref<ExtendedJobOut | null>(null)
 
 const projectTitle = computed(() => project.value?.project_title?.trim() || '—')
 const projectDescription = computed(() => project.value?.description?.trim() || '')
@@ -325,16 +334,90 @@ const projectStatus = computed(() => {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 })
 
+const toStringArray = (input: unknown, delimiters = /[,;\n]/): string[] => {
+  if (!input) return []
+  if (Array.isArray(input)) {
+    return input
+      .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+      .filter(Boolean)
+  }
+  if (typeof input === 'string') {
+    const trimmed = input.trim()
+    if (!trimmed) return []
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map(item => (typeof item === 'string' ? item.trim() : String(item ?? '').trim()))
+          .filter(Boolean)
+      }
+    } catch (_) {
+      // not JSON, continue with delimiter split
+    }
+    return trimmed
+      .split(delimiters)
+      .map(part => part.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+const parseSkillsList = (input: unknown): string[] => toStringArray(input)
+const parseRequirementList = (input: unknown): string[] => toStringArray(input, /\n|[,;]/)
+
+interface AgentDirectoryEntry {
+  id: string
+  name: string
+  email?: string
+}
+
+const mapAgents = (input: unknown): AgentDirectoryEntry[] => {
+  if (!Array.isArray(input)) return []
+  return input.reduce<AgentDirectoryEntry[]>((acc, agent) => {
+    const raw = agent as Record<string, any>
+    const idValue = raw?.id ?? raw?.agent_id ?? raw?.user_id ?? raw?.agentId ?? ''
+    const id = idValue ? String(idValue) : ''
+    if (!id) return acc
+    const name =
+      (typeof raw?.name === 'string' && raw.name.trim())
+        ? raw.name.trim()
+        : (typeof raw?.full_name === 'string' && raw.full_name.trim())
+          ? raw.full_name.trim()
+          : (typeof raw?.display_name === 'string' && raw.display_name.trim())
+            ? raw.display_name.trim()
+            : (typeof raw?.username === 'string' && raw.username.trim())
+              ? raw.username.trim()
+              : (typeof raw?.agent_name === 'string' && raw.agent_name.trim())
+                ? raw.agent_name.trim()
+                : 'Assigned Agent'
+    const email =
+      (typeof raw?.email === 'string' && raw.email.trim())
+        ? raw.email.trim()
+        : (typeof raw?.agent_email === 'string' && raw.agent_email.trim())
+          ? raw.agent_email.trim()
+          : (typeof raw?.contact_email === 'string' && raw.contact_email.trim())
+            ? raw.contact_email.trim()
+            : (typeof raw?.user_email === 'string' && raw.user_email.trim())
+              ? raw.user_email.trim()
+              : undefined
+    acc.push({ id, name, email })
+    return acc
+  }, [])
+}
+
+const buildAgentDirectory = (agents: AgentDirectoryEntry[]): Record<string, { name: string; email?: string }> => {
+  return agents.reduce<Record<string, { name: string; email?: string }>>((acc, agent) => {
+    acc[agent.id] = { name: agent.name, email: agent.email }
+    return acc
+  }, {})
+}
+
 const projectStartDate = computed(() => formatDate(project.value?.timeline?.start_date ?? null))
 const projectDeadline = computed(() => formatDate(project.value?.timeline?.deadline ?? null))
-const projectSkills = computed(() => {
-  const raw = project.value?.skills_needed
-  if (!raw) return [] as string[]
-  if (Array.isArray(raw)) return raw.map(skill => (typeof skill === 'string' ? skill : String(skill)))
-  if (typeof raw === 'string') return raw.split(',').map(skill => skill.trim()).filter(Boolean)
-  return [] as string[]
-})
-const agentNames = computed(() => Object.values(agentDirectory.value))
+const projectSkills = computed(() => parseSkillsList(project.value?.skills_needed))
+const assignedAgents = computed(() =>
+  Object.entries(agentDirectory.value).map(([id, entry]) => ({ id, name: entry.name, email: entry.email }))
+)
 
 const statusBadgeClass = computed(() => {
   const status = rawStatus.value
@@ -358,13 +441,7 @@ const formatDate = (timestamp: number | null): string => {
   })
 }
 
-const parsedRequirements = computed(() => {
-  if (!project.value?.requirement) return [] as string[]
-  return project.value.requirement
-    .split(',')
-    .map(req => req.trim())
-    .filter(Boolean)
-})
+const parsedRequirements = computed(() => parseRequirementList(project.value?.requirement))
 
 const normalizeTimestamp = (timestamp?: number | null): number => {
   if (!timestamp) return 0
@@ -387,7 +464,9 @@ const getInitials = (name: string): string => {
 }
 
 const resolveAgentName = (agentId: string): string => {
-  return agentDirectory.value[agentId] || agentId || 'Assigned Agent'
+  const found = agentDirectory.value[agentId]
+  if (found?.name) return found.name
+  return agentId || 'Assigned Agent'
 }
 
 const normalizeLog = (log: WorkLogOut): DisplayLog => {
@@ -441,20 +520,38 @@ const weeklyLoggedHours = computed(() => {
   }, 0)
 })
 
+const isClientUser = computed(() => {
+  const role = localStorage.getItem('userRole') || localStorage.getItem('role') || ''
+  return role.toLowerCase() === 'client'
+})
+
 const loadProjectContext = () => {
   try {
     const storedProject = localStorage.getItem('selectedClientProject') || localStorage.getItem('selectedProject')
     if (storedProject) {
       const parsed = JSON.parse(storedProject) as Record<string, any>
-      if (Array.isArray(parsed?.agents)) {
-        const directory: Record<string, string> = {}
-        parsed.agents.forEach((agent: any) => {
-          const id = String(agent?.id || agent?.agent_id || '')
-          if (id) {
-            directory[id] = agent?.name || agent?.full_name || agent?.display_name || id
-          }
-        })
-        agentDirectory.value = directory
+      cachedProject.value = {
+        id: parsed.id,
+        project_title: parsed.project_title || parsed.title || '',
+        description: parsed.description || parsed.project_description || '',
+        category: parsed.category || parsed.project_category || 'General',
+        budget: typeof parsed.budget === 'number' ? parsed.budget : Number(parsed.budget ?? 0),
+        requirement: parsed.requirement || parsed.requirements || parsed.project_requirement || '',
+        skills_needed: parsed.skills_needed || parsed.skills || parsed.required_skills || null,
+        timeline: parsed.timeline || { start_date: 0, deadline: 0 },
+        date_created: parsed.date_created,
+        last_updated: parsed.last_updated,
+        admin_approved: parsed.admin_approved,
+        break_down: parsed.break_down,
+        status: parsed.status,
+        agents: Array.isArray(parsed.agents) ? parsed.agents : []
+      }
+      const mappedAgents = mapAgents(parsed.agents)
+      if (mappedAgents.length) {
+        agentDirectory.value = {
+          ...agentDirectory.value,
+          ...buildAgentDirectory(mappedAgents)
+        }
       }
     }
   } catch (err) {
@@ -465,22 +562,27 @@ const loadProjectContext = () => {
 const fetchProject = async () => {
   if (!jobId.value) return
 
+  if (cachedProject.value) {
+    project.value = cachedProject.value
+  }
+
+  if (isClientUser.value) {
+    return
+  }
+
   try {
     const response = await getJobById(jobId.value)
     if (response?.success && response.data) {
       const data = response.data as Record<string, any>
-      const skills: Skill[] =
-        typeof data.skills_needed === 'string'
-          ? data.skills_needed.split(',').map((skill: string) => skill.trim())
-          : (data.skills_needed as Skill[]) || []
+      const skills = parseSkillsList(data.skills_needed)
 
       project.value = {
         id: data.id,
         project_title: data.project_title || data.title || '',
-        description: data.description || '',
-        category: data.category || 'General',
-        budget: data.budget || 0,
-        requirement: data.requirement || '',
+        description: data.description || data.project_description || '',
+        category: data.category || data.project_category || 'General',
+        budget: typeof data.budget === 'number' ? data.budget : Number(data.budget ?? 0),
+        requirement: data.requirement || data.requirements || data.project_requirement || '',
         skills_needed: skills,
         timeline: data.timeline || { start_date: 0, deadline: 0 },
         date_created: data.date_created,
@@ -491,15 +593,12 @@ const fetchProject = async () => {
         agents: Array.isArray(data.agents) ? data.agents : []
       }
 
-      if (Array.isArray(project.value.agents)) {
-        const directory: Record<string, string> = {}
-        project.value.agents.forEach(agent => {
-          const id = String(agent?.id || agent?.agent_id || '')
-          if (id) {
-            directory[id] = agent?.name || agent?.full_name || agent?.display_name || id
-          }
-        })
-        agentDirectory.value = { ...agentDirectory.value, ...directory }
+      const mappedAgents = mapAgents(project.value.agents)
+      if (mappedAgents.length) {
+        agentDirectory.value = {
+          ...agentDirectory.value,
+          ...buildAgentDirectory(mappedAgents)
+        }
       }
     }
   } catch (err) {

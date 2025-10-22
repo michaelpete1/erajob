@@ -151,8 +151,12 @@ const getClientJobs = async (start: number = 0, stop: number = 10) => {
   try {
     const response = await jobsService.listClientCreatedJobs(start, stop);
     if (response.success && response.data) {
+      const activeUserId = localStorage.getItem('userId');
       const jobsArray = Array.isArray(response.data) ? response.data : [response.data];
-      jobState.value.jobs = jobsArray as unknown as EJJobOut[];
+      const filtered = activeUserId
+        ? jobsArray.filter(job => String((job as any)?.client_id ?? '') === activeUserId)
+        : jobsArray;
+      jobState.value.jobs = filtered as unknown as EJJobOut[];
     }
     return response;
   } catch (err) {

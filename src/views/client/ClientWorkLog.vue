@@ -247,6 +247,8 @@ interface DisplayLog {
   clientApproved: boolean
   rejectionReason?: string | null
   files: string[]
+  agentName: string
+  agentEmail?: string | null
 }
 
 const router = useRouter()
@@ -263,7 +265,7 @@ const successMessage = ref<string | null>(null)
 const actionLoadingId = ref<string | null>(null)
 
 const rawLogs = ref<WorkLogOut[]>([])
-const agentDirectory = ref<Record<string, string>>({})
+const agentDirectory = ref<Record<string, { name: string; email?: string }>>({})
 
 const normalizeTimestamp = (timestamp?: number | null): number => {
   if (!timestamp) return 0
@@ -275,7 +277,13 @@ const formatTimestamp = (timestamp?: number | null): string => {
   const ms = normalizeTimestamp(timestamp)
   const date = new Date(ms)
   if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleString()
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
 }
 
 const getInitials = (name: string): string => {
@@ -286,11 +294,27 @@ const getInitials = (name: string): string => {
 }
 
 const resolveAgentName = (agentId: string): string => {
-  return agentDirectory.value[agentId] || agentId || 'Assigned Agent'
+  const entry = agentDirectory.value[agentId]
+  return entry?.name || agentId || 'Assigned Agent'
+}
+
+const resolveAgentEmail = (agentId: string): string | undefined => {
+  return agentDirectory.value[agentId]?.email
+}
+
+const extractAgentEmail = (log: WorkLogOut): string | undefined => {
+  const direct = (log as any)?.agent_email || (log as any)?.email
+  if (direct) return direct
+  const nested = (log as any)?.agent || (log as any)?.agent_detail || (log as any)?.agent_profile || (log as any)?.agentInfo
+  if (nested && typeof nested === 'object') {
+    return nested.email || nested.contact_email || nested.user_email
+  }
+  return undefined
 }
 
 const normalizeLog = (log: WorkLogOut): DisplayLog => {
   const agentName = resolveAgentName(log.agent_id)
+  const agentEmail = resolveAgentEmail(log.agent_id) || extractAgentEmail(log)
   const clientApproved = Boolean(log.client_approved)
   const rejected = Boolean(log.rejection_reason)
 
@@ -318,7 +342,9 @@ const normalizeLog = (log: WorkLogOut): DisplayLog => {
     statusClasses,
     clientApproved,
     rejectionReason: log.rejection_reason,
-    files: attachments
+    files: attachments,
+    agentName,
+    agentEmail: agentEmail ?? null
   }
 }
 
@@ -420,11 +446,25 @@ const rejectLog = async (logId: string, reason: string) => {
 
 const goToLogDetail = (log: DisplayLog) => {
   try {
-    localStorage.setItem('selectedWorkLog', JSON.stringify(log))
+    const raw = rawLogs.value.find(entry => entry.id === log.id)
+    const payload = raw
+      ? {
+          ...raw,
+          agent_name: resolveAgentName(raw.agent_id),
+          agent_email:
+            raw.agent_email || resolveAgentEmail(raw.agent_id) || extractAgentEmail(raw) || log.agentEmail || null,
+          status_label: log.statusLabel
+        }
+      : {
+          ...log,
+          agent_name: log.agentName,
+          agent_email: log.agentEmail || null
+        }
+    localStorage.setItem('selectedWorkLog', JSON.stringify(payload))
   } catch (err) {
     console.warn('Unable to cache selected work log', err)
   }
-  router.push({ name: 'client-work-log-dashboard', params: { jobId: jobId.value } })
+  router.push({ name: 'client-work-log-dashboard', query: { view: currentView.value.toLowerCase() } })
 }
 
 const loadProjectContext = () => {
@@ -444,11 +484,14 @@ const loadProjectContext = () => {
       }
 
       if (Array.isArray(project?.agents)) {
-        const directory: Record<string, string> = {}
+        const directory: Record<string, { name: string; email?: string }> = {}
         project.agents.forEach((agent: any) => {
           const id = String(agent?.id || agent?.agent_id || '')
           if (id) {
-            directory[id] = agent?.name || agent?.full_name || id
+            directory[id] = {
+              name: agent?.name || agent?.full_name || agent?.display_name || agent?.username || id,
+              email: agent?.email || agent?.contact_email || agent?.user_email || agent?.agent_email || undefined
+            }
           }
         })
         agentDirectory.value = directory

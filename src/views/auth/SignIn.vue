@@ -152,6 +152,25 @@ const loginError = ref<string | null>(null)
 const router = useRouter()
 const loading = ref(false)
 
+const clearUserSessionContext = () => {
+  const keysToClear = [
+    'selectedClientProject',
+    'selectedProject',
+    'selectedJobContext',
+    'selectedWorkLog',
+    'selectedAgent',
+    'savedAppointments',
+    'userId'
+  ]
+  keysToClear.forEach(key => {
+    try {
+      localStorage.removeItem(key)
+    } catch (err) {
+      console.warn('SignIn: unable to clear key', key, err)
+    }
+  })
+}
+
 async function onSubmit() {
   loginError.value = null
   
@@ -208,8 +227,10 @@ async function onSubmit() {
     }
 
     if (response.success && response.user) {
+      clearUserSessionContext()
       const role = response.user.role
       localStorage.setItem('userRole', role)
+      localStorage.setItem('userId', response.user.id)
       if (role !== 'admin') {
         localStorage.removeItem('isAdmin')
       }
