@@ -1,6 +1,3 @@
-I'll help fix the template structure in ClientProfile.vue. The main issues are duplicate sections and mismatched tags. Here's the corrected version:
-
-```vue
 <template>
   <div class="min-h-screen bg-gray-50 font-sans antialiased text-gray-800">
     <!-- Header -->
@@ -54,14 +51,14 @@ I'll help fix the template structure in ClientProfile.vue. The main issues are d
                 <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="handleImageUpload">
               </button>
             </div>
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ user.name }}</h2>
-            <p class="text-gray-600 mt-1">{{ user.title }}</p>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ displayName }}</h2>
+            <p class="text-gray-600 mt-1">{{ userProfile.title || 'Client' }}</p>
             <p class="text-gray-500 text-sm mt-2 flex items-center">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
               </svg>
-              {{ user.location }}
+              {{ userProfile.location || 'Unknown location' }}
             </p>
           </div>
         </div>
@@ -73,23 +70,40 @@ I'll help fix the template structure in ClientProfile.vue. The main issues are d
     </main>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { usersService } from '../../services'
-import { api } from '@/services/apiService'
+import { usersService, apiService } from '../../services'
+import type { EJUserOut } from '@/types/api'
 
 const router = useRouter()
-const fileInput = ref(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 // User profile data
-const userProfile = ref({
+type ClientProfile = {
+  name: string
+  email: string
+  phone: string
+  location: string
+  bio: string
+  avatar: string | null
+  title?: string
+  stats: {
+    activeProjects: number
+    completedProjects: number
+    totalSpent: number
+    agentsHired: number
+  }
+}
+
+const userProfile = ref<ClientProfile>({
   name: '',
   email: '',
   phone: '',
   location: '',
   bio: '',
   avatar: null,
+  title: '',
   stats: {
     activeProjects: 0,
     completedProjects: 0,
@@ -140,17 +154,19 @@ const canSubmitReset = computed(() => {
 
 // Methods
 const triggerFileInput = () => {
-  fileInput.value.click()
+  fileInput.value?.click()
 }
 
-const handleImageUpload = (event) => {
-  const file = event.target.files[0]
+const handleImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement | null
+  const file = target?.files?.[0]
   if (file) {
     const reader = new FileReader()
     reader.onload = (e) => {
-      userProfile.value.avatar = e.target.result
-      // Save the updated avatar
-      localStorage.setItem('clientProfile', JSON.stringify(userProfile.value))
+      userProfile.value.avatar = typeof e.target?.result === 'string' ? e.target.result : null
+      if (userProfile.value.avatar) {
+        localStorage.setItem('clientProfile', JSON.stringify(userProfile.value))
+      }
     }
     reader.readAsDataURL(file)
   }
@@ -186,16 +202,15 @@ const requestResetToken = async () => {
 
   resetTokenLoading.value = true
   try {
-    const response = await api.client.sendResetToken(email)
-    if (!response.success || !response.data) {
+    const response = await apiService.forgotPassword({ email })
+    if (!response.success) {
       resetError.value = response.error || 'Unable to generate reset token. Please try again.'
       return
     }
 
-    resetToken.value = response.data.reset_token || ''
-    resetSuccess.value = 'Reset token generated. Check your email for details.'
-  } catch (error: any) {
-    resetError.value = error?.message || 'Unable to generate reset token. Please try again.'
+    resetSuccess.value = response.data?.message || 'Reset token generated. Check your email for details.'
+  } catch (error) {
+    resetError.value = error instanceof Error ? error.message : 'Unable to generate reset token. Please try again.'
   } finally {
     resetTokenLoading.value = false
   }
@@ -212,24 +227,21 @@ const submitPasswordReset = async () => {
 
   resetSubmitting.value = true
   try {
-    const payload = {
-      reset_token: resetToken.value.trim(),
-      otp: resetOtp.value.trim(),
+    const response = await apiService.resetPassword({
+      token: resetToken.value.trim(),
       new_password: newPassword.value
-    }
-
-    const response = await api.client.resetPassword(payload)
+    })
     if (!response.success) {
       resetError.value = response.error || 'Unable to reset password. Please verify the token and OTP.'
       return
     }
 
-    resetSuccess.value = 'Password updated successfully. You can now sign in with the new password.'
+    resetSuccess.value = response.data?.message || 'Password updated successfully. You can now sign in with the new password.'
     newPassword.value = ''
     confirmPassword.value = ''
     resetOtp.value = ''
-  } catch (error: any) {
-    resetError.value = error?.message || 'Unable to reset password. Please verify the token and OTP.'
+  } catch (error) {
+    resetError.value = error instanceof Error ? error.message : 'Unable to reset password. Please verify the token and OTP.'
   } finally {
     resetSubmitting.value = false
   }
@@ -244,19 +256,22 @@ onMounted(async () => {
     const result = await usersService.getCurrentUser()
 
     if (result.success && result.data) {
-      // Map API response to component structure
+      const rawData = result.data as EJUserOut & Record<string, unknown>
+      const stats = (rawData.stats as Partial<ClientProfile['stats']> | undefined) ?? {}
+
       userProfile.value = {
-        name: result.data.name || '',
-        email: result.data.email || '',
-        phone: result.data.phone || '',
-        location: result.data.location || '',
-        bio: result.data.bio || '',
-        avatar: result.data.avatar || null,
+        name: typeof rawData.full_name === 'string' ? rawData.full_name : typeof rawData.name === 'string' ? rawData.name : '',
+        email: typeof rawData.email === 'string' ? rawData.email : '',
+        phone: typeof rawData.phone === 'string' ? rawData.phone : '',
+        location: typeof rawData.location === 'string' ? rawData.location : '',
+        bio: typeof rawData.bio === 'string' ? rawData.bio : '',
+        avatar: typeof rawData.avatar === 'string' ? rawData.avatar : null,
+        title: typeof rawData.title === 'string' ? rawData.title : '',
         stats: {
-          activeProjects: result.data.stats?.activeProjects || 0,
-          completedProjects: result.data.stats?.completedProjects || 0,
-          totalSpent: result.data.stats?.totalSpent || 0,
-          agentsHired: result.data.stats?.agentsHired || 0
+          activeProjects: typeof stats.activeProjects === 'number' ? stats.activeProjects : 0,
+          completedProjects: typeof stats.completedProjects === 'number' ? stats.completedProjects : 0,
+          totalSpent: typeof stats.totalSpent === 'number' ? stats.totalSpent : 0,
+          agentsHired: typeof stats.agentsHired === 'number' ? stats.agentsHired : 0
         }
       }
 
@@ -273,9 +288,9 @@ onMounted(async () => {
       error.value = result.error || 'Failed to load profile'
       syncResetEmail()
     }
-  } catch (error) {
-    console.error('Error loading profile:', error)
-    error.value = 'Failed to load profile data'
+  } catch (caughtError) {
+    console.error('Error loading profile:', caughtError)
+    error.value = caughtError instanceof Error ? caughtError.message : 'Failed to load profile data'
 
     // Fallback to localStorage
     try {

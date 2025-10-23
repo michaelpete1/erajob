@@ -32,10 +32,7 @@ export interface ClientWelcomeData {
   urlLink: string
   primaryAreaOfExpertise: string
   timezone: string
-  openToCalls: string
-  hasWorkingComputer: string
-  hasStableInternet: string
-  comfortableWithTimeTracking: string
+  clientReason: string
   certificates: string[]
   personalityTest: string
 }
@@ -245,10 +242,7 @@ const updateClientProfile = async (userId: string, data: ClientWelcomeData): Pro
       portfolio_link: data.urlLink,
       primary_area_of_expertise: data.primaryAreaOfExpertise,
       time_zone: data.timezone,
-      is_agent_open_to_calls_and_video_meetings: data.openToCalls === 'yes',
-      does_agent_have_working_computer: data.hasWorkingComputer === 'yes',
-      does_agent_have_stable_internet: data.hasStableInternet === 'yes',
-      is_agent_comfortable_with_time_tracking_tools: data.comfortableWithTimeTracking === 'yes',
+      client_reason_for_signing_up: data.clientReason,
       certificate_url: data.certificates,
       personality_url: data.personalityTest,
     }

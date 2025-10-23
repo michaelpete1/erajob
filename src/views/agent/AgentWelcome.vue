@@ -81,18 +81,80 @@
         </div>
 
         <div class="animate-slide-in-left">
-          <select v-model.number="form.hoursPerWeek" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option :value="undefined" disabled selected>How many hours can you commit per week</option>
-            <option :value="80">80</option>
-            <option :value="160">160</option>
-          </select>
+          <button type="button" class="modal-trigger" @click="openHoursModal">
+            <div class="modal-trigger__label">
+              <span class="modal-trigger__tag">Weekly Availability</span>
+              <span class="modal-trigger__value">{{ hoursLabel }}</span>
+            </div>
+            <span class="modal-trigger__icon" aria-hidden="true">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </button>
         </div>
         <div class="animate-slide-in-right">
-          <select v-model="form.timezone" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option value="" disabled selected>Time Zone / Location</option>
-            <option v-for="tz in timezoneOptions" :key="tz.value" :value="tz.value">{{ tz.label }}</option>
-          </select>
+          <button type="button" class="modal-trigger" @click="openTimezoneModal">
+            <div class="modal-trigger__label">
+              <span class="modal-trigger__tag">Time Zone · Location</span>
+              <span class="modal-trigger__value">{{ timezoneLabel }}</span>
+            </div>
+            <span class="modal-trigger__icon" aria-hidden="true">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </button>
         </div>
+        <teleport to="body">
+          <transition name="fade">
+            <div v-if="showTimezoneModal" class="timezone-modal" @click.self="closeTimezoneModal">
+              <div class="timezone-modal__panel">
+                <header class="timezone-modal__header">
+                  <div>
+                    <h3 class="timezone-modal__title">Select your time zone</h3>
+                    <p class="timezone-modal__subtitle">Choose the city or offset that best matches your working hours.</p>
+                  </div>
+                  <button type="button" class="timezone-modal__close" @click="closeTimezoneModal" aria-label="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </header>
+                <div class="timezone-modal__search">
+                  <svg class="w-5 h-5 text-brand-teal/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7 7 0 1010.65 7a7 7 0 006 9.65z" />
+                  </svg>
+                  <input
+                    v-model="timezoneQuery"
+                    type="text"
+                    class="timezone-modal__input"
+                    placeholder="Search city, country, or UTC offset"
+                  />
+                </div>
+                <div class="timezone-modal__list">
+                  <button
+                    v-for="option in filteredTimezones"
+                    :key="option.value"
+                    type="button"
+                    class="timezone-option"
+                    :class="{ 'timezone-option--active': form.timezone === option.value }"
+                    @click="selectTimezone(option)"
+                  >
+                    <div class="timezone-option__label">
+                      <span class="timezone-option__primary">{{ option.label }}</span>
+                      <span class="timezone-option__secondary">{{ option.meta }}</span>
+                    </div>
+                    <div class="timezone-option__offset">{{ option.value }}</div>
+                  </button>
+                  <div v-if="!filteredTimezones.length" class="timezone-modal__empty">
+                    No matches found. Try a different city or offset.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </teleport>
         <div class="animate-slide-in-left">
           <div class="relative" ref="projectsRef" style="z-index: 100;">
             <div
@@ -161,34 +223,223 @@
             </teleport>
           </div>
         </div>
-        <div class="animate-slide-in-right">
-          <select v-model="form.openToCalls" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option :value="undefined" disabled selected>Are you open to calls or video meetings?</option>
-            <option :value="true">Yes, I am comfortable with calls</option>
-            <option :value="false">No, I prefer asynchronous communication</option>
-          </select>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="animate-slide-in-right">
+            <button type="button" class="modal-trigger" @click="openCallsModal">
+              <div class="modal-trigger__label">
+                <span class="modal-trigger__tag">Communication</span>
+                <span class="modal-trigger__value">{{ callsLabel }}</span>
+              </div>
+              <span class="modal-trigger__icon" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </button>
+          </div>
+          <div class="animate-slide-in-left">
+            <button type="button" class="modal-trigger" @click="openComputerModal">
+              <div class="modal-trigger__label">
+                <span class="modal-trigger__tag">Device Access</span>
+                <span class="modal-trigger__value">{{ computerLabel }}</span>
+              </div>
+              <span class="modal-trigger__icon" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </button>
+          </div>
+          <div class="animate-slide-in-right">
+            <button type="button" class="modal-trigger" @click="openInternetModal">
+              <div class="modal-trigger__label">
+                <span class="modal-trigger__tag">Internet Reliability</span>
+                <span class="modal-trigger__value">{{ internetLabel }}</span>
+              </div>
+              <span class="modal-trigger__icon" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </button>
+          </div>
+          <div class="animate-slide-in-left">
+            <button type="button" class="modal-trigger" @click="openTrackingModal">
+              <div class="modal-trigger__label">
+                <span class="modal-trigger__tag">Tracking Tools</span>
+                <span class="modal-trigger__value">{{ trackingLabel }}</span>
+              </div>
+              <span class="modal-trigger__icon" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </button>
+          </div>
         </div>
-        <div class="animate-slide-in-left">
-          <select v-model="form.hasComputer" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option :value="undefined" disabled selected>Do you have a working computer/laptop?</option>
-            <option :value="true">Yes, I have a working computer/laptop</option>
-            <option :value="false">No, I don't have a working computer/laptop</option>
-          </select>
-        </div>
-        <div class="animate-slide-in-right">
-          <select v-model="form.hasInternet" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option :value="undefined" disabled selected>Do you have access to stable internet?</option>
-            <option :value="true">Yes, I have stable internet access</option>
-            <option :value="false">No, I don't have stable internet access</option>
-          </select>
-        </div>
-        <div class="animate-slide-in-left">
-          <select v-model="form.comfortableWithTracking" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all bg-white">
-            <option :value="undefined" disabled selected>Are you comfortable using time-tracking tools?</option>
-            <option :value="true">Yes, I am comfortable with time-tracking</option>
-            <option :value="false">No, I am not comfortable with time-tracking</option>
-          </select>
-        </div>
+        <teleport to="body">
+          <transition name="fade">
+            <div v-if="showHoursModal" class="modal-shell" @click.self="closeHoursModal">
+              <div class="modal-card">
+                <header class="modal-card__header">
+                  <div>
+                    <h3>Pick your weekly commitment</h3>
+                    <p>Select the hours you can consistently dedicate to client projects.</p>
+                  </div>
+                  <button type="button" class="modal-card__close" @click="closeHoursModal" aria-label="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </header>
+                <div class="modal-card__body grid sm:grid-cols-2 gap-2">
+                  <button
+                    v-for="option in hoursOptions"
+                    :key="option"
+                    type="button"
+                    class="choice-tile"
+                    :class="{ 'choice-tile--active': form.hoursPerWeek === option }"
+                    @click="selectHours(option)"
+                  >
+                    <span class="choice-tile__title">{{ option }} hrs / week</span>
+                    <span class="choice-tile__subtitle">Ideal for {{ Math.round(option / 20) }} client projects.</span>
+                  </button>
+                  <button type="button" class="choice-tile choice-tile--ghost sm:col-span-2" @click="clearHours">
+                    Clear availability
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </teleport>
+        <teleport to="body">
+          <transition name="fade">
+            <div v-if="showCallsModal" class="modal-shell" @click.self="closeCallsModal">
+              <div class="modal-card">
+                <header class="modal-card__header">
+                  <div>
+                    <h3>Communication preference</h3>
+                    <p>Let clients know how you prefer to connect for updates.</p>
+                  </div>
+                  <button type="button" class="modal-card__close" @click="closeCallsModal" aria-label="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </header>
+                <div class="modal-card__body">
+                  <button
+                    v-for="option in communicationOptions"
+                    :key="`calls-${option.value}`"
+                    type="button"
+                    class="choice-tile"
+                    :class="{ 'choice-tile--active': form.openToCalls === option.value }"
+                    @click="selectCalls(option.value)"
+                  >
+                    <span class="choice-tile__title">{{ option.title }}</span>
+                    <span class="choice-tile__subtitle">{{ option.description }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </teleport>
+        <teleport to="body">
+          <transition name="fade">
+            <div v-if="showComputerModal" class="modal-shell" @click.self="closeComputerModal">
+              <div class="modal-card">
+                <header class="modal-card__header">
+                  <div>
+                    <h3>Computer availability</h3>
+                    <p>Confirm whether you have access to a dependable work device.</p>
+                  </div>
+                  <button type="button" class="modal-card__close" @click="closeComputerModal" aria-label="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </header>
+                <div class="modal-card__body">
+                  <button
+                    v-for="option in computerOptions"
+                    :key="`computer-${option.value}`"
+                    type="button"
+                    class="choice-tile"
+                    :class="{ 'choice-tile--active': form.hasComputer === option.value }"
+                    @click="selectComputer(option.value)"
+                  >
+                    <span class="choice-tile__title">{{ option.title }}</span>
+                    <span class="choice-tile__subtitle">{{ option.description }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </teleport>
+        <teleport to="body">
+          <transition name="fade">
+            <div v-if="showInternetModal" class="modal-shell" @click.self="closeInternetModal">
+              <div class="modal-card">
+                <header class="modal-card__header">
+                  <div>
+                    <h3>Internet reliability</h3>
+                    <p>Share the stability level of your connection for remote work.</p>
+                  </div>
+                  <button type="button" class="modal-card__close" @click="closeInternetModal" aria-label="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </header>
+                <div class="modal-card__body">
+                  <button
+                    v-for="option in internetOptions"
+                    :key="`internet-${option.value}`"
+                    type="button"
+                    class="choice-tile"
+                    :class="{ 'choice-tile--active': form.hasInternet === option.value }"
+                    @click="selectInternet(option.value)"
+                  >
+                    <span class="choice-tile__title">{{ option.title }}</span>
+                    <span class="choice-tile__subtitle">{{ option.description }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </teleport>
+        <teleport to="body">
+          <transition name="fade">
+            <div v-if="showTrackingModal" class="modal-shell" @click.self="closeTrackingModal">
+              <div class="modal-card">
+                <header class="modal-card__header">
+                  <div>
+                    <h3>Time-tracking preference</h3>
+                    <p>Let clients know if you’re comfortable using activity trackers.</p>
+                  </div>
+                  <button type="button" class="modal-card__close" @click="closeTrackingModal" aria-label="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </header>
+                <div class="modal-card__body">
+                  <button
+                    v-for="option in trackingOptions"
+                    :key="`tracking-${option.value}`"
+                    type="button"
+                    class="choice-tile"
+                    :class="{ 'choice-tile--active': form.comfortableWithTracking === option.value }"
+                    @click="selectTracking(option.value)"
+                  >
+                    <span class="choice-tile__title">{{ option.title }}</span>
+                    <span class="choice-tile__subtitle">{{ option.description }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </teleport>
         <div class="animate-slide-in-right">
           <input v-model="form.videoUrl" type="url" placeholder="Submit your 1min video (URL)" class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
@@ -240,15 +491,21 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, nextTick, onMounted, watch } from 'vue'
+import { reactive, ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import authService, { type AgentWelcomeData } from '../../services/authService'
-import type { SignupData } from '../../types/api/auth'
+import { useTimezones } from '../../composables/useTimezones'
 
 const router = useRouter()
 const isSubmitting = ref(false)
 const showProjectsDropdown = ref(false)
 const projectsRef = ref<HTMLElement | null>(null)
+const showTimezoneModal = ref(false)
+const showHoursModal = ref(false)
+const showCallsModal = ref(false)
+const showComputerModal = ref(false)
+const showInternetModal = ref(false)
+const showTrackingModal = ref(false)
+const timezoneQuery = ref('')
 
 const form = reactive({
   primaryExpertise: '',
@@ -300,47 +557,186 @@ const toolsOptions = [
   'Figma','Adobe Photoshop','Illustrator','VS Code','GitHub','Jira','Notion','Excel','Canva','Python','React','Node.js'
 ]
 
-const timezoneOptions = [
-  { label: 'UTC-12:00', value: 'UTC-12:00' },
-  { label: 'UTC-11:00', value: 'UTC-11:00' },
-  { label: 'UTC-10:00', value: 'UTC-10:00' },
-  { label: 'UTC-09:30', value: 'UTC-09:30' },
-  { label: 'UTC-09:00', value: 'UTC-09:00' },
-  { label: 'UTC-08:00', value: 'UTC-08:00' },
-  { label: 'UTC-07:00', value: 'UTC-07:00' },
-  { label: 'UTC-06:00', value: 'UTC-06:00' },
-  { label: 'UTC-05:00', value: 'UTC-05:00' },
-  { label: 'UTC-04:30', value: 'UTC-04:30' },
-  { label: 'UTC-04:00', value: 'UTC-04:00' },
-  { label: 'UTC-03:30', value: 'UTC-03:30' },
-  { label: 'UTC-03:00', value: 'UTC-03:00' },
-  { label: 'UTC-02:00', value: 'UTC-02:00' },
-  { label: 'UTC-01:00', value: 'UTC-01:00' },
-  { label: 'UTC+00:00', value: 'UTC+00:00' },
-  { label: 'UTC+01:00', value: 'UTC+01:00' },
-  { label: 'UTC+02:00', value: 'UTC+02:00' },
-  { label: 'UTC+03:00', value: 'UTC+03:00' },
-  { label: 'UTC+03:30', value: 'UTC+03:30' },
-  { label: 'UTC+04:00', value: 'UTC+04:00' },
-  { label: 'UTC+05:00', value: 'UTC+05:00' },
-  { label: 'UTC+05:30', value: 'UTC+05:30' },
-  { label: 'UTC+05:45', value: 'UTC+05:45' },
-  { label: 'UTC+06:00', value: 'UTC+06:00' },
-  { label: 'UTC+06:30', value: 'UTC+06:30' },
-  { label: 'UTC+07:00', value: 'UTC+07:00' },
-  { label: 'UTC+08:00', value: 'UTC+08:00' },
-  { label: 'UTC+08:45', value: 'UTC+08:45' },
-  { label: 'UTC+09:00', value: 'UTC+09:00' },
-  { label: 'UTC+09:30', value: 'UTC+09:30' },
-  { label: 'UTC+10:00', value: 'UTC+10:00' },
-  { label: 'UTC+10:30', value: 'UTC+10:30' },
-  { label: 'UTC+11:00', value: 'UTC+11:00' },
-  { label: 'UTC+11:30', value: 'UTC+11:30' },
-  { label: 'UTC+12:00', value: 'UTC+12:00' },
-  { label: 'UTC+12:45', value: 'UTC+12:45' },
-  { label: 'UTC+13:00', value: 'UTC+13:00' },
-  { label: 'UTC+14:00', value: 'UTC+14:00' },
+const timezoneOptions = useTimezones()
+
+const hoursOptions = [80, 120]
+
+type BooleanChoice = { value: boolean; title: string; description: string }
+
+const communicationOptions: BooleanChoice[] = [
+  { value: true, title: 'Yes', description: 'I am available for voice or video calls.' },
+  { value: false, title: 'No', description: 'I prefer asynchronous updates only.' }
 ]
+
+const computerOptions: BooleanChoice[] = [
+  { value: true, title: 'Yes', description: 'I have a reliable computer or laptop.' },
+  { value: false, title: 'No', description: 'I do not have reliable computer access.' }
+]
+
+const internetOptions: BooleanChoice[] = [
+  { value: true, title: 'Yes', description: 'My internet connection is stable.' },
+  { value: false, title: 'No', description: 'My internet connection is not stable.' }
+]
+
+const trackingOptions: BooleanChoice[] = [
+  { value: true, title: 'Yes', description: 'I am okay using time-tracking tools.' },
+  { value: false, title: 'No', description: 'I am not okay using time-tracking tools.' }
+]
+
+const timezoneLabel = computed(() => {
+  if (!form.timezone) return 'Tap to choose your time zone'
+  const match = timezoneOptions.find(option => option.value === form.timezone)
+  return match ? `${match.label}` : form.timezone
+})
+
+const hoursLabel = computed(() => {
+  if (typeof form.hoursPerWeek === 'number') return `${form.hoursPerWeek} hours per week`
+  return 'Tap to set weekly commitment'
+})
+
+const callsLabel = computed<string>(() => {
+  if (form.openToCalls === true) return 'Open to video / voice meetings'
+  if (form.openToCalls === false) return 'Prefer async updates only'
+  return 'Tap to choose communication preference'
+})
+
+const computerLabel = computed<string>(() => {
+  if (form.hasComputer === true) return 'Have daily access to a work-ready computer'
+  if (form.hasComputer === false) return 'No reliable computer available'
+  return 'Tap to confirm computer availability'
+})
+
+const internetLabel = computed<string>(() => {
+  if (form.hasInternet === true) return 'Stable high-speed internet connection'
+  if (form.hasInternet === false) return 'Internet may be unstable or limited'
+  return 'Tap to describe internet reliability'
+})
+
+const trackingLabel = computed<string>(() => {
+  if (form.comfortableWithTracking === true) return 'Comfortable using time-tracking tools'
+  if (form.comfortableWithTracking === false) return 'Prefer working without tracking tools'
+  return 'Tap to share tracking preference'
+})
+
+const filteredTimezones = computed(() => {
+  const query = timezoneQuery.value.trim().toLowerCase()
+  if (!query) {
+    return timezoneOptions.map(option => ({
+      value: option.value,
+      label: option.label.split('•')[0]?.trim() ?? option.label,
+      meta: option.label.split('•')[1]?.trim() ?? ''
+    }))
+  }
+  return timezoneOptions
+    .filter(option => option.searchText.includes(query))
+    .map(option => ({
+      value: option.value,
+      label: option.label.split('•')[0]?.trim() ?? option.label,
+      meta: option.label.split('•')[1]?.trim() ?? ''
+    }))
+})
+
+const openTimezoneModal = () => {
+  timezoneQuery.value = ''
+  showTimezoneModal.value = true
+}
+
+const closeTimezoneModal = () => {
+  showTimezoneModal.value = false
+}
+
+const selectTimezone = (option: { value: string }) => {
+  form.timezone = option.value
+  closeTimezoneModal()
+}
+
+const openHoursModal = () => {
+  showHoursModal.value = true
+}
+
+const closeHoursModal = () => {
+  showHoursModal.value = false
+}
+
+const selectHours = (hours: number) => {
+  form.hoursPerWeek = hours
+  closeHoursModal()
+}
+
+const clearHours = () => {
+  form.hoursPerWeek = undefined
+  closeHoursModal()
+}
+
+const openCallsModal = () => {
+  showCallsModal.value = true
+}
+
+const closeCallsModal = () => {
+  showCallsModal.value = false
+}
+
+const selectCalls = (value: boolean) => {
+  form.openToCalls = value
+  closeCallsModal()
+}
+
+const openComputerModal = () => {
+  showComputerModal.value = true
+}
+
+const closeComputerModal = () => {
+  showComputerModal.value = false
+}
+
+const selectComputer = (value: boolean) => {
+  form.hasComputer = value
+  closeComputerModal()
+}
+
+const openInternetModal = () => {
+  showInternetModal.value = true
+}
+
+const closeInternetModal = () => {
+  showInternetModal.value = false
+}
+
+const selectInternet = (value: boolean) => {
+  form.hasInternet = value
+  closeInternetModal()
+}
+
+const openTrackingModal = () => {
+  showTrackingModal.value = true
+}
+
+const closeTrackingModal = () => {
+  showTrackingModal.value = false
+}
+
+const selectTracking = (value: boolean) => {
+  form.comfortableWithTracking = value
+  closeTrackingModal()
+}
+
+const handleEscape = (event: KeyboardEvent) => {
+  if (event.key !== 'Escape') return
+  closeTimezoneModal()
+  closeHoursModal()
+  closeCallsModal()
+  closeComputerModal()
+  closeInternetModal()
+  closeTrackingModal()
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleEscape)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscape)
+})
 
 const handleCertificationsUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -454,3 +850,217 @@ const onSubmit = async () => {
 }
 
 </script>
+
+<style scoped>
+.timezone-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.timezone-modal__panel,
+.modal-card {
+  width: 100%;
+  max-width: 36rem;
+  border-radius: 1.75rem;
+  background: #ffffff;
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  box-shadow: 0 30px 70px rgba(15, 118, 110, 0.24);
+  overflow: hidden;
+}
+
+.timezone-modal__header,
+.modal-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 1), rgba(20, 184, 166, 1));
+  color: #ffffff;
+}
+
+.timezone-modal__title,
+.modal-card__header h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.timezone-modal__subtitle,
+.modal-card__header p {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: rgba(236, 253, 245, 0.85);
+}
+
+.timezone-modal__close,
+.modal-card__close {
+  display: inline-flex;
+  padding: 0.35rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.timezone-modal__close:hover,
+.timezone-modal__close:focus-visible,
+.modal-card__close:hover,
+.modal-card__close:focus-visible {
+  background: rgba(255, 255, 255, 0.25);
+  outline: none;
+}
+
+.timezone-modal__search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.08);
+}
+
+.timezone-modal__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.timezone-modal__input:focus {
+  outline: none;
+}
+
+.timezone-modal__list,
+.modal-card__body {
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.timezone-option,
+.choice-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(13, 148, 136, 0.15);
+  background: #ffffff;
+  text-align: left;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(13, 148, 136, 0.08);
+}
+
+.timezone-option:hover,
+.choice-tile:hover {
+  border-color: rgba(13, 148, 136, 0.4);
+  background: rgba(13, 148, 136, 0.08);
+  box-shadow: 0 12px 20px rgba(13, 148, 136, 0.12);
+}
+
+.timezone-option--active,
+.choice-tile--active {
+  border-color: rgba(13, 148, 136, 0.9);
+  background: rgba(13, 148, 136, 0.12);
+  box-shadow: 0 14px 26px rgba(13, 148, 136, 0.18);
+}
+
+.choice-tile--ghost {
+  border-style: dashed;
+  border-color: rgba(15, 23, 42, 0.15);
+  background: rgba(241, 245, 249, 0.6);
+  text-align: center;
+  font-weight: 600;
+}
+
+.timezone-option__label,
+.modal-trigger__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timezone-option__primary,
+.choice-tile__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.timezone-option__secondary,
+.choice-tile__subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.timezone-option__offset {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0f766e;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.modal-trigger__tag {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(13, 148, 136, 0.75);
+}
+
+.modal-trigger__value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.modal-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 640px) {
+  .timezone-modal,
+  .modal-shell {
+    padding: 0 0.5rem;
+  }
+
+  .timezone-modal__panel,
+  .modal-card {
+    border-radius: 1.25rem;
+    max-height: 92vh;
+  }
+
+  .timezone-option,
+  .choice-tile {
+    padding: 0.75rem 0.85rem;
+    border-radius: 1rem;
+  }
+}
+</style>

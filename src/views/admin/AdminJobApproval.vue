@@ -191,7 +191,7 @@ const rejectingJobs = ref<Set<string>>(new Set());
 const APPROVED_STATUS_LABEL = 'Approved';
 const PENDING_STATUS_LABEL = 'Pending';
 
-const parseAdminApproved = (value: AdminJob['admin_approved']): boolean | null => {
+const parseAdminApproved = (value: unknown): boolean | null => {
     if (value === null || typeof value === 'undefined') return null;
     if (typeof value === 'boolean') return value;
     if (typeof value === 'string') {

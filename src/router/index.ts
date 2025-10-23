@@ -38,12 +38,6 @@ const routes: RouteRecordRaw[] = [
   // Agent flow
   { path: '/agent/welcome', name: 'agent-welcome', component: () => import('../views/agent/AgentWelcome.vue') },
   {
-    path: '/agent/congrats',
-    name: 'agent-congratulations',
-    component: () => import('../views/agent/AgentCongrats.vue'),
-    meta: { requiresAuth: true, role: 'agent' }
-  },
-  {
     path: '/client-dashboard',
     name: 'client-dashboard',
     component: () => import('../views/client/ClientDashboard.vue'),
@@ -110,7 +104,13 @@ router.beforeEach(async (to, _from, next) => {
   const role = localStorage.getItem('userRole') || ''
 
   const hasSignupData = !!localStorage.getItem('signupBasicData')
-  const signupPages = ['/client/welcome', '/client/congrats', '/agent/welcome', '/agent/congrats', '/agent/welcome-back']
+  const signupPages = [
+    '/client/welcome',
+    '/client/congrats',
+    '/agent/welcome',
+    '/agent/congrats',
+    '/agent/welcome-back'
+  ]
   if (!token && hasSignupData && signupPages.includes(to.path)) {
     next()
     return
