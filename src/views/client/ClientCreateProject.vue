@@ -57,13 +57,13 @@
             class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
           >
             <option value="" disabled>Select a category</option>
-            <option value="Web Development">Web Development</option>
-            <option value="Mobile Development">Mobile Development</option>
-            <option value="UI/UX Design">UI/UX Design</option>
-            <option value="Content Writing">Content Writing</option>
-            <option value="Digital Marketing">Digital Marketing</option>
-            <option value="Data Analysis">Data Analysis</option>
-            <option value="Other">Other</option>
+            <option
+              v-for="option in categoryOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
           </select>
         </div>
 
@@ -162,7 +162,7 @@
               :key="index"
               class="inline-flex items-center bg-green-100 text-green-800 text-xs sm:text-sm px-2.5 py-1 rounded-full"
             >
-              {{ skill }}
+              {{ getOptionLabel(skill) }}
               <button
                 @click="removeSkill(index)"
                 type="button"
@@ -181,8 +181,12 @@
               class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
             >
               <option value="" disabled>Select a skill</option>
-              <option v-for="option in skillOptions" :key="option" :value="option">
-                {{ option }}
+              <option
+                v-for="option in skillOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
               </option>
             </select>
             <button
@@ -243,6 +247,25 @@ const TITLE_MAX_LENGTH = 120;
 const DESCRIPTION_MAX_LENGTH = 2000;
 const selectedSkill = ref<JobsBase['skills_needed'] | ''>('');
 
+const categoryOptions: Array<{ value: JobsBase['category']; label: string }> = [
+  { value: 'Web Devlopment', label: 'Web Development' },
+  { value: 'Mobile Development', label: 'Mobile Development' },
+  { value: 'Sales', label: 'Sales' },
+  { value: 'Customer Service', label: 'Customer Service' },
+  { value: 'Editing', label: 'Editing' },
+  { value: 'Book Keeping', label: 'Book Keeping' },
+  { value: 'Executive Assitant', label: 'Executive Assistant' },
+  { value: 'Appointment Setting', label: 'Appointment Setting' },
+  { value: 'Digital Marketing', label: 'Digital Marketing' },
+  { value: 'Data Analysis', label: 'Data Analysis' },
+  { value: 'Other', label: 'Other' }
+];
+
+const skillOptions: Array<{ value: JobsBase['skills_needed']; label: string }> = categoryOptions.map(option => ({
+  value: option.value,
+  label: option.label
+}));
+
 const formData = ref<FormData>({
   requirements: [{ text: '' }],
   skills: [],
@@ -250,38 +273,18 @@ const formData = ref<FormData>({
   deadline: ''
 });
 
-const skillOptions: JobsBase['skills_needed'][] = [
-  'Web Development',
-  'Mobile Development',
-  'UI/UX Design',
-  'Content Writing',
-  'Digital Marketing',
-  'Data Analysis',
-  'Other'
-];
-
-const apiEnumMap: Record<JobsBase['category'], JobsBase['category']> = {
-  'Web Development': 'Web Devlopment',
-  'Web Devlopment': 'Web Devlopment',
-  'Mobile Development': 'Mobile Development',
-  'UI/UX Design': 'UI/UX Design',
-  'Content Writing': 'Content Writing',
-  'Digital Marketing': 'Digital Marketing',
-  'Data Analysis': 'Data Analysis',
-  'Other': 'Other'
-};
-
-const mapToApiEnum = (value: JobsBase['category']): JobsBase['category'] => {
-  return apiEnumMap[value] ?? 'Other';
+const getOptionLabel = (value: JobsBase['category'] | JobsBase['skills_needed']) => {
+  const match = categoryOptions.find(option => option.value === value);
+  return match?.label ?? value;
 };
 
 const project = ref<JobsBase>({
   project_title: '',
-  category: 'Other' as JobsBase['category'],
+  category: 'Other',
   budget: 0,
   description: '',
   requirement: '',
-  skills_needed: 'Other' as JobsBase['skills_needed'],
+  skills_needed: 'Other',
   timeline: {
     start_date: 0,
     deadline: 0
@@ -368,11 +371,11 @@ const submitProject = async () => {
     // Transform to JobPostData format
     const jobPayload: JobsBase = {
       project_title: project.value.project_title.trim(),
-      category: mapToApiEnum(project.value.category as JobsBase['category']),
+      category: project.value.category,
       budget: project.value.budget,
       description: project.value.description.trim(),
       requirement: project.value.requirement,
-      skills_needed: mapToApiEnum(project.value.skills_needed as JobsBase['category']) as JobsBase['skills_needed'],
+      skills_needed: project.value.skills_needed,
       timeline: {
         start_date: project.value.timeline.start_date,
         deadline: project.value.timeline.deadline

@@ -143,9 +143,9 @@ onBeforeRouteLeave((_to, _from, next) => {
           <p>If you pass the selection process, you'll go through our free onboarding and training program.</p>
           <ul class="list-disc pl-5 space-y-1">
             <li>Structured learning to prepare you for real projects.</li>
-            <li>Equip you with the tools and knowledge to succeed as an ERA agent.</li>
+            <li>Equip you with the tools and knowledge to succeed as an EBA agent.</li>
             <li>Completely free, no fees required.</li>
-            <li>Once you pass the training, you'll be eligible to receive jobs as an ERA agent.</li>
+            <li>Once you pass the training, you'll be eligible to receive jobs as an EBA agent.</li>
           </ul>
           <p>We look forward to working with you!</p>
         </div>

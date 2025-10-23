@@ -531,30 +531,34 @@ const certificationsInput = ref<HTMLInputElement | null>(null)
 const personalityTestInput = ref<HTMLInputElement | null>(null)
 
 const projectOptions = [
-  'Software Development', 'Web Development', 'Mobile App Development', 'Data Science & Analytics',
-  'Artificial Intelligence & Machine Learning', 'Cloud Computing & DevOps', 'Cybersecurity',
-  'Digital Marketing', 'Project Management', 'UI/UX Design', 'Graphic Design',
-  'Content Writing & Copywriting', 'Business Consulting', 'Financial Services',
-  'Human Resources', 'Customer Service', 'Sales & Business Development',
-  'Accounting & Finance', 'Legal Services', 'Healthcare & Medical Services',
-  'Education & Training', 'Real Estate', 'Construction & Engineering',
-  'Manufacturing & Operations', 'Logistics & Supply Chain', 'Other'
+  'Sales',
+  'Customer Service',
+  'Editing',
+  'Book Keeping',
+  'Executive Assitant',
+  'Appointment Setting'
 ]
 
 const expertiseOptions = [
-  'Web Devlopment',
-  'Mobile Development',
-  'UI/UX Design',
-  'Content Writing',
-  'Digital Marketing',
-  'Data Analysis',
+  'Sales',
+  'Customer Service',
+  'Editing',
+  'Book Keeping',
+  'Executive Assitant',
+  'Appointment Setting',
   'Other'
 ]
 
 const yearsOptions = [0,1,2,3,5,7,10,15]
 
 const toolsOptions = [
-  'Figma','Adobe Photoshop','Illustrator','VS Code','GitHub','Jira','Notion','Excel','Canva','Python','React','Node.js'
+  'GHL: Dispute Fox',
+  'Ring Centr',
+  'Vonage',
+  'Go To Connect',
+  'Excel',
+  'Google Chrome',
+  'Google Drive'
 ]
 
 const timezoneOptions = useTimezones()

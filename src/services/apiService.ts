@@ -494,7 +494,7 @@ class ApiService {
 
   async deleteJob(jobId: string): Promise<ServiceResponse<null>> {
     try {
-      const response = await apiClient.delete<EJApiResponse<null>>(`/v1/jobss/${jobId}`)
+      const response = await apiClient.delete<EJApiResponse<null>>(`/v1/jobs/${jobId}`)
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to delete job' }

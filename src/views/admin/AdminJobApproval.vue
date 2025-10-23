@@ -209,13 +209,11 @@ const parseAdminApproved = (value: unknown): boolean | null => {
 
 const normaliseJob = (job: AdminJob): AdminJob => {
     const isApproved = parseAdminApproved(job.admin_approved);
-    const derivedStatus = job.status ?? (
-        isApproved === true
-            ? APPROVED_STATUS_LABEL
-            : isApproved === false
-                ? 'rejected'
-                : PENDING_STATUS_LABEL
-    );
+    const derivedStatus = isApproved === true
+        ? APPROVED_STATUS_LABEL
+        : isApproved === false
+            ? 'Rejected'
+            : job.status ?? PENDING_STATUS_LABEL;
 
     return {
         ...job,
@@ -231,7 +229,9 @@ const fetchJobs = async () => {
     try {
         const response = await api.jobs.listAdminJobs(0, 50);
         if (response.success && response.data) {
-            allJobs.value = response.data.map(job => normaliseJob(job as AdminJob));
+            allJobs.value = response.data
+                .map(job => normaliseJob(job as AdminJob))
+                .filter(job => job.status !== 'Rejected');
         } else {
             error.value = response.error || 'Failed to fetch jobs';
         }
@@ -246,7 +246,7 @@ const filteredJobs = computed<AdminJob[]>(() => {
     if (currentTab.value === 'Approved') {
         return allJobs.value.filter(job => job.admin_approved === true);
     }
-    return allJobs.value.filter(job => job.admin_approved === null);
+    return allJobs.value.filter(job => job.admin_approved !== true && job.status !== 'Rejected');
 });
 
 // Admin action functions
@@ -308,7 +308,6 @@ const rejectJob = async (job: AdminJob) => {
 
         alert('Job rejected successfully');
         allJobs.value = allJobs.value.filter(existingJob => String(existingJob.id) !== jobIdStr);
-        await fetchJobs();
     } catch (error: any) {
         console.error('Error rejecting job:', error);
         alert(error?.message || 'Failed to reject job.');

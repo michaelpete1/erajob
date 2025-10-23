@@ -44,7 +44,7 @@
             
             <!-- Call to action -->
             <p class="text-sm sm:text-base lg:text-base font-medium leading-relaxed">
-              Start your journey as an ERA agent today!
+              Start your journey as an EBA agent today!
             </p>
           </div>
   

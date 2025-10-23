@@ -223,7 +223,7 @@
         <!-- File inputs and rest unchanged -->
         <div class="rounded-lg border border-brand-teal/50 bg-brand-teal/5 p-3 text-xs text-gray-700 animate-fade-up-delay-3">
           <strong class="text-brand-teal text-sm">Background Check Consent:</strong>
-          <p class="mt-1">By proceeding, you consent to ERA's onboarding process, including a background check as required for financial capability and project management positions.</p>
+          <p class="mt-1">By proceeding, you consent to EBA's onboarding process, including a background check as required for financial capability and project management positions.</p>
         </div>
 
         <div class="space-y-3 pt-4 animate-fade-up-delay-4">
@@ -270,7 +270,13 @@ const form = reactive({
 })
 
 const expertiseOptions = [
-        'Web Devlopment', 'Mobile Development', 'UI/UX Design', 'Content Writing', 'Digital Marketing', 'Data Analysis', 'Other'
+  'Sales',
+  'Customer Service',
+  'Editing',
+  'Book Keeping',
+  'Executive Assitant',
+  'Appointment Setting',
+  'Other'
 ]
 
 const timezoneOptions = useTimezones()

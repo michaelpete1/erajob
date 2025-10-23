@@ -164,7 +164,7 @@ onBeforeRouteLeave((_to, _from, next) => {
       <h2 class="text-2xl md:text-3xl font-extrabold text-brand-teal mb-2 animate-fade-up-delay-1">Congratulations!</h2>
       <p class="text-base md:text-lg font-semibold text-brand-teal mb-4 animate-fade-up-delay-2">Your client account has been created successfully!</p>
       <div class="mx-auto mt-2 max-w-sm text-left space-y-3 text-gray-700 animate-fade-up-delay-3">
-        <p>Welcome to ERA! Your client account is now ready to help you find the perfect talent for your projects.</p>
+        <p>Welcome to EBA! Your client account is now ready to help you find the perfect talent for your projects.</p>
         <ul class="list-disc pl-5 space-y-1">
           <li>Access to skilled professionals across various industries.</li>
           <li>Streamlined hiring process with vetted candidates.</li>
