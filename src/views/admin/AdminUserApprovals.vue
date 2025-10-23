@@ -120,6 +120,14 @@ const persistIdSet = (key: string, idSet: Set<string>) => {
   }
 }
 
+const determineRole = (user: any): 'agent' | 'client' => {
+  if (user?.status && user.status !== 'pending') {
+    if (user.role?.agent) return 'agent'
+    if (user.role?.client) return 'client'
+  }
+  return 'client'
+}
+
 const fetchUsers = async () => {
   isLoading.value = true
   fetchError.value = null
@@ -133,7 +141,7 @@ const fetchUsers = async () => {
           id: u.id || u.user_id || String(u._id || ''),
           name: u.full_name || u.name || u.email || 'Unknown',
           email: u.email || '',
-          role: u.role?.agent ? 'agent' : u.role?.client ? 'client' : 'client',
+          role: determineRole(u),
           status: u.status || 'pending',
           createdAt: u.created_at || (u.date_created ? new Date(u.date_created * 1000).toISOString() : new Date().toISOString())
         }))
