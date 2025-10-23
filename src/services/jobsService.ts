@@ -4,6 +4,13 @@ import type { ApiResponse, Job, JobPostData, JobApprovalData, ServiceResponse } 
 
 const BASE_URL = '/v1/jobss'
 
+const isSuccessfulStatus = (status?: number | null) => status === 200 || status === 201 || status === 0
+
+const ensureArray = <T>(data: T | T[] | null | undefined): T[] => {
+  if (!data) return []
+  return Array.isArray(data) ? data : [data]
+}
+
 /**
  * Lists jobs that an agent qualifies for. (Agent only)
  * @param start - The starting index for the list.
@@ -14,11 +21,12 @@ export const listAvailableAgentJobs = async (start: number, stop: number): Promi
     const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/`, {
       params: { start, stop }
     })
-    if (response.data.status_code === 200) {
+    if (isSuccessfulStatus(response.data.status_code)) {
+      const jobs = ensureArray(response.data.data)
       return {
         success: true,
-        data: response.data.data || [],
-        message: `Retrieved ${response.data.data?.length || 0} available jobs`
+        data: jobs,
+        message: `Retrieved ${jobs.length} available jobs`
       }
     } else {
       return {
@@ -44,11 +52,12 @@ export const listClientCreatedJobs = async (start: number, stop: number): Promis
     const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/client/created/`, {
       params: { start, stop }
     })
-    if (response.data.status_code === 200) {
+    if (isSuccessfulStatus(response.data.status_code)) {
+      const jobs = ensureArray(response.data.data)
       return {
         success: true,
-        data: response.data.data || [],
-        message: `Retrieved ${response.data.data?.length || 0} client jobs`
+        data: jobs,
+        message: `Retrieved ${jobs.length} client jobs`
       }
     } else {
       return {
@@ -74,11 +83,12 @@ export const listAdminJobs = async (start: number, stop: number): Promise<Servic
     const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/admin/`, {
       params: { start, stop }
     })
-    if (response.data.status_code === 200) {
+    if (isSuccessfulStatus(response.data.status_code)) {
+      const jobs = ensureArray(response.data.data)
       return {
         success: true,
-        data: response.data.data || [],
-        message: `Retrieved ${response.data.data?.length || 0} admin jobs`
+        data: jobs,
+        message: `Retrieved ${jobs.length} admin jobs`
       }
     } else {
       return {
@@ -177,6 +187,37 @@ export const approveJob = async (jobId: string, data: JobApprovalData): Promise<
 }
 
 /**
+ * Rejects a job posting. (Admin only)
+ * @param jobId - The ID of the job to reject.
+ * @param data - The rejection payload including reason.
+ */
+export const rejectJob = async (
+  jobId: string,
+  data: { admin_approved: boolean; rejection_reason: string }
+): Promise<ServiceResponse<string>> => {
+  try {
+    const response = await apiClient.post<ApiResponse<string>>(`${BASE_URL}/reject/${jobId}`, data)
+    if (response.data.status_code === 200) {
+      return {
+        success: true,
+        data: response.data.data || 'Job rejected successfully',
+        message: 'Job rejected successfully'
+      }
+    } else {
+      return {
+        success: false,
+        error: response.data.detail || 'Failed to reject job'
+      }
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to reject job'
+    }
+  }
+}
+
+/**
  * Updates a job posting. (Client only)
  * @param id - The ID of the job to update.
  * @param data - The updated job data.
@@ -239,6 +280,7 @@ export const jobsService = {
   postNewJob,
   createJob: postNewJob, // Alias for compatibility
   approveJob,
+  rejectJob,
   updateJob,
   deleteJob
 }

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import authService from '../../services/authService'
 import type { SignupData } from '../../types/api/auth'
 
 const router = useRouter()
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const hasCompletedSignup = ref(false)
 
 const finishSignup = async () => {
   if (isSubmitting.value) return
@@ -52,11 +53,54 @@ const finishSignup = async () => {
       services: Array.isArray(services) ? services : []
     }
 
+    const placeholderUrl = 'https://example.com/resource'
+
+    payload.company_email = payload.company_email || basic.email
+    payload.company_address = payload.company_address || 'Not provided'
+    payload.certificate_url = Array.isArray(payload.certificate_url) && payload.certificate_url.length > 0
+      ? payload.certificate_url
+      : [placeholderUrl]
+    payload.video_url = payload.video_url || placeholderUrl
+    payload.personality_url = payload.personality_url || placeholderUrl
+    payload.client_reason_for_signing_up = payload.client_reason_for_signing_up || 'Just hire me someone'
+    payload.client_need_agent_work_hours_to_be = payload.client_need_agent_work_hours_to_be || 'both'
+    payload.primary_area_of_expertise = payload.primary_area_of_expertise || 'Other'
+    payload.time_zone = payload.time_zone || 'UTC+00:00'
+    payload.phone_number = payload.phone_number || basic.phone || 'Not provided'
+    payload.is_agent_open_to_calls_and_video_meetings = payload.is_agent_open_to_calls_and_video_meetings || 'no'
+    payload.does_agent_have_working_computer = payload.does_agent_have_working_computer || 'no'
+    payload.does_agent_have_stable_internet = payload.does_agent_have_stable_internet || 'no'
+    payload.is_agent_comfortable_with_time_tracking_tools = payload.is_agent_comfortable_with_time_tracking_tools || 'no'
+    payload.three_most_commonly_used_tools_or_platforms = Array.isArray(payload.three_most_commonly_used_tools_or_platforms)
+      ? payload.three_most_commonly_used_tools_or_platforms
+      : []
+    const normalisedHours = payload.available_hours_agent_can_commit?.toString()
+    if (normalisedHours !== '80' && normalisedHours !== '160') {
+      payload.available_hours_agent_can_commit = '80'
+    } else {
+      payload.available_hours_agent_can_commit = normalisedHours
+    }
+
     const resp = await authService.signup(payload)
     if (!resp.success) {
-      errorMessage.value = resp.error || 'Signup failed. Please try again.'
+      const fieldErrors = resp.fieldErrors
+      if (fieldErrors && typeof fieldErrors === 'object') {
+        const entries = Object.entries(fieldErrors)
+        if (entries.length) {
+          errorMessage.value = entries
+            .map(([field, message]) => `${field}: ${Array.isArray(message) ? message.join(', ') : message}`)
+            .join(' | ')
+        }
+      }
+
+      if (!errorMessage.value) {
+        const detail = Array.isArray(resp.error) ? resp.error.map((item: any) => item?.msg || item).join(' | ') : resp.error
+        errorMessage.value = detail || 'Signup failed. Please try again.'
+      }
       return
     }
+
+    hasCompletedSignup.value = true
 
     try {
       localStorage.removeItem('signupBasicData')
@@ -74,6 +118,14 @@ const finishSignup = async () => {
     isSubmitting.value = false
   }
 }
+
+onBeforeRouteLeave((_to, _from, next) => {
+  if (hasCompletedSignup.value) {
+    next()
+    return
+  }
+  next('/client/services')
+})
 </script>
 
 <template>

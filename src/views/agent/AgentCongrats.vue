@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import authService from '../../services/authService'
 import type { SignupData } from '../../types/api/auth'
 
 const router = useRouter()
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const hasCompletedSignup = ref(false)
 
 const finishSignup = async () => {
   if (isSubmitting.value) return
@@ -93,6 +94,8 @@ const finishSignup = async () => {
     }
 
     // Optionally clear stored data after success
+    hasCompletedSignup.value = true
+
     try {
       localStorage.removeItem('signupBasicData')
       localStorage.removeItem('agentWelcomeData')
@@ -106,6 +109,14 @@ const finishSignup = async () => {
     isSubmitting.value = false
   }
 }
+
+onBeforeRouteLeave((_to, _from, next) => {
+  if (hasCompletedSignup.value) {
+    next()
+    return
+  }
+  next('/agent/services')
+})
 </script>
 
 <template>

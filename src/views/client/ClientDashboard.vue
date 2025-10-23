@@ -80,20 +80,6 @@
         </div>
       </section>
 
-      <section class="bg-white p-6 rounded-lg shadow">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold">Recommended Agents</h2>
-          <button
-            @click="$router.push({ name: 'client-recommended-agents' })"
-            class="text-brand-teal hover:text-teal-700 font-medium"
-          >
-            View All
-          </button>
-        </div>
-        <p class="text-center text-gray-500">
-          Visit the recommended agents page to discover specialists curated for your projects.
-        </p>
-      </section>
     </main>
 
     <ClientBottomNav />

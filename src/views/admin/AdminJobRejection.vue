@@ -171,6 +171,8 @@ const rejectionReason = ref<RejectionReason>({
   details: '',
   notifyAgent: true
 });
+const submitting = ref(false);
+const submissionError = ref<string | null>(null);
 
 const ADMIN_JOBS_STORAGE_KEY = 'adminJobs';
 const SELECTED_ADMIN_JOB_STORAGE_KEY = 'selectedAdminJob';
@@ -182,14 +184,14 @@ const mockJobs: Job[] = [
   { id: 3, status: 'Pending', timeAgo: '1 hour ago', title: 'Write SEO Content for a Tech Blog', agentName: 'Matt Barrie', agentUsername: 'matt', pay: '$80 -120' },
 ];
 
-const normaliseId = (value: string | number | null | undefined) => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'number') return value.toString();
-  return value;
-};
+const normaliseId = (value: string | number | null | undefined): string => {
+  if (value === null || value === undefined) return ''
+  return typeof value === 'number' ? value.toString() : value
+}
 
-const loadJobFromStorage = (id: number): Job | null => {
-  const stringId = id.toString();
+const loadJobFromStorage = (id: string): Job | null => {
+  if (!id) return null
+  const stringId = id
 
   try {
     const selected = localStorage.getItem(SELECTED_ADMIN_JOB_STORAGE_KEY);
@@ -219,11 +221,11 @@ const loadJobFromStorage = (id: number): Job | null => {
   return null;
 };
 
-const loadJobFromApi = async (id: number): Promise<Job | null> => {
+const loadJobFromApi = async (id: string): Promise<Job | null> => {
   try {
     const response = await api.jobs.listAdminJobs(0, 100);
     if (response.success && response.data) {
-      const found = response.data.find(apiJob => normaliseId(apiJob.id) === id.toString());
+      const found = response.data.find(apiJob => normaliseId(apiJob.id) === id);
       if (found) {
         return found as Job;
       }
@@ -234,7 +236,7 @@ const loadJobFromApi = async (id: number): Promise<Job | null> => {
   return null;
 };
 
-const initialiseJob = async (id: number) => {
+const initialiseJob = async (id: string) => {
   if (!id) {
     router.push('/admin/job-approval');
     return;
@@ -252,7 +254,7 @@ const initialiseJob = async (id: number) => {
     return;
   }
 
-  const fallback = mockJobs.find(mockJob => normaliseId(mockJob.id) === id.toString()) || null;
+  const fallback = mockJobs.find(mockJob => normaliseId(mockJob.id) === id) || null;
   if (fallback) {
     job.value = fallback;
     return;
@@ -268,7 +270,7 @@ const isFormValid = computed(() => {
 });
 
 onMounted(() => {
-  const jobId = parseInt(route.params.id as string, 10) || 0;
+  const jobId = normaliseId(route.params.id as string | number | null | undefined);
   initialiseJob(jobId);
 });
 
@@ -276,25 +278,33 @@ const goBack = () => {
   router.push('/admin/job-approval');
 };
 
-const submitRejection = () => {
+const submitRejection = async () => {
   if (!job.value || !isFormValid.value) return;
 
-  // In a real app, this would call an API to submit the rejection
-  console.log('Submitting rejection for job:', job.value.id);
-  console.log('Rejection reason:', rejectionReason.value);
-
-  // Show success message
-  const successMessage = `Job "${job.value.title}" has been rejected successfully.`;
-  
-  if (rejectionReason.value.notifyAgent) {
-    console.log('Agent will be notified via email');
+  const jobId = normaliseId(job.value.id);
+  if (!jobId) {
+    submissionError.value = 'Missing job ID. Please return to the job list and try again.';
+    return;
   }
 
-  // You could replace this with a toast notification in a real app
-  alert(successMessage);
+  submitting.value = true;
+  submissionError.value = null;
 
-  // Navigate back to job approval page
-  router.push('/admin/job-approval');
+  try {
+    const response = await api.jobs.rejectJob(jobId, rejectionReason.value.details.trim());
+    if (!response.success) {
+      submissionError.value = response.error || 'Failed to reject job. Please try again.';
+      return;
+    }
+
+    const successMessage = `Job "${job.value.title}" has been rejected successfully.`;
+    alert(successMessage);
+    router.push('/admin/job-approval');
+  } catch (error: any) {
+    submissionError.value = error?.message || 'Failed to reject job. Please try again.';
+  } finally {
+    submitting.value = false;
+  }
 };
 </script>
 

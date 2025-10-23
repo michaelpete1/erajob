@@ -36,11 +36,15 @@
       <div v-if="!loading">
         <!-- Project Title -->
         <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
-          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Project Title</label>
+          <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <label class="block text-gray-700 text-sm font-medium">Project Title</label>
+            <span class="text-xs text-gray-500">{{ titleLength }}/{{ TITLE_MAX_LENGTH }}</span>
+          </div>
           <input
             v-model="project.project_title"
             type="text"
             placeholder="Enter project title..."
+            :maxlength="TITLE_MAX_LENGTH"
             class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
           />
         </div>
@@ -101,11 +105,15 @@
 
         <!-- Description -->
         <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
-          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Project Description</label>
+          <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <label class="block text-gray-700 text-sm font-medium">Project Description</label>
+            <span class="text-xs text-gray-500">{{ descriptionLength }}/{{ DESCRIPTION_MAX_LENGTH }}</span>
+          </div>
           <textarea
             v-model="project.description"
             rows="4"
             placeholder="Describe your project in detail..."
+            :maxlength="DESCRIPTION_MAX_LENGTH"
             class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
           ></textarea>
         </div>
@@ -230,6 +238,9 @@ interface FormData {
 const router = useRouter();
 const loading = ref(false);
 const error = ref('');
+
+const TITLE_MAX_LENGTH = 120;
+const DESCRIPTION_MAX_LENGTH = 2000;
 const selectedSkill = ref<JobsBase['skills_needed'] | ''>('');
 
 const formData = ref<FormData>({
@@ -276,6 +287,9 @@ const project = ref<JobsBase>({
     deadline: 0
   }
 });
+
+const titleLength = computed(() => project.value.project_title.length);
+const descriptionLength = computed(() => project.value.description.length);
 
 const isFormValid = computed(() => {
   const hasValidRequirements =

@@ -121,12 +121,30 @@
               <button
                 v-if="!job.admin_approved"
                 @click="rejectJob(job)"
-                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
+                :disabled="rejectingJobs.has(job.id!)"
+                class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-md bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-xs sm:text-sm font-medium transition-all duration-300 min-h-[44px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02] disabled:hover:scale-100"
               >
-                <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg
+                  v-if="rejectingJobs.has(job.id!)"
+                  class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 animate-spin"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <svg
+                  v-else
+                  class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
-                Reject
+                {{ rejectingJobs.has(job.id!) ? 'Rejecting...' : 'Reject' }}
               </button>
               <button
                 @click="viewJobDetails(job)"
@@ -168,17 +186,41 @@ const allJobs = ref<AdminJob[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const approvingJobs = ref<Set<string>>(new Set());
+const rejectingJobs = ref<Set<string>>(new Set());
 
 const APPROVED_STATUS_LABEL = 'Approved';
 const PENDING_STATUS_LABEL = 'Pending';
 
+const parseAdminApproved = (value: AdminJob['admin_approved']): boolean | null => {
+    if (value === null || typeof value === 'undefined') return null;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const lower = value.toLowerCase();
+        if (lower === 'true') return true;
+        if (lower === 'false') return false;
+        if (!lower.trim()) return null;
+    }
+    if (typeof value === 'number') {
+        if (value === 1) return true;
+        if (value === 0) return false;
+    }
+    return null;
+};
+
 const normaliseJob = (job: AdminJob): AdminJob => {
-    const isApproved = Boolean(job.admin_approved);
+    const isApproved = parseAdminApproved(job.admin_approved);
+    const derivedStatus = job.status ?? (
+        isApproved === true
+            ? APPROVED_STATUS_LABEL
+            : isApproved === false
+                ? 'rejected'
+                : PENDING_STATUS_LABEL
+    );
 
     return {
         ...job,
         admin_approved: isApproved,
-        status: job.status ?? (isApproved ? APPROVED_STATUS_LABEL : PENDING_STATUS_LABEL)
+        status: derivedStatus
     };
 };
 
@@ -202,9 +244,9 @@ const fetchJobs = async () => {
 
 const filteredJobs = computed<AdminJob[]>(() => {
     if (currentTab.value === 'Approved') {
-        return allJobs.value.filter(job => job.admin_approved);
+        return allJobs.value.filter(job => job.admin_approved === true);
     }
-    return allJobs.value.filter(job => !job.admin_approved);
+    return allJobs.value.filter(job => job.admin_approved === null);
 });
 
 // Admin action functions
@@ -237,10 +279,42 @@ const approveJob = async (jobId: string) => {
     }
 };
 
-const rejectJob = (job: AdminJob) => {
-    if (!job?.id) return;
+const rejectJob = async (job: AdminJob) => {
+    if (!job?.id) {
+        alert('Cannot reject job: missing job ID from server.');
+        return;
+    }
 
-    router.push(`/admin/job/${job.id}/reject`);
+    const jobIdStr = String(job.id);
+    const reason = prompt('Please enter a rejection reason:', 'This user doesn\'t meet the expectation needed on the platform');
+
+    if (reason === null) {
+        return;
+    }
+
+    if (!reason.trim()) {
+        alert('Rejection reason is required.');
+        return;
+    }
+
+    rejectingJobs.value.add(jobIdStr);
+
+    try {
+        const response = await api.jobs.rejectJob(jobIdStr, reason.trim());
+        if (!response.success) {
+            alert(response.error || 'Failed to reject job.');
+            return;
+        }
+
+        alert('Job rejected successfully');
+        allJobs.value = allJobs.value.filter(existingJob => String(existingJob.id) !== jobIdStr);
+        await fetchJobs();
+    } catch (error: any) {
+        console.error('Error rejecting job:', error);
+        alert(error?.message || 'Failed to reject job.');
+    } finally {
+        rejectingJobs.value.delete(jobIdStr);
+    }
 };
 
 const viewJobDetails = (job: AdminJob) => {

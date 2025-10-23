@@ -34,11 +34,6 @@ onMounted(() => {
     form.shortVideo = saved.shortVideo || form.shortVideo
     form.urlLink = saved.urlLink || form.urlLink
     form.primaryAreaOfExpertise = saved.primaryAreaOfExpertise || form.primaryAreaOfExpertise
-    form.timezone = saved.timezone || form.timezone
-    form.openToCalls = saved.openToCalls || form.openToCalls
-    form.hasWorkingComputer = saved.hasWorkingComputer || form.hasWorkingComputer
-    form.hasStableInternet = saved.hasStableInternet || form.hasStableInternet
-    form.comfortableWithTimeTracking = saved.comfortableWithTimeTracking || form.comfortableWithTimeTracking
     form.clientReason = saved.clientReason || form.clientReason
   } catch {}
 })
@@ -57,10 +52,6 @@ watch(form, (val) => {
       urlLink: val.urlLink,
       primaryAreaOfExpertise: val.primaryAreaOfExpertise,
       timezone: val.timezone,
-      openToCalls: val.openToCalls,
-      hasWorkingComputer: val.hasWorkingComputer,
-      hasStableInternet: val.hasStableInternet,
-      comfortableWithTimeTracking: val.comfortableWithTimeTracking,
       clientReason: val.clientReason,
     }
     const existing = JSON.parse(localStorage.getItem('clientWelcomeData') || '{}')
@@ -128,34 +119,6 @@ watch(form, (val) => {
         </div>
 
         <!-- TIMEZONE: fixed to have single arrow, padding-right for custom icon -->
-        <div class="space-y-2 animate-slide-in-right">
-          <label for="timezone-select" class="form-label">Time Zone Location</label>
-          <div class="relative">
-            <select
-              id="timezone-select"
-              v-model="form.timezone"
-              class="w-full rounded-full border border-gray-300 px-4 py-3 pr-10 text-sm text-gray-700 transition-all duration-150 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/10 appearance-none bg-white"
-            >
-              <option value="" disabled>Select your time zone</option>
-              <option
-                v-for="timezone in timezoneOptions"
-                :key="timezone.value"
-                :value="timezone.value"
-              >
-                {{ timezone.label }} ({{ timezone.offset }})
-              </option>
-            </select>
-
-            <!-- custom arrow (single) -->
-            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-          <p v-if="fieldErrors.time_zone" class="mt-1 text-xs text-red-200 text-left pl-2">{{ fieldErrors.time_zone }}</p>
-        </div>
-
         <!-- EXPERTISE MULTI-SELECT (fixed stacking, click-outside) -->
         <div class="space-y-2 animate-slide-in-left">
           <label for="expertise-select" class="form-label">What types of projects do you prefer?</label>
@@ -245,77 +208,6 @@ watch(form, (val) => {
             </teleport>
           </div>
           <p v-if="fieldErrors.primary_area_of_expertise" class="mt-1 text-xs text-red-200 text-left pl-2">{{ fieldErrors.primary_area_of_expertise }}</p>
-        </div>
-
-        <!-- Remaining selects: ensure single arrow and space for arrow -->
-        <div class="space-y-4 animate-slide-in-right">
-          <div class="space-y-2">
-            <label for="calls-select" class="form-label">Are you open to calls or video meetings?</label>
-            <div class="relative">
-              <select id="calls-select" v-model="form.openToCalls" class="w-full rounded-full border border-gray-300 px-4 py-3 pr-10 text-sm text-gray-700 transition-all duration-150 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/10 appearance-none bg-white">
-                <option value="" disabled>Select an option</option>
-                <option value="yes">Yes, I am comfortable with calls</option>
-                <option value="no">No, I prefer to review proposals asynchronously</option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            <p v-if="fieldErrors.is_agent_open_to_calls_and_video_meetings" class="mt-1 text-xs text-red-200 text-left pl-2">{{ fieldErrors.is_agent_open_to_calls_and_video_meetings }}</p>
-          </div>
-
-          <div class="space-y-2">
-            <label for="computer-select" class="form-label">Do you have a working computer?</label>
-            <div class="relative">
-              <select id="computer-select" v-model="form.hasWorkingComputer" class="w-full rounded-full border border-gray-300 px-4 py-3 pr-10 text-sm text-gray-700 transition-all duration-150 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/10 appearance-none bg-white">
-                <option value="" disabled>Select an option</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            <p v-if="fieldErrors.does_agent_have_working_computer" class="mt-1 text-xs text-red-200 text-left pl-2">{{ fieldErrors.does_agent_have_working_computer }}</p>
-          </div>
-
-          <div class="space-y-2">
-            <label for="internet-select" class="form-label">Do you have access to stable internet?</label>
-            <div class="relative">
-              <select id="internet-select" v-model="form.hasStableInternet" class="w-full rounded-full border border-gray-300 px-4 py-3 pr-10 text-sm text-gray-700 transition-all duration-150 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/10 appearance-none bg-white">
-                <option value="" disabled>Select an option</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            <p v-if="fieldErrors.does_agent_have_stable_internet" class="mt-1 text-xs text-red-200 text-left pl-2">{{ fieldErrors.does_agent_have_stable_internet }}</p>
-          </div>
-
-          <div class="space-y-2">
-            <label for="tracking-select" class="form-label">Are you comfortable using time tracking tools?</label>
-            <div class="relative">
-              <select id="tracking-select" v-model="form.comfortableWithTimeTracking" class="w-full rounded-full border border-gray-300 px-4 py-3 pr-10 text-sm text-gray-700 transition-all duration-150 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/10 appearance-none bg-white">
-                <option value="" disabled>Select an option</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            <p v-if="fieldErrors.is_agent_comfortable_with_time_tracking_tools" class="mt-1 text-xs text-red-200 text-left pl-2">{{ fieldErrors.is_agent_comfortable_with_time_tracking_tools }}</p>
-          </div>
         </div>
 
         <!-- File inputs and rest unchanged -->

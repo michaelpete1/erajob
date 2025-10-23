@@ -94,8 +94,7 @@ const showPlusButton = computed(() => {
   const clientProjectPages = [
     '/client/projects',
     '/client/projects/create',
-    '/client/explore-gigs',
-    '/client/recommended-agents'
+    '/client/explore-gigs'
   ]
   
   // Uses startsWith to match nested routes under the primary paths

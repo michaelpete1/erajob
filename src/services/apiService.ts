@@ -244,16 +244,28 @@ class ApiService {
 
   async listUsers(start: number, stop: number): Promise<ServiceResponse<UserOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<UserOut[]>>('/v1/users', {
+      const response = await apiClient.get<EJApiResponse<UserOut[]>>('/v1/users/', {
         params: {
           start,
           stop
         }
       })
-      return { success: true, data: response.data.data }
+      if (this.isSuccessfulStatus(response.data.status_code)) {
+        return { success: true, data: this.ensureArray(response.data.data) }
+      }
+      return { success: false, error: response.data.detail || 'Failed to list users' }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to list users' }
     }
+  }
+
+  private isSuccessfulStatus(status?: number | null) {
+    return status === 200 || status === 201 || status === 0
+  }
+
+  private ensureArray<T>(data: T | T[] | null | undefined): T[] {
+    if (!data) return []
+    return Array.isArray(data) ? data : [data]
   }
 
   async deleteAccount(): Promise<ServiceResponse<null>> {
@@ -390,6 +402,26 @@ class ApiService {
     }
   }
 
+  async sendClientResetToken(email: string): Promise<ServiceResponse<{ reset_token: string }>> {
+    try {
+      const response = await apiClient.post<EJApiResponse<{ reset_token: string }>>('/v1/clients/get-reset-token', {
+        email
+      })
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to generate reset token' }
+    }
+  }
+
+  async resetClientPassword(payload: { reset_token: string; otp: string; new_password: string }): Promise<ServiceResponse<UserOut>> {
+    try {
+      const response = await apiClient.patch<EJApiResponse<UserOut>>('/v1/clients/reset-password', payload)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to reset password' }
+    }
+  }
+
   // Jobs endpoints
   async createJob(jobData: JobsBase): Promise<ServiceResponse<JobsOut>> {
     try {
@@ -500,7 +532,10 @@ class ApiService {
 
   async rejectUser(userId: string, reason?: string): Promise<ServiceResponse<null>> {
     try {
-      const response = await apiClient.post<EJApiResponse<null>>(`/v1/users/reject/${userId}`, { reason })
+      const payload = {
+        rejection_reason: reason?.trim() || 'No reason provided'
+      }
+      const response = await apiClient.patch<EJApiResponse<null>>(`/v1/users/${userId}/reject`, payload)
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to reject user' }

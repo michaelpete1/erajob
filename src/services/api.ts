@@ -478,7 +478,7 @@ export const apiService = {
   // Admin-only: list all users (raw), useful for approvals page
   async listUsers(start = 0, stop = 100): Promise<ServiceResponse<any>> { // Use ApiResponse<any>
     try {
-      const response = await api.get(`${API_VERSION}/users/${start}/${stop}`)
+     const response = await api.get(`${API_VERSION}/users/${start}/${stop}`)
       return { success: true, data: response.data }
     } catch (error: any) {
       const detail = error?.response?.data?.detail

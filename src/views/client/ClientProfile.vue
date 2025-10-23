@@ -74,9 +74,10 @@ I'll help fix the template structure in ClientProfile.vue. The main issues are d
   </div>
 </template>
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usersService } from '../../services'
+import { api } from '@/services/apiService'
 
 const router = useRouter()
 const fileInput = ref(null)
@@ -96,6 +97,16 @@ const userProfile = ref({
     agentsHired: 0
   }
 })
+
+const resetEmail = ref('')
+const resetToken = ref('')
+const resetOtp = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const resetTokenLoading = ref(false)
+const resetSubmitting = ref(false)
+const resetSuccess = ref('')
+const resetError = ref('')
 
 // Loading and error states
 const loading = ref(false)
@@ -118,6 +129,14 @@ const memberSince = computed(() => {
 
 const displayName = computed(() => userProfile.value.name || 'Your Name')
 const displayEmail = computed(() => userProfile.value.email || 'your.email@example.com')
+const canSubmitReset = computed(() => {
+  return (
+    resetToken.value.trim() !== '' &&
+    resetOtp.value.trim() !== '' &&
+    newPassword.value.length >= 8 &&
+    newPassword.value === confirmPassword.value
+  )
+})
 
 // Methods
 const triggerFileInput = () => {
@@ -149,6 +168,73 @@ const goToNotifications = () => {
   router.push('/client/notifications')
 }
 
+const syncResetEmail = () => {
+  if (userProfile.value.email) {
+    resetEmail.value = userProfile.value.email
+  }
+}
+
+const requestResetToken = async () => {
+  resetError.value = ''
+  resetSuccess.value = ''
+
+  const email = resetEmail.value.trim()
+  if (!email) {
+    resetError.value = 'Please enter your account email before requesting a reset token.'
+    return
+  }
+
+  resetTokenLoading.value = true
+  try {
+    const response = await api.client.sendResetToken(email)
+    if (!response.success || !response.data) {
+      resetError.value = response.error || 'Unable to generate reset token. Please try again.'
+      return
+    }
+
+    resetToken.value = response.data.reset_token || ''
+    resetSuccess.value = 'Reset token generated. Check your email for details.'
+  } catch (error: any) {
+    resetError.value = error?.message || 'Unable to generate reset token. Please try again.'
+  } finally {
+    resetTokenLoading.value = false
+  }
+}
+
+const submitPasswordReset = async () => {
+  resetError.value = ''
+  resetSuccess.value = ''
+
+  if (!canSubmitReset.value) {
+    resetError.value = 'Please provide all required details. Passwords must match and be at least 8 characters.'
+    return
+  }
+
+  resetSubmitting.value = true
+  try {
+    const payload = {
+      reset_token: resetToken.value.trim(),
+      otp: resetOtp.value.trim(),
+      new_password: newPassword.value
+    }
+
+    const response = await api.client.resetPassword(payload)
+    if (!response.success) {
+      resetError.value = response.error || 'Unable to reset password. Please verify the token and OTP.'
+      return
+    }
+
+    resetSuccess.value = 'Password updated successfully. You can now sign in with the new password.'
+    newPassword.value = ''
+    confirmPassword.value = ''
+    resetOtp.value = ''
+  } catch (error: any) {
+    resetError.value = error?.message || 'Unable to reset password. Please verify the token and OTP.'
+  } finally {
+    resetSubmitting.value = false
+  }
+}
+
 // Load profile data on mount
 onMounted(async () => {
   loading.value = true
@@ -176,6 +262,7 @@ onMounted(async () => {
 
       // Save to localStorage as backup
       localStorage.setItem('clientProfile', JSON.stringify(userProfile.value))
+      syncResetEmail()
     } else {
       // Fallback to localStorage if API fails
       const savedProfile = localStorage.getItem('clientProfile')
@@ -184,6 +271,7 @@ onMounted(async () => {
         userProfile.value = { ...userProfile.value, ...parsed }
       }
       error.value = result.error || 'Failed to load profile'
+      syncResetEmail()
     }
   } catch (error) {
     console.error('Error loading profile:', error)
@@ -211,10 +299,18 @@ onMounted(async () => {
     } catch (localStorageError) {
       console.error('Error loading profile from localStorage:', localStorageError)
     }
+    syncResetEmail()
   } finally {
     loading.value = false
   }
 })
+
+watch(
+  () => userProfile.value.email,
+  () => {
+    syncResetEmail()
+  }
+)
 </script>
 
 <style scoped>

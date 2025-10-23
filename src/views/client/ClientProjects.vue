@@ -160,15 +160,31 @@
               <p class="text-xs font-medium text-yellow-700 mb-3">Awaiting admin approval before work can begin.</p>
               <div class="flex items-center justify-between">
                 <span class="text-lg font-bold text-teal-600">${{ project.budget.toLocaleString() }}</span>
-                <button
-                  class="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm sm:text-base transition-colors"
-                  @click.stop="goToProject(project)"
-                >
-                  View Details
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+                <div class="flex items-center gap-3">
+                  <button
+                    class="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm sm:text-base transition-colors"
+                    @click.stop="goToProject(project)"
+                  >
+                    View Details
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    class="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-medium text-xs sm:text-sm transition-colors disabled:opacity-50"
+                    @click.stop="deletePendingProject(project)"
+                    :disabled="isDeleting(project.id)"
+                  >
+                    <svg v-if="!isDeleting(project.id)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                      <path class="opacity-70" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    {{ isDeleting(project.id) ? 'Deleting...' : 'Delete' }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -217,8 +233,9 @@ import { useJobs } from '../../composables/useJobs'
 
 const router = useRouter()
 const activeTab = ref<'active' | 'pending'>('pending')
-const { getClientJobs, getAllJobs, loading } = useJobs()
+const { getClientJobs, getAllJobs, deleteJob, loading, clearError } = useJobs()
 const error = ref<string | null>(null)
+const deletingJobIds = ref<string[]>([])
 
 const formatDate = (timestamp: number | null | undefined) => {
   if (!timestamp) return 'N/A'
@@ -262,6 +279,15 @@ interface Project {
 
 const activeProjects = ref<Project[]>([])
 const browseProjects = ref<Project[]>([])
+
+const isDeleting = (id?: string) => {
+  if (!id) return false
+  return deletingJobIds.value.includes(id)
+}
+
+const removeDeletingId = (id: string) => {
+  deletingJobIds.value = deletingJobIds.value.filter(existingId => existingId !== id)
+}
 
 const suspiciousPatterns = [
   /return\s+[A-Za-z0-9_]/i,
@@ -535,6 +561,35 @@ const toProject = (jobPayload: unknown): Project => {
     agents,
     status: typeof job.status === 'string' ? job.status : undefined,
     admin_approved: typeof job.admin_approved === 'boolean' ? job.admin_approved : undefined
+  }
+}
+
+const deletePendingProject = async (project: Project) => {
+  if (!project?.id) return
+  if (project.admin_approved) return
+
+  const confirmed = window.confirm('Are you sure you want to delete this project? This action cannot be undone.')
+  if (!confirmed) return
+
+  clearError?.()
+  error.value = null
+
+  if (!isDeleting(project.id)) {
+    deletingJobIds.value = [...deletingJobIds.value, project.id]
+  }
+
+  try {
+    const response = await deleteJob(project.id)
+    if (!response.success) {
+      error.value = response.error || 'Failed to delete project'
+      return
+    }
+
+    browseProjects.value = browseProjects.value.filter(item => item.id !== project.id)
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to delete project'
+  } finally {
+    removeDeletingId(project.id)
   }
 }
 

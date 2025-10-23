@@ -45,21 +45,6 @@
             class="w-full rounded-full border border-gray-200 px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal transition-all" />
         </div>
 
-        <!-- Client Reason for Signing Up (enum required by API) -->
-        <div class="space-y-2 animate-slide-in-right">
-          <label class="text-sm font-medium text-brand-teal">What do you need help with?</label>
-          <div class="grid grid-cols-1 gap-2">
-            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-teal-500 cursor-pointer">
-              <input type="radio" class="accent-teal-600" value="Just hire me someone" v-model="form.clientReason" />
-              <span class="text-sm text-gray-700">Just hire me someone</span>
-            </label>
-            <label class="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-teal-500 cursor-pointer">
-              <input type="radio" class="accent-teal-600" value="Need assistance with hiring, training, onboarding and management for first month" v-model="form.clientReason" />
-              <span class="text-sm text-gray-700">Need assistance with hiring, training, onboarding and management for first month</span>
-            </label>
-          </div>
-        </div>
-
         <div class="space-y-2 animate-slide-in-left">
           <label class="text-sm font-medium text-brand-teal">Certifications</label>
           <div class="relative">
@@ -273,7 +258,6 @@ const form = reactive({
   hoursPerWeek: undefined as number | undefined,
   timezone: '',
   preferredProjects: [] as string[],
-  clientReason: '' as string,
   openToCalls: undefined as boolean | undefined,
   hasComputer: undefined as boolean | undefined,
   hasInternet: undefined as boolean | undefined,
@@ -448,7 +432,6 @@ const onSubmit = async () => {
       hoursPerWeek: form.hoursPerWeek,
       timezone: form.timezone,
       preferredProjects: form.preferredProjects,
-      clientReason: form.clientReason,
       openToCalls: form.openToCalls,
       hasComputer: form.hasComputer,
       hasInternet: form.hasInternet,

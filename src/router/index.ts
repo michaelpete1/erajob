@@ -20,7 +20,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/client/add-post', name: 'add-post', component: () => import('../views/client/ClientSummary.vue') },
   { path: '/client/congrats', name: 'client-congrats', component: () => import('../views/client/ClientCongrats.vue') },
   { path: '/client/job-application', name: 'client-job-application', component: () => import('../views/client/ClientJobApplication.vue') },
-  { path: '/client/recommended-agents', name: 'client-recommended-agents', component: () => import('../views/client/ClientRecommendedAgents.vue') },
   { path: '/client/agent/:id', name: 'client-agent-profile', component: () => import('../views/client/ClientAgentProfile.vue') },
   { path: '/client/agent/:id/set-appointment', name: 'client-set-appointment', component: () => import('../views/client/ClientSetAppointment.vue') },
   { path: '/client/work-log/:jobId', name: 'client-work-log', component: () => import('../views/client/ClientWorkLog.vue') },

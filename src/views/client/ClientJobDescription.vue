@@ -146,92 +146,6 @@
         </div>
       </div>
 
-      <!-- Recommended Agents (Top Section) -->
-      <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <h3 class="text-base sm:text-lg md:text-xl font-semibold text-gray-800">Recommended Agents</h3>
-          <button @click="$router.push('/client/recommended-agents')" class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white rounded-md shadow-sm hover:shadow-md text-xs sm:text-sm text-teal-600 font-medium hover:text-teal-700 transition-colors border border-teal-200 hover:border-teal-300">
-            <span>View all</span>
-            <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-        
-        <div class="space-y-4 sm:space-y-6">
-          <div v-for="agent in recommendedAgents.slice(0, 3)" :key="agent.id" class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 cursor-pointer group hover:border-teal-300 relative overflow-hidden" @click="$router.push(`/client/agent/${agent.id}`)">
-            <!-- Decorative background element -->
-            <div class="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-full -mr-12 -mt-12 opacity-30 group-hover:opacity-50 transition-opacity"></div>
-            
-            <div class="relative z-10">
-              <div class="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-                <!-- Enhanced Avatar -->
-                <div class="flex-shrink-0">
-                  <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg ring-4 ring-white ring-offset-2 ring-offset-teal-50 group-hover:scale-105 transition-transform duration-300">
-                    {{ agent.name.charAt(0) }}
-                  </div>
-                </div>
-                
-                <!-- Agent Info -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                    <div>
-                      <h4 class="font-bold text-gray-800 text-lg sm:text-xl group-hover:text-teal-600 transition-colors">{{ agent.name }}</h4>
-                      <p class="text-sm sm:text-base text-gray-600 font-medium">{{ agent.title }}</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <svg class="w-4 h-4 sm:w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <span class="font-semibold text-sm sm:text-base text-gray-800">{{ agent.rating }}</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Stats and Info -->
-                  <div class="flex flex-wrap gap-2 sm:gap-3 mb-3">
-                    <div class="flex items-center gap-1 bg-gray-50 px-3 py-1.5 rounded-full">
-                      <span class="text-sm">📍</span>
-                      <span class="text-sm text-gray-700 font-medium">{{ agent.location }}</span>
-                    </div>
-                    <div class="flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-full">
-                      <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span class="font-semibold text-sm text-green-700">{{ agent.completionRate }}%</span>
-                    </div>
-                    <div class="flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full">
-                      <span class="text-sm">💼</span>
-                      <span class="text-sm text-gray-700 font-medium">{{ agent.company }}</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Skills Preview -->
-                  <div class="mb-3">
-                    <p class="text-xs sm:text-sm text-gray-500 mb-2">Top Skills:</p>
-                    <div class="flex flex-wrap gap-1 sm:gap-2">
-                      <span v-for="skill in agent.skills.slice(0, 3)" :key="skill.name" class="px-2 py-1 bg-teal-100 text-teal-700 text-xs font-medium rounded-full">
-                        {{ skill.name }}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <!-- Availability Info -->
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs sm:text-sm text-gray-500">{{ agent.availability.type }} · {{ agent.availability.hours }}</span>
-                    </div>
-                    <div class="text-right">
-                      <span :class="agent.status === 'Ongoing' ? 'text-green-600' : 'text-blue-600'" class="font-semibold text-xs sm:text-sm block">{{ agent.status }}</span>
-                      <p class="font-bold text-sm sm:text-base text-gray-800">${{ agent.rate }}/Mo</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Job Description -->
       <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm mb-4 sm:mb-6">
         <h3 class="text-base sm:text-lg md:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Description</h3>
@@ -264,28 +178,9 @@ import { jobsService } from '../../services/jobsService'
 import { applicationsService } from '@/services/applicationsService'
 import type { ApplicationOut } from '@/types/api'
 
-interface Agent {
-  id: string
-  name: string
-  title: string
-  company: string
-  location: string
-  rating: number
-  completionRate: number
-  skills: Array<{ name: string }>
-  availability: {
-    type: string
-    hours: string
-  }
-  status: string
-  rate: number
-}
-
 const route = useRoute()
 const router = useRouter()
 
-// Recommended agents data
-const recommendedAgents = ref<Agent[]>([])
 const gigBullets = ref<string[]>([])
 
 const hydrateJobFromContext = (jobId: string): boolean => {
