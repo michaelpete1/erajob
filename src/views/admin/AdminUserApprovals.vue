@@ -1,7 +1,10 @@
 <template>
   <div class="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen">
     <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">User Approval Queue</h1>
-    <p class="text-sm text-gray-600 mb-6">Review and approve new agents and clients.</p>
+    <p class="text-sm text-gray-600 mb-3">Review and approve new agents and clients.</p>
+    <div class="mb-6 text-xs sm:text-sm text-gray-500 bg-teal-50 border border-teal-100 rounded-md px-3 py-2">
+      Rejected accounts are scheduled for automatic cleanup on the backend, so no manual deletion is required.
+    </div>
     
     <div v-if="isLoading" class="text-center p-8">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-teal mx-auto"></div>
@@ -121,11 +124,31 @@ const persistIdSet = (key: string, idSet: Set<string>) => {
 }
 
 const determineRole = (user: any): 'agent' | 'client' => {
-  if (user?.status && user.status !== 'pending') {
-    if (user.role?.agent) return 'agent'
-    if (user.role?.client) return 'client'
+  if (!user) return 'client'
+
+  const normalise = (value: unknown): 'agent' | 'client' | null => {
+    if (typeof value !== 'string') return null
+    const lower = value.toLowerCase()
+    if (lower.includes('agent')) return 'agent'
+    if (lower.includes('client')) return 'client'
+    return null
   }
-  return 'client'
+
+  const roleFromObject = (role: any): 'agent' | 'client' | null => {
+    if (!role || typeof role !== 'object') return null
+    if (role.agent) return 'agent'
+    if (role.client) return 'client'
+    return null
+  }
+
+  return (
+    roleFromObject(user.role) ||
+    normalise(user.role) ||
+    normalise(user.signup_role) ||
+    normalise(user.requested_role) ||
+    normalise(user.desired_role) ||
+    'client'
+  )
 }
 
 const fetchUsers = async () => {

@@ -1,14 +1,5 @@
 <template>
   <div class="relative min-h-screen bg-gradient-to-br from-brand-teal via-teal-600 to-teal-700 overflow-hidden">
-    <div class="absolute top-0 right-0 h-24 w-24 sm:h-32 sm:w-32 md:h-48 md:w-48 rounded-full bg-white/10 translate-x-1/4 -translate-y-1/4 backdrop-blur-sm animate-pulse-slow"></div>
-    <div class="absolute bottom-0 left-0 h-20 w-20 sm:h-24 sm:w-24 md:h-40 md:w-40 rounded-full bg-white/10 -translate-x-1/4 translate-y-1/4 backdrop-blur-sm animate-pulse-slow-reverse"></div>
-    <div class="absolute top-1/2 left-1/2 h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 rounded-full bg-white/5 -translate-x-1/2 -translate-y-1/2 backdrop-blur-sm animate-float"></div>
-    
-    <div class="absolute top-16 left-16 sm:top-20 sm:left-20 w-2 h-2 bg-white/20 rounded-full animate-float-delayed-1"></div>
-    <div class="absolute top-32 right-24 sm:top-40 sm:right-32 w-1 h-1 bg-white/30 rounded-full animate-float-delayed-2"></div>
-    <div class="absolute bottom-24 left-32 sm:bottom-32 sm:left-40 w-1.5 h-1.5 bg-white/25 rounded-full animate-float-delayed-3"></div>
-    <div class="absolute bottom-16 right-16 sm:bottom-20 sm:right-20 w-2.5 h-2.5 bg-white/15 rounded-full animate-float-delayed-4"></div>
-
     <div class="relative z-10 container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-24">
       <header class="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[90%] sm:w-[92%] max-w-3xl bg-brand-teal text-white rounded-xl px-3 sm:px-4 py-2 sm:py-3 z-50 shadow-md flex items-center justify-between">
         <div class="flex items-center gap-2 sm:gap-3">
@@ -29,15 +20,14 @@
           <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
           </svg>
-          Total: {{ filteredJobs.length }}
+          Total: {{ allJobs.length }}
           <span v-if="loading" class="ml-2 text-xs">(Loading...)</span>
           <span v-if="error" class="ml-2 text-xs text-red-300">({{ error }})</span>
         </div>
-        <button @click="deleteSelectedJobs" aria-label="Delete selected job offers" class="p-1.5 sm:p-2 text-white/95 hover:text-white rounded-md hover:bg-white/10 transition-colors">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-          </svg>
-        </button>
+      </div>
+
+      <div class="mt-1 mb-3 text-center text-white/80 text-xs sm:text-sm">
+        Rejected jobs are queued for automatic removal in the backend. No manual deletion is required.
       </div>
 
       <div class="mb-4 sm:mb-6 flex items-center justify-center">
@@ -72,16 +62,34 @@
 
       <div v-else-if="filteredJobs.length === 0" class="text-center py-8">
         <p class="text-white/80">No jobs found.</p>
+        <p class="text-white/60 text-sm mt-2">If you recently created a job, tap the refresh button below.</p>
+        <button @click="fetchJobs" class="mt-4 px-4 py-2 bg-white/20 rounded-md hover:bg-white/30 transition-colors">
+          Refresh
+        </button>
       </div>
 
       <div v-else class="space-y-3 sm:space-y-4">
         <div v-for="(job, index) in filteredJobs" :key="job.id || index" :class="`animate-stagger-${(index % 4) + 1}`" class="bg-white/95 backdrop-blur-sm p-4 sm:p-5 rounded-xl shadow-lg border-l-4 border-white/30 cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02]">
 
-          <div class="flex items-center text-xs text-gray-500 mb-2">
-            <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>{{ job.date_created ? new Date(job.date_created * 1000).toLocaleDateString() : 'N/A' }}</span>
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
+            <div class="flex items-center">
+              <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span>{{ job.date_created ? new Date(job.date_created * 1000).toLocaleDateString() : 'N/A' }}</span>
+            </div>
+            <span :class="statusBadgeClass(job.status)" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] sm:text-xs font-semibold">
+              <svg v-if="getStatusLabel(job.status) === 'Pending'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <svg v-else-if="getStatusLabel(job.status) === 'Approved'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              {{ getStatusLabel(job.status) }}
+            </span>
           </div>
 
           <h4 class="text-sm sm:text-lg font-bold mb-3 text-gray-900 display-font">{{ job.project_title }}</h4>
@@ -208,16 +216,20 @@ const parseAdminApproved = (value: unknown): boolean | null => {
 };
 
 const normaliseJob = (job: AdminJob): AdminJob => {
-    const isApproved = parseAdminApproved(job.admin_approved);
-    const derivedStatus = isApproved === true
-        ? APPROVED_STATUS_LABEL
-        : isApproved === false
-            ? 'Rejected'
-            : job.status ?? PENDING_STATUS_LABEL;
+    const parsedApproved = parseAdminApproved(job.admin_approved);
+    const rawStatus = job.status?.toString().trim().toLowerCase();
+
+    let derivedStatus: 'approved' | 'pending' | 'rejected' = 'pending';
+
+    if (rawStatus === 'approved' || parsedApproved === true) {
+        derivedStatus = 'approved';
+    } else if (rawStatus === 'rejected') {
+        derivedStatus = 'rejected';
+    }
 
     return {
         ...job,
-        admin_approved: isApproved,
+        admin_approved: parsedApproved,
         status: derivedStatus
     };
 };
@@ -230,8 +242,7 @@ const fetchJobs = async () => {
         const response = await api.jobs.listAdminJobs(0, 50);
         if (response.success && response.data) {
             allJobs.value = response.data
-                .map(job => normaliseJob(job as AdminJob))
-                .filter(job => job.status !== 'Rejected');
+                .map(job => normaliseJob(job as AdminJob));
         } else {
             error.value = response.error || 'Failed to fetch jobs';
         }
@@ -242,12 +253,36 @@ const fetchJobs = async () => {
     }
 };
 
+const deriveJobState = (job: AdminJob): 'approved' | 'pending' | 'rejected' => {
+    const status = job.status?.toString().trim().toLowerCase();
+
+    if (status === 'approved') return 'approved';
+    if (status === 'rejected') return 'rejected';
+    return 'pending';
+};
+
 const filteredJobs = computed<AdminJob[]>(() => {
     if (currentTab.value === 'Approved') {
-        return allJobs.value.filter(job => job.admin_approved === true);
+        return allJobs.value.filter(job => deriveJobState(job) === 'approved');
     }
-    return allJobs.value.filter(job => job.admin_approved !== true && job.status !== 'Rejected');
+    return allJobs.value.filter(job => deriveJobState(job) === 'pending');
 });
+
+const getStatusLabel = (status: string | null | undefined): 'Approved' | 'Pending' | 'Rejected' => {
+    const normalized = status?.toString().trim().toLowerCase();
+
+    if (normalized === 'approved') return 'Approved';
+    if (normalized === 'rejected') return 'Rejected';
+    return 'Pending';
+};
+
+const statusBadgeClass = (status: string | null | undefined): string => {
+    const normalized = status?.toString().trim().toLowerCase();
+
+    if (normalized === 'approved') return 'bg-green-100 text-green-700 border-green-200';
+    if (normalized === 'rejected') return 'bg-red-100 text-red-700 border-red-200';
+    return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+};
 
 // Admin action functions
 const approveJob = async (jobId: string) => {

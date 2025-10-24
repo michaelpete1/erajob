@@ -60,17 +60,15 @@ const navbarPaddingClass = computed(() => {
   return ''
 })
 
-// Compute bottom nav padding class
-const bottomNavPaddingClass = computed(() => {
-  if (userRole.value === 'client') {
-    return 'client-bottom-nav-safe'
-  } else if (userRole.value === 'agent') {
-    return 'agent-bottom-nav-safe'
-  } else if (userRole.value === 'admin') {
-    return 'admin-bottom-nav-safe'
+
+const bottomContentPaddingClass = computed(() => {
+  if (!shouldShowNavbar.value) return ''
+  if (['client', 'agent', 'admin'].includes(userRole.value)) {
+    return 'pb-20 lg:pb-0'
   }
   return ''
 })
+
 
 onMounted(() => {
   updateUserRole()
@@ -150,7 +148,7 @@ function reloadApp() {
 </script>
 
 <template>
-  <div id="app-shell" class="min-h-screen" :class="[navbarPaddingClass, bottomNavPaddingClass]">
+  <div id="app-shell" class="min-h-screen" :class="[navbarPaddingClass, bottomContentPaddingClass]">
     <!-- Conditional Top Navigation -->
     <ClientNavbar v-if="shouldShowNavbar && userRole === 'client'" />
     <AgentNavbar v-else-if="shouldShowNavbar && userRole === 'agent'" />
