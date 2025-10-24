@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-16 sm:pb-20">
+  <div class="min-h-screen bg-gray-50 pb-28 sm:pb-32 lg:pb-20">
     <!-- Header -->
     <div class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
       <div class="flex items-center justify-between max-w-7xl mx-auto">
@@ -56,7 +56,7 @@
             v-model="project.category"
             class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
           >
-            <option value="" disabled>Select a category</option>
+            <option value="" disabled>Please select</option>
             <option
               v-for="option in categoryOptions"
               :key="option.value"
@@ -180,7 +180,7 @@
               v-model="selectedSkill"
               class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
             >
-              <option value="" disabled>Select a skill</option>
+              <option value="" disabled>Please select</option>
               <option
                 v-for="option in skillOptions"
                 :key="option.value"
@@ -204,7 +204,7 @@
         </div>
 
         <!-- Submit Button -->
-        <div class="sticky bottom-0 bg-white border-t border-gray-200 py-3 px-4 sm:px-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 rounded-b-xl">
+        <div class="sticky bottom-28 sm:bottom-32 lg:bottom-6 bg-white border-t border-gray-200 py-3 px-4 sm:px-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 rounded-b-xl shadow-lg">
           <button
             @click="submitProject"
             type="button"
@@ -257,8 +257,7 @@ const categoryOptions: Array<{ value: JobsBase['category']; label: string }> = [
   { value: 'Executive Assitant', label: 'Executive Assistant' },
   { value: 'Appointment Setting', label: 'Appointment Setting' },
   { value: 'Digital Marketing', label: 'Digital Marketing' },
-  { value: 'Data Analysis', label: 'Data Analysis' },
-  { value: 'Other', label: 'Other' }
+  { value: 'Data Analysis', label: 'Data Analysis' }
 ];
 
 const skillOptions: Array<{ value: JobsBase['skills_needed']; label: string }> = categoryOptions.map(option => ({
@@ -280,11 +279,11 @@ const getOptionLabel = (value: JobsBase['category'] | JobsBase['skills_needed'])
 
 const project = ref<JobsBase>({
   project_title: '',
-  category: 'Other',
+  category: '' as JobsBase['category'],
   budget: 0,
   description: '',
   requirement: '',
-  skills_needed: 'Other',
+  skills_needed: '' as JobsBase['skills_needed'],
   timeline: {
     start_date: 0,
     deadline: 0
@@ -301,7 +300,7 @@ const isFormValid = computed(() => {
 
   return (
     project.value.project_title.trim() !== '' &&
-    project.value.category && project.value.category !== 'Other' &&
+    project.value.category.trim() !== '' &&
     project.value.budget > 0 &&
     project.value.description.trim() !== '' &&
     hasValidRequirements &&
@@ -334,7 +333,7 @@ const addSkill = () => {
   if (selectedSkill.value && !formData.value.skills.includes(selectedSkill.value)) {
     formData.value.skills.push(selectedSkill.value);
     const primarySkill = formData.value.skills[0];
-    project.value.skills_needed = (primarySkill ?? 'Other') as JobsBase['skills_needed'];
+    project.value.skills_needed = (primarySkill ?? '') as JobsBase['skills_needed'];
     selectedSkill.value = '';
   }
 };
@@ -342,7 +341,7 @@ const addSkill = () => {
 const removeSkill = (index: number) => {
   formData.value.skills.splice(index, 1);
   const primarySkill = formData.value.skills[0];
-  project.value.skills_needed = (primarySkill ?? 'Other') as JobsBase['skills_needed'];
+  project.value.skills_needed = (primarySkill ?? '') as JobsBase['skills_needed'];
 };
 
 const normalizeBudget = () => {

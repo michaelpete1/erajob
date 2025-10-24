@@ -44,7 +44,12 @@
         >
           <CheckCircleIcon :class="iconClass('/client/notifications')" />
           <span class="text-[11px] mt-0.5">Alerts</span>
-          <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
+          <span
+            v-if="unreadCount > 0"
+            class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]"
+          >
+            {{ unreadBadgeLabel }}
+          </span>
         </router-link>
 
         <!-- Settings Button -->
@@ -71,10 +76,23 @@ import {
   CheckCircleIcon
 } from '@heroicons/vue/24/solid'
 import { useRoute, useRouter } from 'vue-router'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useAlerts } from '../composables/useAlerts'
 
 const route = useRoute()
 const router = useRouter()
+const { unreadCount, getAlerts } = useAlerts()
+const unreadBadgeLabel = computed(() => {
+  const count = Number(unreadCount.value || 0)
+  return count > 9 ? '9+' : String(count)
+})
+onMounted(async () => {
+  try {
+    await getAlerts()
+  } catch (error) {
+    console.warn('ClientBottomNav: failed to load alerts', error)
+  }
+})
 // Check if plus button should be shown (only for clients on project-related pages)
 const showPlusButton = computed(() => {
   const clientProjectPages = [

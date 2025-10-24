@@ -275,8 +275,7 @@ const expertiseOptions = [
   'Editing',
   'Book Keeping',
   'Executive Assitant',
-  'Appointment Setting',
-  'Other'
+  'Appointment Setting'
 ]
 
 const timezoneOptions = useTimezones()

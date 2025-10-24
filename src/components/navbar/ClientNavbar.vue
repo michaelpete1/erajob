@@ -42,7 +42,12 @@
           >
             <CheckCircleIcon :class="navIconClass('/client/notifications')" />
             <span>Alerts</span>
-            <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
+            <span
+              v-if="unreadCount > 0"
+              class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]"
+            >
+              {{ unreadBadgeLabel }}
+            </span>
           </router-link>
 
           <router-link 
@@ -129,7 +134,12 @@
         >
           <CheckCircleIcon :class="mobileNavIconClass('/client/notifications')" />
           <span>Alerts</span>
-          <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
+          <span
+            v-if="unreadCount > 0"
+            class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]"
+          >
+            {{ unreadBadgeLabel }}
+          </span>
         </router-link>
 
         <router-link 
@@ -172,14 +182,25 @@ import {
 import { 
   CheckCircleIcon
 } from '@heroicons/vue/24/solid'
+import { useAlerts } from '../../composables/useAlerts'
 
 const route = useRoute()
 const userRole = ref<string>('')
 const mobileMenuOpen = ref<boolean>(false)
+const { unreadCount, getAlerts } = useAlerts()
+const unreadBadgeLabel = computed(() => {
+  const count = Number(unreadCount.value || 0)
+  return count > 9 ? '9+' : String(count)
+})
 
-onMounted(() => {
+onMounted(async () => {
   // NOTE: This assumes userRole is correctly managed in App.vue based on localStorage
   userRole.value = localStorage.getItem('userRole') || ''
+  try {
+    await getAlerts()
+  } catch (error) {
+    console.warn('ClientNavbar: failed to load alerts', error)
+  }
 })
 
 const userInitial = computed(() => {

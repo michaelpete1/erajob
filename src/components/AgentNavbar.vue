@@ -19,7 +19,12 @@
                 <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
               </svg>
               <span>Notifications</span>
-              <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
+              <span
+                v-if="unreadCount > 0"
+                class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]"
+              >
+                {{ unreadBadgeLabel }}
+              </span>
             </router-link>
             <router-link 
               :to="'/agent/gigs-listing'" 
@@ -120,7 +125,12 @@
         >
           <MusicalNoteIcon :class="mobileNavIconClass('/agent/notifications')" />
           <span>Notifications</span>
-          <span class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]">3</span>
+          <span
+            v-if="unreadCount > 0"
+            class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]"
+          >
+            {{ unreadBadgeLabel }}
+          </span>
         </router-link>
 
         <!-- FIX: Use global /settings since /agent/settings route does not exist -->
@@ -164,14 +174,25 @@ import {
 import BrandLogo from './BrandLogo.vue'
 import { useRoute } from 'vue-router'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useAlerts } from '../composables/useAlerts'
 
 const route = useRoute()
 const userRole = ref<string>('')
 const mobileMenuOpen = ref<boolean>(false)
+const { unreadCount, getAlerts } = useAlerts()
+const unreadBadgeLabel = computed(() => {
+  const count = Number(unreadCount.value || 0)
+  return count > 9 ? '9+' : String(count)
+})
 
-onMounted(() => {
+onMounted(async () => {
   // NOTE: This assumes userRole is correctly managed in App.vue based on localStorage
   userRole.value = localStorage.getItem('userRole') || ''
+  try {
+    await getAlerts()
+  } catch (error) {
+    console.warn('AgentNavbar: failed to load alerts', error)
+  }
 })
 
 const userInitial = computed(() => {

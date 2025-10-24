@@ -40,6 +40,12 @@
         >
           <BellIcon :class="iconClass('/agent/notifications')" />
           <span class="text-[11px] mt-0.5">Alerts</span>
+          <span
+            v-if="unreadCount > 0"
+            class="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-teal-400 text-white text-[10px]"
+          >
+            {{ unreadBadgeLabel }}
+          </span>
         </router-link>
 
         <!-- Settings -->
@@ -58,6 +64,8 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { useAlerts } from '../composables/useAlerts'
 import {
   BriefcaseIcon,
   ClipboardDocumentListIcon,
@@ -67,6 +75,18 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
+const { unreadCount, getAlerts } = useAlerts()
+const unreadBadgeLabel = computed(() => {
+  const count = Number(unreadCount.value || 0)
+  return count > 9 ? '9+' : String(count)
+})
+onMounted(async () => {
+  try {
+    await getAlerts()
+  } catch (error) {
+    console.warn('AgentBottomNav: failed to load alerts', error)
+  }
+})
 
 const navItemClass = (path: string) => {
   const isActive = route.path.startsWith(path)

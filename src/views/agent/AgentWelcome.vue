@@ -545,8 +545,7 @@ const expertiseOptions = [
   'Editing',
   'Book Keeping',
   'Executive Assitant',
-  'Appointment Setting',
-  'Other'
+  'Appointment Setting'
 ]
 
 const yearsOptions = [0,1,2,3,5,7,10,15]
