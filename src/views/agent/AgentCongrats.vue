@@ -102,7 +102,11 @@ const finishSignup = async () => {
       localStorage.removeItem('selectedAgentServices')
     } catch {}
 
-    router.push('/agent/welcome-back')
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('userRole')
+    localStorage.removeItem('userInfo')
+    router.push('/sign-in')
   } catch (e: any) {
     errorMessage.value = e?.response?.data?.detail || e?.message || 'Unexpected error.'
   } finally {
