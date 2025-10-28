@@ -1,7 +1,9 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios'
 
 // Base URL for the API
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
+const API_BASE_URL = import.meta.env.DEV
+  ? '/api'  // Uses the proxy in development
+  : import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({

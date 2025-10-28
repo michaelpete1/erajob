@@ -119,7 +119,7 @@ onBeforeRouteLeave((_to, _from, next) => {
     next()
     return
   }
-  next('/agent/services')
+  next('/agent/welcome')
 })
 </script>
 

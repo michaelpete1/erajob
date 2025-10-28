@@ -15,6 +15,7 @@ export class AlertsService {
   private notificationState: AlertState = {
     alerts: [],
     unreadCount: 0,
+    totalUnread: 0,
     loading: false,
     error: null,
     pagination: {
@@ -43,7 +44,7 @@ export class AlertsService {
   /**
    * Get notifications for current user (role-aware via /v1/alertss/{role})
    */
-  async getAlerts(params?: PaginationParams & AlertFilters): Promise<ServiceResponse<AlertOut[]>> {
+  async getAlerts(params?: PaginationParams & AlertFilters): Promise<ServiceResponse<{ alerts: AlertOut[]; totalUnread: number }>> {
     this.notificationState.loading = true
     this.notificationState.error = null
 
@@ -56,10 +57,12 @@ export class AlertsService {
 
     try {
       // According to OpenAPI, alerts list does not paginate; we ignore start/stop
-      const response = await apiClient.get<ApiResponse<AlertOut[]>>(`/v1/alertss/${role}`)
+      const response = await apiClient.get<ApiResponse<{ alerts: AlertOut[]; total_number_of_unread?: number }>>(`/v1/alertss/${role}`)
 
       if (response.data.status_code === 200) {
-        const alerts = (response.data.data as any[]) || []
+        const payload = (response.data.data as any) || {}
+        const alerts = Array.isArray(payload.alerts) ? payload.alerts : []
+        const totalUnread = typeof payload.total_number_of_unread === 'number' ? payload.total_number_of_unread : undefined
 
         // Update pagination state (treat whole list as single page)
         this.notificationState.pagination = {
@@ -71,14 +74,24 @@ export class AlertsService {
         // Update alerts list
         this.notificationState.alerts = alerts as any
 
-        // Update unread count (map missing flag to false)
-        this.notificationState.unreadCount = (alerts as any[]).filter((alert: any) => !alert.is_read).length
+        // Update unread count using payload value when available
+        if (typeof totalUnread === 'number') {
+          this.notificationState.unreadCount = totalUnread
+          this.notificationState.totalUnread = totalUnread
+        } else {
+          const computedUnread = (alerts as any[]).filter((alert: any) => !alert.is_read).length
+          this.notificationState.unreadCount = computedUnread
+          this.notificationState.totalUnread = computedUnread
+        }
 
         this.notificationState.loading = false
 
         return {
           success: true,
-          data: alerts as any,
+          data: {
+            alerts: alerts as any,
+            totalUnread: this.notificationState.unreadCount
+          },
           message: `Retrieved ${alerts.length} alerts`
         }
       } else {
@@ -93,9 +106,23 @@ export class AlertsService {
         console.error('[AlertsService] getAlerts error:', message)
       }
 
+      // Degrade gracefully: return empty alerts so UI can continue rendering
+      this.notificationState.alerts = []
+      this.notificationState.unreadCount = 0
+      this.notificationState.totalUnread = 0
+      this.notificationState.pagination = {
+        start: 0,
+        stop: 0,
+        hasMore: false
+      }
+
       return {
-        success: false,
-        error: message
+        success: true,
+        data: {
+          alerts: [],
+          totalUnread: 0
+        },
+        message
       }
     }
   }

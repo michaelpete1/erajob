@@ -103,6 +103,25 @@
           >
             Open Work Logs
           </button>
+          <button
+            v-if="activeTab === 'pending'"
+            class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center gap-1"
+            @click.stop="confirmDeleteProject(project)"
+            :disabled="isDeleting(project.id)"
+          >
+            <span v-if="isDeleting(project.id)" class="inline-block animate-spin">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </span>
+            <span v-else>
+              <svg class="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </span>
+            {{ isDeleting(project.id) ? 'Deleting...' : 'Delete' }}
+          </button>
         </div>
       </div>
 
@@ -213,9 +232,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useJobs } from '../../composables/useJobs'
+import { useJobs } from '@/composables/useJobs'
+import { useToast } from 'vue-toastification'
 
 const router = useRouter()
+const { deleteJob } = useJobs()
+const toast = useToast()
 const activeTab = ref<'active' | 'pending'>('pending')
 const { getClientJobs, getAllJobs, loading, clearError } = useJobs()
 const error = ref<string | null>(null)
@@ -265,12 +287,11 @@ const activeProjects = ref<Project[]>([])
 const browseProjects = ref<Project[]>([])
 
 const isDeleting = (id?: string) => {
-  if (!id) return false
-  return deletingJobIds.value.includes(id)
+  return id ? deletingJobIds.value.includes(id) : false
 }
 
 const removeDeletingId = (id: string) => {
-  deletingJobIds.value = deletingJobIds.value.filter(existingId => existingId !== id)
+  deletingJobIds.value = deletingJobIds.value.filter(did => did !== id)
 }
 
 const suspiciousPatterns = [
@@ -670,7 +691,36 @@ const goToProjectWorkLogs = (project: Project) => {
 }
 
 const goToCreateProject = () => {
-  router.push('/client/projects/create')
+  router.push('/client/create-project')
+}
+
+const confirmDeleteProject = async (project: Project) => {
+  if (!project.id) return
+  
+  const confirmed = window.confirm('Are you sure you want to delete this project? This action cannot be undone.')
+  if (!confirmed) return
+  
+  try {
+    deletingJobIds.value.push(project.id)
+    const response = await deleteJob(project.id)
+    
+    if (response.success) {
+      // Remove from the appropriate list based on tab
+      if (activeTab.value === 'pending') {
+        browseProjects.value = browseProjects.value.filter(p => p.id !== project.id)
+      } else {
+        activeProjects.value = activeProjects.value.filter(p => p.id !== project.id)
+      }
+      toast.success('Project deleted successfully')
+    } else {
+      throw new Error(response.error || 'Failed to delete project')
+    }
+  } catch (error) {
+    console.error('Error deleting project:', error)
+    toast.error(error instanceof Error ? error.message : 'Failed to delete project')
+  } finally {
+    removeDeletingId(project.id)
+  }
 }
 </script>
 

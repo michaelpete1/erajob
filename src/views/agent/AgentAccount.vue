@@ -163,17 +163,47 @@
           </div>
         </div>
       </section>
+      <div class="mt-6 space-y-4">
+        <button 
+          @click="handleSignOut"
+          class="w-full py-3 px-4 bg-brand-teal text-white rounded-xl font-medium hover:bg-brand-teal-dark transition-colors"
+        >
+          Sign Out
+        </button>
+        
+        <button
+          @click="handleDeleteAccount"
+          :disabled="isDeletingAccount"
+          class="w-full py-3 px-4 border border-red-500 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <span v-if="isDeletingAccount" class="inline-flex items-center justify-center">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Deleting Account...
+          </span>
+          <span v-else>Delete Account</span>
+        </button>
+      </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { usersService } from '../../services/usersService'
+import { useToast } from 'vue-toastification'
 import { apiService } from '../../services/api'
 
 const agentName = ref('')
 const agentEmail = ref('')
 const memberSince = ref('')
+
+const router = useRouter()
+const toast = useToast()
+const isDeletingAccount = ref(false)
 
 const agentProfile = ref({
   name: '',
@@ -297,7 +327,87 @@ async function fetchAgentProfile() {
 
 function ensureMemberSinceFallback() {
   if (!memberSince.value) {
-    memberSince.value = 'Not available'
+    memberSince.value = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+  }
+}
+
+const handleSignOut = async () => {
+  try {
+    // Clear any stored tokens or user data
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('userRole')
+    
+    // Redirect to sign in page
+    router.push('/sign-in')
+  } catch (error) {
+    console.error('Error during sign out:', error)
+    toast.error('Failed to sign out. Please try again.')
+  }
+}
+
+import { handleAccountDeletion } from '@/utils/auth'
+
+const handleDeleteAccount = async () => {
+  if (isDeletingAccount.value) return
+  
+  // Use a more modern confirmation dialog
+  const confirmed = window.confirm(
+    '⚠️ WARNING: This action is permanent!\n\n' +
+    'Deleting your account will:\n' +
+    '• Permanently remove all your data\n' +
+    '• Cancel any active subscriptions\n' +
+    '• Remove access to all your resources\n\n' +
+    'This action cannot be undone.\n\n' +
+    'Are you absolutely sure you want to delete your account?'
+  )
+  
+  if (!confirmed) {
+    toast.info('Account deletion cancelled')
+    return
+  }
+
+  isDeletingAccount.value = true
+  
+  try {
+    // Show loading state
+    const toastId = toast.loading('Deleting your account...')
+    
+    // Call the service
+    const result = await usersService.deleteAccount()
+    
+    if (result.success) {
+      toast.update(toastId, {
+        render: 'Account deleted successfully. Redirecting...',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000
+      })
+      
+      // Use the centralized account deletion handler
+      await handleAccountDeletion()
+      
+    } else {
+      throw new Error(result.error || 'Failed to delete account')
+    }
+  } catch (error) {
+    console.error('Account deletion failed:', error)
+    
+    let errorMessage = 'Failed to delete account. Please try again.'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('network') || error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.'
+      } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        errorMessage = 'Your session has expired. Please sign in again and try deleting your account.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
+    toast.error(errorMessage, { autoClose: 5000 })
+  } finally {
+    isDeletingAccount.value = false
   }
 }
 </script>

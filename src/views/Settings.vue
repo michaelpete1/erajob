@@ -151,6 +151,16 @@
           </svg>
         </div>
       </div>
+
+      <div class="mt-6 space-y-3">
+        <button
+          @click="handleDeleteAccount"
+          :disabled="isDeletingAccount"
+          class="w-full border border-red-500 text-red-600 py-3 px-4 rounded-lg font-medium text-sm hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {{ isDeletingAccount ? 'Deleting Account...' : 'Delete Account' }}
+        </button>
+      </div>
     </main>
   </div>
 </template>
@@ -160,6 +170,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { agentsService } from '@/services/agentsService'
 import authService from '@/services/authService'
+import { usersService } from '@/services/usersService'
 
 const router = useRouter()
 
@@ -172,6 +183,7 @@ const languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanes
 const loading = ref(false)
 const saving = ref(false)
 const error = ref<string | null>(null)
+const isDeletingAccount = ref(false)
 
 const userInitials = computed(() => {
   if (!userName.value) return 'AG'
@@ -318,6 +330,38 @@ const handleSectionClick = (section: string) => {
       break
     default:
       console.log('Unknown section:', section)
+  }
+}
+
+const clearAuthData = () => {
+  authService.logout()
+  localStorage.removeItem('userToken')
+  localStorage.removeItem('selectedClientServices')
+  localStorage.removeItem('selectedAgentServices')
+  localStorage.removeItem('selectedGig')
+}
+
+const handleDeleteAccount = async () => {
+  if (isDeletingAccount.value) return
+  const confirmed = confirm('This will permanently delete your account and data. This action cannot be undone. Continue?')
+  if (!confirmed) return
+
+  isDeletingAccount.value = true
+  try {
+    const result = await usersService.deleteAccount()
+    if (result.success) {
+      alert('Your account has been deleted successfully.')
+      clearAuthData()
+      router.replace('/sign-in')
+    } else {
+      throw new Error(result.error || 'Failed to delete account')
+    }
+  } catch (error: any) {
+    console.error('Failed to delete account:', error)
+    const message = error?.response?.data?.detail || error?.message || 'Failed to delete account. Please try again.'
+    alert(message)
+  } finally {
+    isDeletingAccount.value = false
   }
 }
 </script>

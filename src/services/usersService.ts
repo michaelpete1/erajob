@@ -156,19 +156,63 @@ export class UsersService {
 
   /**
    * Delete user account
+   * @returns Promise with success status and message/error
    */
   async deleteAccount(): Promise<ServiceResponse<void>> {
     try {
-      await apiClient.delete('/v1/users/account')
-
-      return {
-        success: true,
-        message: 'Account deleted successfully'
+      // Get the token from localStorage
+      const token = localStorage.getItem('access_token') || localStorage.getItem('user-token')
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.')
       }
+
+      console.log('Attempting to delete account...')
+      
+      const response = await apiClient.delete('/v1/users/account', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        validateStatus: (status) => status < 500 // Don't throw for 4xx errors
+      })
+
+      console.log('Delete account response:', response.status, response.data)
+
+      if (response.status === 200) {
+        return {
+          success: true,
+          message: response.data?.message || 'Account deleted successfully',
+          data: response.data
+        }
+      }
+
+      // Handle specific error statuses
+      if (response.status === 401) {
+        throw new Error('Session expired. Please log in again.')
+      }
+      
+      if (response.status === 403) {
+        throw new Error('You do not have permission to perform this action.')
+      }
+
+      throw new Error(response.data?.detail || 'Failed to delete account')
+      
     } catch (error: any) {
+      console.error('Error deleting account:', error)
+      
+      // Handle network errors
+      if (error.code === 'ERR_NETWORK') {
+        return {
+          success: false,
+          error: 'Network error. Please check your connection and try again.'
+        }
+      }
+      
+      // Handle other errors
       return {
         success: false,
-        error: error.response?.data?.detail || error.message || 'Failed to delete account'
+        error: error.response?.data?.detail || error.message || 'Failed to delete account. Please try again.'
       }
     }
   }

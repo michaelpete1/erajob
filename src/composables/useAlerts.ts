@@ -1,6 +1,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { alertsService } from '../services'
-import type { AlertState, AlertFilters, PaginationParams } from '../types/api'
+import type { AlertState, AlertFilters, PaginationParams, AlertOut } from '../types/api'
 
 export function useAlerts() {
   const alertState = ref<AlertState>({
@@ -25,13 +25,20 @@ export function useAlerts() {
     const result = await alertsService.getAlerts(params)
 
     if (result.success && result.data) {
-      alertState.value.alerts = result.data
+      const payload = result.data as { alerts?: AlertOut[]; totalUnread?: number }
+      const alerts = Array.isArray(payload.alerts) ? payload.alerts : []
+      const unreadTotal =
+        typeof payload.totalUnread === 'number'
+          ? payload.totalUnread
+          : alerts.filter((alert: any) => !alert?.is_read).length
+
+      alertState.value.alerts = alerts
       alertState.value.pagination = {
         start: params?.start || 0,
-        stop: params?.stop || result.data.length,
+        stop: params?.stop || alerts.length,
         hasMore: false
       }
-      alertState.value.unreadCount = result.data.filter((alert: any) => !alert?.is_read).length
+      alertState.value.unreadCount = unreadTotal
       alertState.value.error = null
     } else {
       alertState.value.error = result.error || 'Failed to fetch alerts'

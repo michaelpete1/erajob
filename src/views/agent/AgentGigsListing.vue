@@ -451,7 +451,7 @@ const filteredGigs = computed<MappedGigCard[]>(() => {
     if (activeTab.value === 'active') {
       return job.status === 'active'
     }
-    return ['awaiting_client', 'available'].includes(job.status)
+    return job.status !== 'active'
   })
 
   const query = searchQuery.value.trim().toLowerCase()

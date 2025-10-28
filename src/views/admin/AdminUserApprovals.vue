@@ -128,27 +128,58 @@ const determineRole = (user: any): 'agent' | 'client' => {
 
   const normalise = (value: unknown): 'agent' | 'client' | null => {
     if (typeof value !== 'string') return null
-    const lower = value.toLowerCase()
+    const lower = value.trim().toLowerCase()
+    if (!lower) return null
     if (lower.includes('agent')) return 'agent'
     if (lower.includes('client')) return 'client'
     return null
   }
 
-  const roleFromObject = (role: any): 'agent' | 'client' | null => {
+  const roleFromObject = (role: unknown): 'agent' | 'client' | null => {
     if (!role || typeof role !== 'object') return null
-    if (role.agent) return 'agent'
-    if (role.client) return 'client'
+    const record = role as Record<string, unknown>
+    const agentFlag = record.agent ?? record.Agent
+    const clientFlag = record.client ?? record.Client
+
+    const isTruthful = (flag: unknown) => {
+      if (flag === true) return true
+      if (typeof flag === 'string') return flag.toLowerCase() === 'true'
+      if (typeof flag === 'number') return flag === 1
+      return false
+    }
+
+    if (isTruthful(agentFlag)) return 'agent'
+    if (isTruthful(clientFlag)) return 'client'
     return null
   }
 
-  return (
-    roleFromObject(user.role) ||
-    normalise(user.role) ||
-    normalise(user.signup_role) ||
-    normalise(user.requested_role) ||
-    normalise(user.desired_role) ||
-    'client'
+  const fromRoleObject = roleFromObject(user.role)
+  if (fromRoleObject) return fromRoleObject
+
+  const stringCandidates = [user.role, user.signup_role, user.requested_role, user.desired_role, user.user_type]
+  for (const candidate of stringCandidates) {
+    const normalised = normalise(candidate)
+    if (normalised) return normalised
+  }
+
+  // Heuristics based on domain-specific fields
+  const hasAgentSignals = [
+    user.available_hours_agent_can_commit,
+    user.is_agent_open_to_calls_and_video_meetings,
+    user.does_agent_have_working_computer,
+    user.does_agent_have_stable_internet,
+    user.is_agent_comfortable_with_time_tracking_tools
+  ].some(flag => flag !== undefined && flag !== null)
+
+  if (hasAgentSignals) return 'agent'
+
+  const hasClientSignals = [user.client_reason_for_signing_up, user.client_need_agent_work_hours_to_be].some(
+    value => typeof value === 'string' && value.trim().length > 0
   )
+
+  if (hasClientSignals) return 'client'
+
+  return 'client'
 }
 
 const fetchUsers = async () => {

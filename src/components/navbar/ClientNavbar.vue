@@ -40,7 +40,7 @@
             :to="'/client/notifications'" 
             :class="['relative', navLinkClass('/client/notifications')]"
           >
-            <CheckCircleIcon :class="navIconClass('/client/notifications')" />
+            <BellIcon :class="navIconClass('/client/notifications')" />
             <span>Alerts</span>
             <span
               v-if="unreadCount > 0"
@@ -51,11 +51,11 @@
           </router-link>
 
           <router-link 
-            :to="'/client/settings'" 
-            :class="navLinkClass('/client/settings')"
+            :to="'/settings'" 
+            :class="navLinkClass('/settings')"
           >
             <!-- NOTE: Removed array filter logic for simplicity, relying on navIconClass for sizing -->
-            <Cog6ToothIcon :class="navIconClass('/client/settings')" />
+            <Cog6ToothIcon :class="navIconClass('/settings')" />
             <span>Settings</span>
           </router-link>
         </div>
@@ -132,7 +132,7 @@
           :class="['relative', mobileNavLinkClass('/client/notifications')]"
           @click="closeMobileMenu"
         >
-          <CheckCircleIcon :class="mobileNavIconClass('/client/notifications')" />
+          <BellIcon :class="mobileNavIconClass('/client/notifications')" />
           <span>Alerts</span>
           <span
             v-if="unreadCount > 0"
@@ -143,11 +143,11 @@
         </router-link>
 
         <router-link 
-          :to="'/client/settings'" 
-          :class="mobileNavLinkClass('/client/settings')"
+          :to="'/settings'" 
+          :class="mobileNavLinkClass('/settings')"
           @click="closeMobileMenu"
         >
-          <Cog6ToothIcon :class="mobileNavIconClass('/client/settings')" />
+          <Cog6ToothIcon :class="mobileNavIconClass('/settings')" />
           <span>Settings</span>
         </router-link>
 
@@ -177,11 +177,9 @@ import {
   PencilSquareIcon, 
   UserGroupIcon,
   Cog6ToothIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  BellIcon
 } from '@heroicons/vue/24/outline'
-import { 
-  CheckCircleIcon
-} from '@heroicons/vue/24/solid'
 import { useAlerts } from '../../composables/useAlerts'
 
 const route = useRoute()

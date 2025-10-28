@@ -89,19 +89,67 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, _from, next) => {
+// Import our auth utilities
+import { clearAuthData, handleAccountDeletion, validateSession } from '@/utils/auth'
+import { useToast } from 'vue-toastification'
+
+router.beforeEach(async (to, from, next) => {
+  const toast = useToast()
   const authPages = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/role-select', '/admin/sign-in']
   const publicPages = ['/', '/terms-and-conditions']
 
+  // Handle account deletion redirect
+  if (to.query.accountDeleted) {
+    toast.warning('Your account has been successfully deleted.')
+    // Clear the query param to prevent showing the message again on refresh
+    next({ ...to, query: {} })
+    return
+  }
+
   const isPublic = publicPages.includes(to.path)
   const isAuthPage = authPages.includes(to.path)
+  
   if (isPublic) {
     next()
     return
   }
 
+  // Check for existing auth data
   const token = localStorage.getItem('access_token')
-  const role = localStorage.getItem('userRole') || ''
+  const userRole = localStorage.getItem('userRole')
+  
+  // If no token but trying to access protected route, redirect to sign-in
+  if (!token && !isAuthPage) {
+    next({ name: 'sign-in', query: { redirect: to.fullPath } })
+    return
+  }
+  
+  // If token exists and going to auth page, redirect to appropriate dashboard
+  if (token && isAuthPage) {
+    const defaultRoute = userRole === 'admin' ? 'admin-job-approval' : `${userRole}-dashboard`
+    next({ name: defaultRoute })
+    return
+  }
+  
+  // Validate the session for protected routes
+  if (token && !isAuthPage) {
+    const isValidSession = await validateSession()
+    if (!isValidSession) {
+      // Clear invalid session data
+      clearAuthData()
+      toast.warning('Your session has expired. Please sign in again.')
+      next({ name: 'sign-in', query: { redirect: to.fullPath } })
+      return
+    }
+    
+    // Check route permissions based on user role
+    if (to.meta.role && to.meta.role !== userRole) {
+      // If user doesn't have permission, redirect to their dashboard
+      const defaultRoute = userRole === 'admin' ? 'admin-job-approval' : `${userRole}-dashboard`
+      next({ name: defaultRoute })
+      return
+    }
+  }
 
   const hasSignupData = !!localStorage.getItem('signupBasicData')
   const signupPages = [
@@ -144,14 +192,15 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   const requiredRole = (to.meta as any)?.role as string | undefined
-  if (requiredRole && role !== requiredRole) {
-    if (role === 'admin') return next('/admin/job-approval')
-    if (role === 'client') return next({ name: 'client-dashboard' })
-    if (role === 'agent') return next({ name: 'agent-explore-gigs' })
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('userInfo')
+  if (requiredRole && userRole !== requiredRole) {
+    // Redirect based on user's role
+    if (userRole === 'admin') return next('/admin/job-approval')
+    if (userRole === 'client') return next({ name: 'client-dashboard' })
+    if (userRole === 'agent') return next({ name: 'agent-explore-gigs' })
+    
+    // If we get here, the user role is invalid or missing
+    clearAuthData()
+    toast.warning('Invalid user role. Please sign in again.')
     return next('/sign-in')
   }
 

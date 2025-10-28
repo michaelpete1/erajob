@@ -86,29 +86,50 @@ interface LocalJobOut {
   };
 }
 
-// Helper to parse skills from string to string[]
-function parseSkills(skills: string | string[] | undefined): string[] {
-  if (!skills) return [];
-  
-  if (Array.isArray(skills)) {
-    return skills.filter(skill => typeof skill === 'string');
+const isTruthy = (flag: unknown): boolean => {
+  if (flag === true) return true
+  if (typeof flag === 'number') return flag === 1
+  if (typeof flag === 'string') {
+    const normalized = flag.trim().toLowerCase()
+    return ['true', '1', 'yes'].includes(normalized)
   }
-  
-  if (typeof skills !== 'string') {
-    return [];
-  }
-  
-  try {
-    const parsed = JSON.parse(skills);
-    if (Array.isArray(parsed)) {
-      return parsed.filter((s: any) => typeof s === 'string');
-    }
-  } catch (e) {
-    // If not valid JSON, try splitting by comma
-    return skills.split(',').map(s => s.trim()).filter(Boolean);
-  }
-  
-  return [];
+  return false
+}
+
+const deriveRawStatus = (job: any): string => {
+  const statusCandidates = [job?.status, job?.job_status, job?.jobStatus, job?.state]
+  const status = statusCandidates.find(value => typeof value === 'string' && value.trim().length > 0)
+  return status ? status.trim().toLowerCase() : ''
+}
+
+const normalizeJobStatus = (job: any): string => {
+  const derived = deriveJobStatus(job)
+  if (derived) return derived
+  return 'pending_review'
+}
+
+const isAdminApproved = (job: any): boolean => {
+  const adminFlags = [job?.admin_approved, job?.adminApproved, job?.is_admin_approved]
+  if (adminFlags.some(isTruthy)) return true
+
+  const rawStatus = deriveRawStatus(job)
+  return rawStatus.includes('approved') || rawStatus.includes('available')
+}
+
+const deriveJobStatus = (job: any): string => {
+  const adminApproved = isAdminApproved(job)
+  const rawStatus = deriveRawStatus(job)
+
+  if (rawStatus.includes('active')) return 'active'
+  if (rawStatus.includes('awaiting')) return 'awaiting_client'
+  if (rawStatus.includes('available')) return 'available'
+  if (rawStatus.includes('accepted')) return adminApproved ? 'active' : 'awaiting_client'
+  if (rawStatus.includes('approved')) return adminApproved ? 'available' : 'pending_admin'
+  if (rawStatus.includes('pending')) return adminApproved ? 'available' : 'pending_review'
+
+  if (adminApproved) return 'available'
+
+  return rawStatus || 'pending_review'
 }
 
 // Convert service job to our local job type
@@ -118,18 +139,21 @@ function toLocalJobOut(job: EJJobOut): LocalJobOut {
     ? job.skills_needed.join(', ')
     : (job.skills_needed || '');
 
+  const adminApproved = isTruthy((job as any)?.admin_approved ?? (job as any)?.adminApproved ?? (job as any)?.is_admin_approved)
+  const normalizedStatus = deriveJobStatus(job)
+
   return {
     id: job.id || null,
     date_created: job.date_created || null,
     last_updated: job.last_updated || null,
-    admin_approved: job.admin_approved || false,
+    admin_approved: adminApproved,
     project_title: job.project_title || '',
     description: job.description || '',
     category: job.category as string,
     skills_needed: skillsString, // Now matches API's string type
     timeline: job.timeline || { start_date: 0, deadline: 0 },
     budget: job.budget || 0,
-    status: job.status || 'draft',
+    status: normalizedStatus,
     client_id: (job as any).client_id || '',
     requirement: (job as any).requirement || '',
     break_down: (job as any).break_down || { Charges: 0, Tax: 0 }
@@ -153,10 +177,12 @@ const getClientJobs = async (start: number = 0, stop: number = 10) => {
     if (response.success && response.data) {
       const activeUserId = localStorage.getItem('userId');
       const jobsArray = Array.isArray(response.data) ? response.data : [response.data];
-      const filtered = activeUserId
-        ? jobsArray.filter(job => String((job as any)?.client_id ?? '') === activeUserId)
-        : jobsArray;
-      jobState.value.jobs = filtered as unknown as EJJobOut[];
+      if (activeUserId) {
+        const filtered = jobsArray.filter(job => String((job as any)?.client_id ?? '') === activeUserId);
+        jobState.value.jobs = (filtered.length > 0 ? filtered : jobsArray) as unknown as EJJobOut[];
+      } else {
+        jobState.value.jobs = jobsArray as unknown as EJJobOut[];
+      }
     }
     return response;
   } catch (err) {
@@ -173,8 +199,13 @@ const getAvailableJobs = async (params: { start?: number; stop?: number } = {}) 
   try {
     const response = await jobsService.listAvailableAgentJobs(start, stop);
     if (response.success && response.data) {
-      jobState.value.jobs = Array.isArray(response.data) ? response.data as unknown as EJJobOut[] : [response.data as unknown as EJJobOut];
-      jobState.value.pagination.hasMore = response.data.length > 0;
+      const jobsArray = Array.isArray(response.data)
+        ? response.data
+        : response.data
+          ? [response.data]
+          : []
+      jobState.value.jobs = jobsArray as unknown as EJJobOut[]
+      jobState.value.pagination.hasMore = jobsArray.length > 0;
     }
     return response;
   } catch (err) {

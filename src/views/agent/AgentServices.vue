@@ -87,10 +87,10 @@ import {
   UserCircleIcon,
   DocumentTextIcon,
   CreditCardIcon,
-  BriefcaseIcon
+  BriefcaseIcon,
+  CalendarDaysIcon
 } from '@heroicons/vue/24/outline'
 import { MusicalNoteIcon } from '@heroicons/vue/24/solid'
-import { mapAgentServiceTitlesToEnums } from '../../utils/serviceMapping'
 
 const router = useRouter()
 const categories = [
@@ -106,10 +106,11 @@ const categories = [
   { title: 'Customer Sales Associate', description: 'Sales', icon: UserGroupIcon },
   { title: 'Administrators', description: 'Administrative Support', icon: BriefcaseIcon },
   { title: 'Customer Service Rep', description: 'Customer Support', icon: UserGroupIcon },
-  { title: 'Bookkeeper', description: 'Accounting & Finance', icon: DocumentTextIcon },
+  { title: 'Book Keeping', description: 'Accounting & Finance', icon: DocumentTextIcon },
   { title: 'Editor', description: 'Media & Content', icon: PencilSquareIcon },
   { title: 'Credit Repair Disputer', description: 'Finance/Credit Services', icon: CreditCardIcon },
-  { title: 'Executive Assistant', description: 'Administrative Support', icon: BriefcaseIcon }
+  { title: 'Executive Assistant', description: 'Administrative Support', icon: BriefcaseIcon },
+  { title: 'Appointment Setting', description: 'Scheduling & coordination', icon: CalendarDaysIcon }
 ]
 
 const selectedCategories = ref<any[]>([])
@@ -119,14 +120,7 @@ onMounted(() => {
   try {
     const saved = JSON.parse(localStorage.getItem('selectedAgentServices') || '[]')
     if (Array.isArray(saved) && saved.length) {
-      const reverseMap: Record<string, string> = {
-        'Digital Marketing': 'Digital Marketing',
-        'Content Writing': 'Editor',
-        'Web Devlopment': 'Program & Tech',
-        'Other': 'Graphic Design'
-      }
-      const titles = saved.map((s: string) => reverseMap[s] || 'Graphic Design')
-      selectedCategories.value = categories.filter(c => titles.includes(c.title))
+      selectedCategories.value = categories.filter(c => saved.includes(c.title))
     }
   } catch (error) {
     console.error('Error loading saved categories:', error)
@@ -136,9 +130,10 @@ onMounted(() => {
 // Autosave mapped enums as user selects/deselects
 watch(selectedCategories, (val) => {
   try {
-    const titles = val.map((cat: any) => cat.title as string)
-    const selectedServices = mapAgentServiceTitlesToEnums(titles)
-    localStorage.setItem('selectedAgentServices', JSON.stringify(selectedServices))
+    const titles = val
+      .map((cat: any) => (typeof cat?.title === 'string' ? cat.title : ''))
+      .filter((title: string) => title.length > 0)
+    localStorage.setItem('selectedAgentServices', JSON.stringify(titles))
   } catch (e) {
     console.error('Error autosaving services:', e)
   }
@@ -149,9 +144,10 @@ const goNext = async () => {
     if (selectedCategories.value.length >= 3) {
       // Store mapped enum services as strings for API compatibility
       try {
-        const titles = selectedCategories.value.map((cat: any) => cat.title as string)
-        const selectedServices = mapAgentServiceTitlesToEnums(titles)
-        localStorage.setItem('selectedAgentServices', JSON.stringify(selectedServices))
+        const titles = selectedCategories.value
+          .map((cat: any) => (typeof cat?.title === 'string' ? cat.title : ''))
+          .filter((title: string) => title.length > 0)
+        localStorage.setItem('selectedAgentServices', JSON.stringify(titles))
       } catch (storageError) {
         console.error('LocalStorage error:', storageError)
         // Continue even if localStorage fails

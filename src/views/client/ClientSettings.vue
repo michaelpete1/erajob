@@ -239,7 +239,6 @@
 
       </div>
 
-      <!-- Sign Out Button -->
       <div class="mt-6 sm:mt-8">
         <button 
           @click="handleSignOut"
@@ -255,12 +254,13 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import userService from '../../services/userService'
+import { usersService } from '../../services/usersService'
 
 const router = useRouter()
 
 // Account settings visibility
 const showAccountSettings = ref(false)
+const isDeletingAccount = ref(false)
 
 // User data
 const userName = ref('')
@@ -356,6 +356,81 @@ const saveProfile = () => {
   } catch (error) {
     console.error('Error saving profile:', error)
     alert('Error saving profile. Please try again.')
+  }
+}
+
+const clearAuthData = () => {
+  localStorage.removeItem('userRole')
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('userName')
+  localStorage.removeItem('userEmail')
+  localStorage.removeItem('clientProfile')
+  localStorage.removeItem('userInfo')
+}
+
+import { handleAccountDeletion } from '@/utils/auth'
+
+const handleDeleteAccount = async () => {
+  if (isDeletingAccount.value) return
+  
+  // Enhanced confirmation dialog
+  const confirmed = window.confirm(
+    '⚠️ WARNING: This action is permanent!\n\n' +
+    'Deleting your account will:\n' +
+    '• Permanently remove all your data\n' +
+    '• Cancel any active subscriptions\n' +
+    '• Remove access to all your resources\n\n' +
+    'This action cannot be undone.\n\n' +
+    'Are you absolutely sure you want to delete your account?'
+  )
+  
+  if (!confirmed) {
+    toast.info('Account deletion cancelled')
+    return
+  }
+
+  isDeletingAccount.value = true
+  
+  try {
+    // Show loading state
+    const toastId = toast.loading('Deleting your account...')
+    
+    // Call the service
+    const result = await usersService.deleteAccount()
+    
+    if (result.success) {
+      toast.update(toastId, {
+        render: 'Account deleted successfully. Redirecting...',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000
+      })
+      
+      // Use the centralized account deletion handler
+      await handleAccountDeletion()
+      
+    } else {
+      throw new Error(result.error || 'Failed to delete account')
+    }
+  } catch (error) {
+    console.error('Account deletion failed:', error)
+    
+    let errorMessage = 'Failed to delete account. Please try again.'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('network') || error.message.includes('Network')) {
+        errorMessage = 'Network error. Please check your connection and try again.'
+      } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        errorMessage = 'Your session has expired. Please sign in again and try deleting your account.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
+    toast.error(errorMessage, { autoClose: 5000 })
+  } finally {
+    isDeletingAccount.value = false
   }
 }
 

@@ -268,6 +268,7 @@ export interface AlertState {
   loading: boolean;
   error: string | null;
   unreadCount: number;
+  totalUnread?: number;
   pagination: {
     start: number;
     stop: number;
