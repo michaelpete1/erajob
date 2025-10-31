@@ -35,7 +35,7 @@ onMounted(() => {
       const reverseMap = {
         'Digital Marketing': 'Sales & Marketing',
         'Content Writing': 'Writing & Translation',
-        'Web Devlopment': 'Programming & Tech',
+        'Web Development': 'Programming & Tech',
         'Other': 'Graphic Design'
       }
       const titles = saved.map((s) => reverseMap[s] || 'Graphic Design')
@@ -52,7 +52,7 @@ watch(selectedCategories, (val) => {
       'Digital Marketing': 'Digital Marketing',
       'Video & Animation': 'Other',
       'Music & Audio': 'Other',
-      'Programming & Tech': 'Web Devlopment',
+      'Programming & Tech': 'Web Development',
       'Business': 'Other',
       'Finance & Accounting': 'Other',
       'Writing & Translation': 'Content Writing',
@@ -77,7 +77,7 @@ const goNext = () => {
       'Digital Marketing': 'Digital Marketing',
       'Video & Animation': 'Other',
       'Music & Audio': 'Other',
-      'Programming & Tech': 'Web Devlopment', // Map to closest match
+      'Programming & Tech': 'Web Development', // Map to closest match
       'Business': 'Other',
       'Finance & Accounting': 'Other',
       'Writing & Translation': 'Content Writing',

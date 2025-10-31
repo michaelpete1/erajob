@@ -18,15 +18,23 @@
           </button>
         </div>
 
-        <div v-if="loading" class="flex justify-center py-10">
+        <div v-if="loading" class="flex flex-col items-center justify-center py-10 loading-indicator">
           <svg class="w-8 h-8 animate-spin text-brand-teal" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
           </svg>
+          <p class="mt-2 text-sm text-gray-500">Loading your projects...</p>
         </div>
 
-        <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
-          {{ error }}
+        <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 error-message">
+          <p class="font-medium">Error loading projects</p>
+          <p class="text-sm">{{ error }}</p>
+          <button 
+            @click="loadJobs" 
+            class="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
+          >
+            Retry
+          </button>
         </div>
 
         <div v-else-if="projects.length === 0" class="text-center text-gray-500 py-10">
@@ -88,19 +96,44 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteUpdate } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import ClientNavbar from '../../components/navbar/ClientNavbar.vue'
 import ClientBottomNav from '../../components/ClientBottomNav.vue'
-import { useJobs } from '@/composables/useJobs'
+import { useJobs, type LocalJobOut } from '@/composables/useJobs'
 
 const router = useRouter()
+const toast = useToast()
 const { jobs, loading, error, getClientJobs } = useJobs()
 
 const pagination = { start: 0, stop: 20 }
-
 const projects = computed(() => jobs.value)
 
-const viewWorkLogs = (project: any) => {
+// Expose projects to template
+defineExpose({ projects })
+
+// Debug info
+const debugInfo = ref({
+  userId: localStorage.getItem('userId'),
+  userRole: localStorage.getItem('userRole'),
+  hasToken: !!localStorage.getItem('access_token'),
+  jobsCount: computed(() => jobs.value?.length || 0)
+})
+
+// Log debug info
+onMounted(() => {
+  console.log('ClientDashboard mounted with:', debugInfo.value)
+  
+  // Add a small delay to ensure the DOM is fully rendered
+  setTimeout(() => {
+    const loadingElement = document.querySelector('.loading-indicator')
+    const errorElement = document.querySelector('.error-message')
+    console.log('Loading element:', loadingElement)
+    console.log('Error element:', errorElement)
+  }, 100)
+})
+
+const viewWorkLogs = (project: LocalJobOut) => {
   const projectId = project?.id ? String(project.id) : ''
   if (!projectId) {
     return
@@ -118,8 +151,41 @@ const viewWorkLogs = (project: any) => {
   router.push({ name: 'client-work-log', params: { jobId: projectId } })
 }
 
-onMounted(async () => {
-  await getClientJobs(pagination.start, pagination.stop)
+const loadJobs = async () => {
+  try {
+    console.log('Loading client jobs...')
+    const result = await getClientJobs(pagination.start, pagination.stop)
+    console.log('Jobs loaded:', { 
+      success: result.success, 
+      data: result.data,
+      jobsCount: jobs.value?.length
+    })
+    
+    if (result.success) {
+      // Jobs are already updated in the store via the useJobs composable
+      console.log('Jobs loaded successfully')
+    } else {
+      const errorMessage = result.error || 'Failed to load projects'
+      toast.error(errorMessage)
+    }
+  } catch (err) {
+    console.error('Error loading jobs:', err)
+    const errorMessage = 'An error occurred while loading projects'
+    toast.error(errorMessage)
+  }
+}
+
+// Load jobs when component is mounted
+onMounted(() => {
+  loadJobs()
+})
+
+// Reload jobs when route changes (e.g., after login redirect)
+onBeforeRouteUpdate(async (to, from, next) => {
+  if (to.path === '/client-dashboard') {
+    await loadJobs()
+  }
+  next()
 })
 
 const formatBudget = (budget: number) => {

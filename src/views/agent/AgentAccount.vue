@@ -31,8 +31,8 @@
           </button>
         </div>
         <div>
-          <h2 class="text-2xl font-semibold">{{ agentName }}</h2>
-          <p class="text-sm text-gray-500">{{ agentEmail }}</p>
+          <h2 class="text-2xl font-semibold">{{ agentProfile.name || agentName }}</h2>
+          <p class="text-sm text-gray-500">{{ agentProfile.email || agentEmail }}</p>
         </div>
         <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wide">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4">
@@ -195,7 +195,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usersService } from '../../services/usersService'
 import { useToast } from 'vue-toastification'
-import { apiService } from '../../services/api'
+import { api } from '../../services/apiService'
 
 const agentName = ref('')
 const agentEmail = ref('')
@@ -204,11 +204,23 @@ const memberSince = ref('')
 const router = useRouter()
 const toast = useToast()
 const isDeletingAccount = ref(false)
+const isEditingPrimaryExpertise = ref(false)
+const tempPrimaryExpertise = ref('')
+
+const expertiseOptions = [
+  'Web Development',
+  'Mobile Development',
+  'UI/UX Design',
+  'Content Writing',
+  'Digital Marketing',
+  'Data Analysis',
+  'Other'
+]
 
 const agentProfile = ref({
   name: '',
   email: '',
-  phone: '',
+  phone: '' as string | undefined,
   primaryExpertise: '',
   experience: '',
   verified: false
@@ -278,28 +290,45 @@ function loadFromLocalStorage() {
       console.error('Error loading agent profile', error)
     }
   }
+
+  // Also load from agentWelcomeData if available
+  const storedWelcomeData = localStorage.getItem('agentWelcomeData')
+  if (storedWelcomeData) {
+    try {
+      const parsedWelcome = JSON.parse(storedWelcomeData)
+      agentProfile.value = {
+        name: parsedWelcome.name || agentProfile.value.name,
+        email: parsedWelcome.email || agentProfile.value.email,
+        phone: parsedWelcome.phoneNumber || parsedWelcome.phone || agentProfile.value.phone,
+        primaryExpertise: parsedWelcome.primaryExpertise || agentProfile.value.primaryExpertise,
+        experience: parsedWelcome.yearsOfExperience || parsedWelcome.experience || agentProfile.value.experience,
+        verified: Boolean(parsedWelcome.verified ?? agentProfile.value.verified)
+      }
+    } catch (error) {
+      console.error('Error loading agent welcome data', error)
+    }
+  }
 }
 
 async function fetchAgentProfile() {
   try {
-    const response = await apiService.getCurrentUser()
+    const response = await api.agent.getCurrentUser()
     if (response.success && response.data) {
-      const payload = response.data
-      const data = payload?.data || payload
+      const data = response.data
 
       if (data) {
         const fullName = data.full_name || data.name || agentName.value
         const email = data.email || agentEmail.value
-        const profile = data.agent_profile || data.agentProfile || {}
+        const profile = data.agent_profile || data.agentProfile || data
 
         if (fullName) agentName.value = fullName
         if (email) agentEmail.value = email
 
         agentProfile.value = {
-          name: profile.name || fullName || agentProfile.value.name,
+          name: profile.name || profile.full_name || fullName || agentProfile.value.name,
           email: profile.email || email || agentProfile.value.email,
-          phone: profile.phone_number || profile.phone || data.phone_number || data.phone || agentProfile.value.phone,
-          primaryExpertise: profile.primary_expertise || profile.primaryExpertise || data.primary_expertise || agentProfile.value.primaryExpertise,
+          phone: profile.phone_number || profile.phone || data.phone_number || data.phone || agentProfile.value.phone || '',
+          primaryExpertise: profile.primary_area_of_expertise || profile.primary_expertise || profile.primaryExpertise || data.primary_area_of_expertise || data.primary_expertise || agentProfile.value.primaryExpertise,
           experience: profile.experience || profile.years_of_experience || data.years_of_experience || agentProfile.value.experience,
           verified: Boolean((profile.verified ?? data.verified) ?? agentProfile.value.verified)
         }
@@ -348,9 +377,73 @@ const handleSignOut = async () => {
 
 import { handleAccountDeletion } from '@/utils/auth'
 
+function startEditingPrimaryExpertise() {
+  tempPrimaryExpertise.value = agentProfile.value.primaryExpertise || ''
+  isEditingPrimaryExpertise.value = true
+}
+
+async function savePrimaryExpertise() {
+  if (tempPrimaryExpertise.value.trim()) {
+    const newExpertise = tempPrimaryExpertise.value.trim()
+
+    try {
+      // Update backend first
+      const updateData = {
+        primary_expertise: newExpertise
+      }
+      const response = await api.agent.updateProfile(updateData)
+
+      if (response.success) {
+        // Update reactive state
+        agentProfile.value.primaryExpertise = newExpertise
+
+        // Update localStorage
+        const storedInfo = localStorage.getItem('userInfo')
+        if (storedInfo) {
+          try {
+            const parsed = JSON.parse(storedInfo)
+            if (parsed.agentProfile) {
+              parsed.agentProfile.primaryExpertise = newExpertise
+            } else {
+              parsed.primary_expertise = newExpertise
+            }
+            localStorage.setItem('userInfo', JSON.stringify(parsed))
+          } catch (error) {
+            console.error('Error updating userInfo in localStorage:', error)
+          }
+        }
+
+        const storedAgentProfile = localStorage.getItem('agentProfile')
+        if (storedAgentProfile) {
+          try {
+            const parsedProfile = JSON.parse(storedAgentProfile)
+            parsedProfile.primaryExpertise = newExpertise
+            localStorage.setItem('agentProfile', JSON.stringify(parsedProfile))
+          } catch (error) {
+            console.error('Error updating agentProfile in localStorage:', error)
+          }
+        }
+
+        toast.success('Primary expertise updated successfully!')
+      } else {
+        toast.error('Failed to update primary expertise. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error updating primary expertise:', error)
+      toast.error('Failed to update primary expertise. Please try again.')
+    }
+  }
+  isEditingPrimaryExpertise.value = false
+}
+
+function cancelEditingPrimaryExpertise() {
+  tempPrimaryExpertise.value = ''
+  isEditingPrimaryExpertise.value = false
+}
+
 const handleDeleteAccount = async () => {
   if (isDeletingAccount.value) return
-  
+
   // Use a more modern confirmation dialog
   const confirmed = window.confirm(
     '⚠️ WARNING: This action is permanent!\n\n' +
@@ -361,51 +454,55 @@ const handleDeleteAccount = async () => {
     'This action cannot be undone.\n\n' +
     'Are you absolutely sure you want to delete your account?'
   )
-  
+
   if (!confirmed) {
     toast.info('Account deletion cancelled')
     return
   }
 
   isDeletingAccount.value = true
-  
+
   try {
     // Show loading state
-    const toastId = toast.loading('Deleting your account...')
-    
+    const toastId = toast('Deleting your account...', {
+      timeout: false,
+      closeOnClick: false,
+      draggable: false
+    })
+
     // Call the service
     const result = await usersService.deleteAccount()
-    
+
     if (result.success) {
       toast.update(toastId, {
-        render: 'Account deleted successfully. Redirecting...',
-        type: 'success',
-        isLoading: false,
-        autoClose: 3000
-      })
-      
+        content: 'Account deleted successfully. Redirecting...',
+        options: { type: 'success', timeout: 3000 }
+      }, true)
+
       // Use the centralized account deletion handler
       await handleAccountDeletion()
-      
+
     } else {
       throw new Error(result.error || 'Failed to delete account')
     }
   } catch (error) {
     console.error('Account deletion failed:', error)
-    
+
     let errorMessage = 'Failed to delete account. Please try again.'
-    
+
     if (error instanceof Error) {
       if (error.message.includes('network') || error.message.includes('Network')) {
         errorMessage = 'Network error. Please check your connection and try again.'
       } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
         errorMessage = 'Your session has expired. Please sign in again and try deleting your account.'
       } else {
-        errorMessage = error.message
+        errorMessage = error.message || 'An unexpected error occurred.'
       }
+    } else {
+      errorMessage = 'An unexpected error occurred.'
     }
-    
-    toast.error(errorMessage, { autoClose: 5000 })
+
+    toast.error(errorMessage, { timeout: 5000 })
   } finally {
     isDeletingAccount.value = false
   }

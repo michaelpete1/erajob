@@ -8,14 +8,14 @@
         <p class="text-gray-600 mt-1">Manage your active and browse projects</p>
       </div>
       <div class="flex bg-gray-100 rounded-lg overflow-hidden max-w-md mx-auto mb-6">
-        <button 
+        <button
           @click="activeTab = 'active'"
           :class="activeTab === 'active' ? 'bg-teal-500 text-white' : 'text-gray-600'"
           class="flex-1 py-3 sm:py-3 text-sm sm:text-base font-medium transition-colors duration-200 hover:bg-gray-200"
         >
           Active
         </button>
-        <button 
+        <button
           @click="activeTab = 'pending'"
           :class="activeTab === 'pending' ? 'bg-teal-500 text-white' : 'text-gray-600'"
           class="flex-1 py-3 sm:py-3 text-sm sm:text-base font-medium transition-colors duration-200 hover:bg-gray-200"
@@ -157,9 +157,9 @@
 
         <div v-if="activeTab === 'pending' && !loading" class="md:col-span-2 lg:col-span-3">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <div 
-              v-for="project in browseProjects"
-              :key="project.id || `browse-${project.project_title}-${project.date_created}`"
+            <div
+              v-for="project in pendingProjects"
+              :key="project.id || `pending-${project.project_title}-${project.date_created}`"
               @click="goToProject(project)"
               class="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg hover:border-teal-300 transition-all duration-300 group cursor-pointer"
             >
@@ -168,7 +168,8 @@
                   <span class="text-lg">⏰</span>
                   <span>{{ formatDate(project.date_created) }}</span>
                 </span>
-                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full">Pending Approval</span>
+                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full" v-if="!project.admin_approved">Pending Approval</span>
+                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full" v-else>Approved</span>
               </div>
               <h2 class="font-semibold text-gray-800 text-base sm:text-lg mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors">
                 {{ project.project_title }}
@@ -176,7 +177,8 @@
               <p class="text-sm text-gray-600 mb-4 line-clamp-3">
                 {{ project.description }}
               </p>
-              <p class="text-xs font-medium text-yellow-700 mb-3">Awaiting admin approval before work can begin.</p>
+              <p class="text-xs font-medium text-yellow-700 mb-3" v-if="!project.admin_approved">Awaiting admin approval before work can begin.</p>
+              <p class="text-xs font-medium text-green-700 mb-3" v-else>Approved and ready for work.</p>
               <div class="flex items-center justify-between">
                 <span class="text-lg font-bold text-teal-600">${{ project.budget.toLocaleString() }}</span>
                 <button
@@ -191,9 +193,9 @@
               </div>
             </div>
           </div>
-          
-          <!-- Empty state for browse projects -->
-          <div v-if="browseProjects.length === 0" class="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-8 sm:p-12 text-center">
+
+          <!-- Empty state for pending projects -->
+          <div v-if="pendingProjects.length === 0" class="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-8 sm:p-12 text-center">
             <div class="mb-6">
               <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,7 +208,7 @@
               </p>
             </div>
             <div class="flex justify-center">
-              <button 
+              <button
                 @click="goToCreateProject"
                 class="px-6 py-3 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 transition-colors duration-200"
               >
@@ -215,6 +217,9 @@
             </div>
           </div>
         </div>
+
+        <!-- Browse Tab -->
+
       </div>
     </div>
 
@@ -239,7 +244,7 @@ const router = useRouter()
 const { deleteJob } = useJobs()
 const toast = useToast()
 const activeTab = ref<'active' | 'pending'>('pending')
-const { getClientJobs, getAllJobs, loading, clearError } = useJobs()
+const { getClientJobs, loading, clearError } = useJobs()
 const error = ref<string | null>(null)
 const deletingJobIds = ref<string[]>([])
 
@@ -284,7 +289,7 @@ interface Project {
 }
 
 const activeProjects = ref<Project[]>([])
-const browseProjects = ref<Project[]>([])
+const pendingProjects = ref<Project[]>([])
 
 const isDeleting = (id?: string) => {
   return id ? deletingJobIds.value.includes(id) : false
@@ -585,33 +590,19 @@ const fetchActiveProjects = async () => {
   }
 }
 
-const fetchBrowseProjects = async () => {
+const fetchPendingProjects = async () => {
   try {
-    const role = localStorage.getItem('userRole') || ''
-
-    if (role === 'admin') {
-      const response = await getAllJobs({ start: 0, stop: 10 })
-      if (!response.success || !response.data) {
-        browseProjects.value = []
-        return
-      }
-      const jobsData = Array.isArray(response.data) ? response.data : [response.data]
-      browseProjects.value = jobsData.map((job) => toProject(job))
-      return
-    }
-
+    // Fetch all client's projects for pending tab
     const response = await getClientJobs(0, 10)
     if (!response.success || !response.data) {
-      browseProjects.value = []
+      pendingProjects.value = []
       return
     }
-
     const jobsData = Array.isArray(response.data) ? response.data : [response.data]
-    const pendingJobs = jobsData.filter((job: any) => job?.admin_approved === false)
-    browseProjects.value = pendingJobs.map((job) => toProject(job))
+    pendingProjects.value = jobsData.map((job) => toProject(job))
   } catch (err) {
-    console.error('Error fetching browse projects:', err)
-    error.value = 'Failed to load available projects'
+    console.error('Error fetching pending projects:', err)
+    error.value = 'Failed to load pending projects'
   }
 }
 
@@ -619,7 +610,7 @@ const fetchProjects = () => {
   if (activeTab.value === 'active') {
     fetchActiveProjects()
   } else {
-    fetchBrowseProjects()
+    fetchPendingProjects()
   }
 }
 
@@ -707,7 +698,7 @@ const confirmDeleteProject = async (project: Project) => {
     if (response.success) {
       // Remove from the appropriate list based on tab
       if (activeTab.value === 'pending') {
-        browseProjects.value = browseProjects.value.filter(p => p.id !== project.id)
+        pendingProjects.value = pendingProjects.value.filter(p => p.id !== project.id)
       } else {
         activeProjects.value = activeProjects.value.filter(p => p.id !== project.id)
       }

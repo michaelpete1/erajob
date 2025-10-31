@@ -65,6 +65,7 @@
               {{ option.label }}
             </option>
           </select>
+          <p class="text-xs text-gray-500 mt-2">Jobs are matched to agents based on their expertise in this category.</p>
         </div>
 
         <!-- Budget -->
@@ -156,6 +157,7 @@
         <!-- Skills -->
         <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
           <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Required Skills</label>
+          <p class="text-xs text-gray-500 mb-3">Select skills that match the agents' expertise. Jobs are matched based on these skills.</p>
           <div class="flex flex-wrap gap-2 mb-3">
             <span
               v-for="(skill, index) in formData.skills"
@@ -248,7 +250,7 @@ const DESCRIPTION_MAX_LENGTH = 2000;
 const selectedSkill = ref<JobsBase['skills_needed'] | ''>('');
 
 const categoryOptions: Array<{ value: JobsBase['category']; label: string }> = [
-  { value: 'Web Devlopment', label: 'Web Development' },
+  { value: 'Web Development', label: 'Web Development' },
   { value: 'Mobile Development', label: 'Mobile Development' },
   { value: 'Sales', label: 'Sales' },
   { value: 'Customer Service', label: 'Customer Service' },

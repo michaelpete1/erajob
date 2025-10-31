@@ -3,6 +3,8 @@ export interface User {
   email: string
   role: 'client' | 'agent' | 'admin' // Add 'admin' to the allowed roles
   full_name?: string
+  admin_approved?: boolean
+  rejection_reason?: string | null
 }
 
 export interface AuthState {

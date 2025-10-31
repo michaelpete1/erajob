@@ -3,7 +3,7 @@
 
 import { ref, onMounted, reactive, onUnmounted } from 'vue'
 import { useApi, usePagination } from '../composables/useApi'
-import type { UserBase, UserLogin, JobsBase } from '../services/apiService'
+import type { UserBase, UserLogin, JobsBase } from '../services'
 
 // ========================================
 // 1. AUTHENTICATION EXAMPLES

@@ -42,18 +42,37 @@
       >
         <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
           <div>
-            <h3 class="text-lg leading-6 font-medium text-gray-900">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 flex items-center">
               {{ user.name }}
-              <span 
+              <span
                 :class="{
-                  'bg-teal-100 text-teal-800': user.role === 'agent',
-                  'bg-purple-100 text-purple-800': user.role === 'client'
+                  'bg-teal-100 border-teal-300 text-teal-800': user.role === 'agent',
+                  'bg-purple-100 border-purple-300 text-purple-800': user.role === 'client'
                 }"
-                class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                class="ml-3 px-3 py-1.5 rounded-full text-sm font-semibold border-2 flex items-center shadow-sm"
               >
-                {{ user.role }}
+                <svg v-if="user.role === 'agent'" class="w-4 h-4 mr-2 text-teal-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                </svg>
+                <svg v-else-if="user.role === 'client'" class="w-4 h-4 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                </svg>
+                {{ user.role === 'agent' ? 'Agent' : 'Client' }}
               </span>
             </h3>
+            <!-- User approval status badge below the name/role -->
+            <div class="mt-1">
+              <span v-if="user.admin_approved === true" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-green-100 text-green-700 border-green-200 text-xs font-semibold">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Approved
+              </span>
+              <span v-else-if="user.admin_approved === false" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-red-100 text-red-700 border-red-200 text-xs font-semibold">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Rejected
+                <span v-if="user.rejection_reason" class="ml-1 text-xs text-red-500 font-normal">({{ user.rejection_reason }})</span>
+              </span>
+              <span v-else class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200 text-xs font-semibold">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Pending
+              </span>
+            </div>
             <p class="mt-1 max-w-2xl text-sm text-gray-500">
               Submitted: {{ formatDate(user.createdAt) }}
             </p>
@@ -90,6 +109,8 @@ interface User {
   role: 'agent' | 'client'
   status: 'pending' | 'approved' | 'rejected'
   createdAt: string
+  admin_approved?: boolean
+  rejection_reason?: string
 }
 
 const users = ref<User[]>([])
@@ -197,7 +218,9 @@ const fetchUsers = async () => {
           email: u.email || '',
           role: determineRole(u),
           status: u.status || 'pending',
-          createdAt: u.created_at || (u.date_created ? new Date(u.date_created * 1000).toISOString() : new Date().toISOString())
+          createdAt: u.created_at || (u.date_created ? new Date(u.date_created * 1000).toISOString() : new Date().toISOString()),
+          admin_approved: u.admin_approved, // Assuming admin_approved is returned by the API
+          rejection_reason: u.rejection_reason // Assuming rejection_reason is returned by the API
         }))
       users.value = mappedUsers.filter(user => {
         const id = String(user.id)

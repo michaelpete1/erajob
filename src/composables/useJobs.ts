@@ -62,8 +62,9 @@ function normalizeJobCategory(category: string): JobCategoryType {
 }
 
 // Define our local job type that extends EJJobOut with proper typing
-interface LocalJobOut {
+export interface LocalJobOut {
   id?: string | null;
+  job_id?: string | null;
   date_created?: number | null;
   last_updated?: number | null;
   admin_approved?: boolean;
@@ -193,11 +194,11 @@ const getClientJobs = async (start: number = 0, stop: number = 10) => {
   }
 };
 
-const getAvailableJobs = async (params: { start?: number; stop?: number } = {}) => {
-  const { start = 0, stop = 10 } = params;
+const getAvailableJobs = async (params: { start?: number; stop?: number; agentData?: { primaryExpertise?: string; preferredProjects?: string[] } } = {}) => {
+  const { start = 0, stop = 10, agentData } = params;
   jobState.value.loading = true;
   try {
-    const response = await jobsService.listAvailableAgentJobs(start, stop);
+    const response = await jobsService.listAvailableAgentJobs(start, stop, agentData);
     if (response.success && response.data) {
       const jobsArray = Array.isArray(response.data)
         ? response.data
@@ -206,10 +207,51 @@ const getAvailableJobs = async (params: { start?: number; stop?: number } = {}) 
           : []
       jobState.value.jobs = jobsArray as unknown as EJJobOut[]
       jobState.value.pagination.hasMore = jobsArray.length > 0;
+    } else {
+      // If no jobs found, set empty array instead of keeping old data
+      jobState.value.jobs = []
+      jobState.value.pagination.hasMore = false;
     }
     return response;
   } catch (err) {
     jobState.value.error = err instanceof Error ? err.message : 'Failed to fetch available jobs';
+    jobState.value.jobs = []
+    jobState.value.pagination.hasMore = false;
+    return { success: false, error: jobState.value.error };
+  } finally {
+    jobState.value.loading = false;
+  }
+};
+
+const getBrowseJobs = async (params: { start?: number; stop?: number } = {}) => {
+  const { start = 0, stop = 10 } = params;
+  jobState.value.loading = true;
+  try {
+    // Fetch all admin-approved jobs for agents to browse
+    const response = await jobsService.listAvailableAgentJobs(start, stop);
+    if (response.success && response.data) {
+      const jobsArray = Array.isArray(response.data)
+        ? response.data
+        : response.data
+          ? [response.data]
+          : []
+      // Filter to only show admin-approved jobs
+      const approvedJobs = jobsArray.filter(job => {
+        const adminApproved = isTruthy((job as any)?.admin_approved ?? (job as any)?.adminApproved ?? (job as any)?.is_admin_approved)
+        return adminApproved
+      })
+      jobState.value.jobs = approvedJobs as unknown as EJJobOut[]
+      jobState.value.pagination.hasMore = approvedJobs.length > 0;
+    } else {
+      // If no jobs found, set empty array instead of keeping old data
+      jobState.value.jobs = []
+      jobState.value.pagination.hasMore = false;
+    }
+    return response;
+  } catch (err) {
+    jobState.value.error = err instanceof Error ? err.message : 'Failed to fetch browse jobs';
+    jobState.value.jobs = []
+    jobState.value.pagination.hasMore = false;
     return { success: false, error: jobState.value.error };
   } finally {
     jobState.value.loading = false;
@@ -401,6 +443,7 @@ export function useJobs() {
     // Actions
     getClientJobs,
     getAvailableJobs,
+    getBrowseJobs,
     getAllJobs,
     createJob,
     getJobById,

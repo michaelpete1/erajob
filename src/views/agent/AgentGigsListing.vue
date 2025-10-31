@@ -109,6 +109,7 @@
           <p v-if="searchQuery" class="text-center text-white/80 text-sm mt-2">
             Showing results for "{{ searchQuery }}"
           </p>
+
         </div>
       </div>
 
@@ -366,13 +367,14 @@ const goToGig = (job: any) => {
   }
 }
 
-const { 
-  jobs, 
-  loading: jobsLoading, 
+const {
+  jobs,
+  loading: jobsLoading,
   error: jobsError,
-  getAvailableJobs, 
+  getAvailableJobs,
+  getBrowseJobs,
   hasMore,
-  loadMoreJobs 
+  loadMoreJobs
 } = useJobs()
 
 // Default pagination parameters
@@ -388,7 +390,11 @@ onMounted(async () => {
 
 // Watch tab changes to load appropriate jobs
 watch(activeTab, async () => {
-  await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
+  if (activeTab.value === 'browse') {
+    await Promise.all([getBrowseJobs(paginationParams), loadAgentApplications()])
+  } else {
+    await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
+  }
 })
 
 const selectedServices = ref<any[]>([])
@@ -424,6 +430,19 @@ interface MappedGigCard {
   raw: any
 }
 
+const getAgentExpertise = (): string | null => {
+  try {
+    const welcomeData = localStorage.getItem('agentWelcomeData')
+    if (welcomeData) {
+      const parsed = JSON.parse(welcomeData)
+      return parsed.primaryExpertise || null
+    }
+  } catch (error) {
+    console.warn('Failed to parse agent welcome data:', error)
+  }
+  return null
+}
+
 const filteredGigs = computed<MappedGigCard[]>(() => {
   const source = Array.isArray(jobs.value) ? jobs.value : []
 
@@ -453,6 +472,8 @@ const filteredGigs = computed<MappedGigCard[]>(() => {
     }
     return job.status !== 'active'
   })
+
+
 
   const query = searchQuery.value.trim().toLowerCase()
   if (query) {

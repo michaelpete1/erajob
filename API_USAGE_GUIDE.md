@@ -178,7 +178,7 @@ const { authState, currentUser, userRole, logout: handleLogout } = useAuth()
   <form @submit.prevent="handleCreateJob">
     <input v-model="jobForm.project_title" placeholder="Project Title" />
     <select v-model="jobForm.category">
-      <option value="Web Devlopment">Web Development</option>
+      <option value="Web Development">Web Development</option>
       <option value="Mobile Development">Mobile Development</option>
       <option value="UI/UX Design">UI/UX Design</option>
     </select>
@@ -186,7 +186,7 @@ const { authState, currentUser, userRole, logout: handleLogout } = useAuth()
     <textarea v-model="jobForm.description" placeholder="Description"></textarea>
     <textarea v-model="jobForm.requirement" placeholder="Requirements"></textarea>
     <select v-model="jobForm.skills_needed">
-      <option value="Web Devlopment">Web Development</option>
+      <option value="Web Development">Web Development</option>
       <option value="Mobile Development">Mobile Development</option>
     </select>
     <div>
@@ -604,11 +604,11 @@ const loginForm: UserLogin = {
 
 const jobForm: JobsBase = {
   project_title: 'New Project',
-  category: 'Web Devlopment',
+  category: 'Web Development',
   budget: 1000,
   description: 'Project description',
   requirement: 'Project requirements',
-  skills_needed: 'Web Devlopment',
+  skills_needed: 'Web Development',
   timeline: {
     start_date: Date.now(),
     deadline: Date.now() + 86400000
@@ -719,11 +719,11 @@ const { jobs } = useApi()
 // Form data
 const jobForm = ref<JobsBase>({
   project_title: '',
-  category: 'Web Devlopment',
+  category: 'Web Development',
   budget: 1000,
   description: '',
   requirement: '',
-  skills_needed: 'Web Devlopment',
+  skills_needed: 'Web Development',
   timeline: {
     start_date: Date.now(),
     deadline: Date.now() + (30 * 24 * 60 * 60 * 1000)
@@ -742,7 +742,7 @@ const hasMore = ref(true)
 
 // Options
 const categories = [
-  'Web Devlopment',
+  'Web Development',
   'Mobile Development',
   'UI/UX Design',
   'Content Writing',
@@ -752,7 +752,7 @@ const categories = [
 ]
 
 const skills = [
-  'Web Devlopment',
+  'Web Development',
   'Mobile Development',
   'UI/UX Design',
   'Content Writing',
@@ -773,11 +773,11 @@ const handleCreateJob = async () => {
       // Reset form
       jobForm.value = {
         project_title: '',
-        category: 'Web Devlopment',
+        category: 'Web Development',
         budget: 1000,
         description: '',
         requirement: '',
-        skills_needed: 'Web Devlopment',
+        skills_needed: 'Web Development',
         timeline: {
           start_date: Date.now(),
           deadline: Date.now() + (30 * 24 * 60 * 60 * 1000)

@@ -1,9 +1,11 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import './style.css'
 import App from './App.vue'
 import router from './router'
 
 const app = createApp(App)
+const pinia = createPinia()
 
 // Global Vue error handler (dev helper)
 app.config.errorHandler = (err: unknown, vm, info) => {
@@ -36,4 +38,4 @@ window.addEventListener('unhandledrejection', (e) => {
   console.error('Unhandled rejection:', e.reason || e)
 })
 
-app.use(router).mount('#app')
+app.use(pinia).use(router).mount('#app')

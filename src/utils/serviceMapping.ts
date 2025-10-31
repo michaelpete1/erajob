@@ -5,7 +5,7 @@ export const AGENT_SERVICE_MAPPING: Record<string, string> = {
   'Digital Marketing': 'Digital Marketing',
   'Video & Animation': 'Other',
   'Music & Audio': 'Other',
-  'Program & Tech': 'Web Devlopment',
+  'Program & Tech': 'Web Development',
   'Product Photography': 'Other',
   'Build AI Service': 'Other',
   'Data': 'Other',
@@ -20,7 +20,7 @@ export const AGENT_SERVICE_MAPPING: Record<string, string> = {
 }
 
 export const VALID_SERVICE_ENUMS = [
-  'Web Devlopment',
+  'Web Development',
   'Digital Marketing',
   'Content Writing',
   'Other',

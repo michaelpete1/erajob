@@ -2,11 +2,12 @@
 // Fixed TypeScript imports - using type-only imports for types
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  api, 
+import {
+  api,
+  apiService,
   ApiError,
-  handleApiResponse 
-} from '../services/apiService'
+  handleApiResponse
+} from '../services'
 import type {
   UserBase,
   UserLogin,
@@ -14,7 +15,7 @@ import type {
   UserOut,
   JobsOut,
   ServiceResponse
-} from '../services/apiService'
+} from '../services'
 
 // Types for state management
 export interface ApiState<T> {
@@ -62,7 +63,7 @@ export function useApi() {
       const result = handleApiResponse(response)
       state.data = result
       return result
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof ApiError ? error.message : errorMessage
       state.error = message
       console.error('API Error:', error)
@@ -84,8 +85,7 @@ export function useApi() {
       if (result) {
         authState.user = result
         authState.isAuthenticated = true
-        api.auth.storeAuthData(result)
-        
+
         // Navigate based on role
         if (userData.role === 'agent') {
           await router.push('/agent/welcome')
@@ -110,8 +110,7 @@ export function useApi() {
       if (result) {
         authState.user = result
         authState.isAuthenticated = true
-        api.auth.storeAuthData(result)
-        
+
         // Navigate based on role
         if (role === 'agent') {
           await router.push('/agent/explore-gigs')
@@ -132,13 +131,12 @@ export function useApi() {
 
       const state = createState<UserOut>()
       const result = await callApi(state, () =>
-        api.user.refreshToken({ refresh_token: refreshToken })
+        api.admin.refreshToken({ refresh_token: refreshToken })
       )
 
       if (result) {
         authState.user = result
         authState.isAuthenticated = true
-        api.auth.storeAuthData(result)
       }
 
       return { result, state }
@@ -150,9 +148,8 @@ export function useApi() {
       authState.isAuthenticated = false
       authState.loading = false
       authState.error = null
-      
-      api.auth.clearAuthData()
-      await router.push('/sign-in')
+
+      await api.auth.logout('/sign-in')
     },
 
     // Check authentication status
@@ -293,7 +290,7 @@ export function useApi() {
     check: async () => {
       const state = createState<null>()
       const result = await callApi(state, () =>
-        api.health.check()
+        apiService.checkHealth()
       )
       return { result, state }
     }

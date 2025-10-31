@@ -32,14 +32,59 @@ export interface UserRefresh {
 }
 
 export interface UserOut {
+  // Authentication
   email: string
   password: string
   role: Record<string, any>
+  access_token?: string | null
+  refresh_token?: string | null
+
+  // User info
   id?: string | null
+  full_name?: string | null
+  phone_number?: string | null
   date_created?: number | null
   last_updated?: number | null
-  refresh_token?: string | null
-  access_token?: string | null
+
+  // Profile
+  certificate_url?: string[]
+  video_url?: string | null
+  personality_url?: string | null
+  settings?: Record<string, any>
+
+  // Company info
+  company_name?: string | null
+  company_email?: string | null
+  company_address?: string | null
+
+  // Agent-specific fields
+  services?: string[]
+  client_reason_for_signing_up?: string | null
+  client_need_agent_work_hours_to_be?: string | null
+  primary_area_of_expertise?: string | null
+  years_of_experience?: number
+  three_most_commonly_used_tools_or_platforms?: string[]
+  available_hours_agent_can_commit?: number
+  time_zone?: string | null
+  portfolio_link?: string | null
+  is_agent_open_to_calls_and_video_meetings?: boolean
+  does_agent_have_working_computer?: boolean
+  does_agent_have_stable_internet?: boolean
+  is_agent_comfortable_with_time_tracking_tools?: boolean
+
+  // Admin fields
+  admin_approved?: boolean
+  rejection_reason?: string | null
+
+  // Additional agent-specific fields for compatibility
+  name?: string
+  agent_profile?: any
+  agentProfile?: any
+  phone?: string
+  primary_expertise?: string
+  verified?: boolean
+  created_at?: string
+  createdAt?: string
 }
 
 export interface JobTimeline {
@@ -49,7 +94,6 @@ export interface JobTimeline {
 
 export type JobCategories =
   | 'Web Development'
-  | 'Web Devlopment'
   | 'Mobile Development'
   | 'Sales'
   | 'Customer Service'
@@ -65,7 +109,6 @@ export type JobCategories =
 
 export type Skills =
   | 'Web Development'
-  | 'Web Devlopment'
   | 'Mobile Development'
   | 'Sales'
   | 'Customer Service'
@@ -120,9 +163,10 @@ export interface HTTPValidationError {
 }
 
 // Service response wrapper for frontend
-export interface ServiceResponse<T> {
-  success: boolean
-  data?: T | null
-  error?: string
-  message?: string
+export interface ServiceResponse<T = any> {
+  success: boolean;
+  data?: T | null;
+  error?: string;
+  message?: string;
+  statusCode?: number;
 }

@@ -512,6 +512,7 @@ const form = reactive({
   yearsOfExperience: 0 as number,
   tools: '',
   phoneNumber: '',
+  agentId: '',
   hoursPerWeek: undefined as number | undefined,
   timezone: '',
   preferredProjects: [] as string[],
@@ -531,21 +532,37 @@ const certificationsInput = ref<HTMLInputElement | null>(null)
 const personalityTestInput = ref<HTMLInputElement | null>(null)
 
 const projectOptions = [
+  'Web Development',
+  'Web Development',
+  'Mobile Development',
   'Sales',
   'Customer Service',
   'Editing',
   'Book Keeping',
   'Executive Assitant',
-  'Appointment Setting'
+  'Appointment Setting',
+  'UI/UX Design',
+  'Content Writing',
+  'Digital Marketing',
+  'Data Analysis',
+  'Other'
 ]
 
 const expertiseOptions = [
+  'Web Development',
+  'Web Devlopment',
+  'Mobile Development',
   'Sales',
   'Customer Service',
   'Editing',
   'Book Keeping',
   'Executive Assitant',
-  'Appointment Setting'
+  'Appointment Setting',
+  'UI/UX Design',
+  'Content Writing',
+  'Digital Marketing',
+  'Data Analysis',
+  'Other'
 ]
 
 const yearsOptions = [0,1,2,3,5,7,10,15]
@@ -562,7 +579,7 @@ const toolsOptions = [
 
 const timezoneOptions = useTimezones()
 
-const hoursOptions = [80, 120]
+const hoursOptions = [20, 40]
 
 type BooleanChoice = { value: boolean; title: string; description: string }
 
@@ -733,8 +750,42 @@ const handleEscape = (event: KeyboardEvent) => {
   closeTrackingModal()
 }
 
+const loadSavedData = () => {
+  try {
+    const savedData = JSON.parse(localStorage.getItem('agentWelcomeData') || '{}')
+    if (savedData.primaryExpertise) form.primaryExpertise = savedData.primaryExpertise
+    if (savedData.yearsOfExperience !== undefined) form.yearsOfExperience = savedData.yearsOfExperience
+    if (savedData.tools) form.tools = savedData.tools
+    if (savedData.phoneNumber) form.phoneNumber = savedData.phoneNumber
+    if (savedData.agentId) form.agentId = savedData.agentId
+    if (savedData.hoursPerWeek !== undefined) form.hoursPerWeek = savedData.hoursPerWeek
+    if (savedData.timezone) form.timezone = savedData.timezone
+    if (savedData.preferredProjects) form.preferredProjects = savedData.preferredProjects
+    if (savedData.openToCalls !== undefined) form.openToCalls = savedData.openToCalls
+    if (savedData.hasComputer !== undefined) form.hasComputer = savedData.hasComputer
+    if (savedData.hasInternet !== undefined) form.hasInternet = savedData.hasInternet
+    if (savedData.comfortableWithTracking !== undefined) form.comfortableWithTracking = savedData.comfortableWithTracking
+    if (savedData.videoUrl) form.videoUrl = savedData.videoUrl
+    if (savedData.portfolioLink) form.portfolioLink = savedData.portfolioLink
+    if (savedData.certificateUrls) form.certificateUrls = savedData.certificateUrls
+    if (savedData.personalityUrl) form.personalityUrl = savedData.personalityUrl
+
+    // Restore file names (files themselves can't be restored from localStorage)
+    if (savedData.certifications && savedData.certifications.length > 0) {
+      // Create dummy File objects with the saved names for display purposes
+      certificationsFiles.value = savedData.certifications.map((name: string) => new File([], name))
+    }
+    if (savedData.personalityTest) {
+      personalityTestFile.value = new File([], savedData.personalityTest)
+    }
+  } catch (error) {
+    console.error('Error loading saved data:', error)
+  }
+}
+
 onMounted(() => {
   document.addEventListener('keydown', handleEscape)
+  loadSavedData()
 })
 
 onUnmounted(() => {
@@ -828,6 +879,7 @@ const onSubmit = async () => {
       yearsOfExperience: form.yearsOfExperience,
       tools: form.tools,
       phoneNumber: form.phoneNumber,
+      agentId: form.agentId,
       hoursPerWeek: form.hoursPerWeek,
       timezone: form.timezone,
       preferredProjects: form.preferredProjects,

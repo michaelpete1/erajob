@@ -53,15 +53,11 @@ export const validateSession = async (): Promise<boolean> => {
   try {
     // Check if we have a token
     const token = localStorage.getItem('access_token')
-    if (!token) return false
-    
-    // Optional: Make an API call to validate the token
-    // This would be a lightweight endpoint that just validates the token
-    // const response = await apiClient.get('/v1/auth/validate')
-    // return response.data.valid === true
-    
-    // For now, we'll just check if the token exists and is a JWT
-    return token.split('.').length === 3
+    if (!token || typeof token !== 'string' || token.trim() === '') return false
+
+    // For now, we'll just check if the token exists and has content
+    // TODO: Implement proper token validation with API call
+    return true
   } catch (error) {
     console.error('Session validation error:', error)
     return false

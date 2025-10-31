@@ -106,9 +106,12 @@
               </svg>
             </button>
           </div>
-          <p v-if="searchQuery" class="text-center text-white/80 text-sm mt-2">
-            Showing results for "{{ searchQuery }}"
-          </p>
+      <p v-if="searchQuery" class="text-center text-white/80 text-sm mt-2">
+        Showing results for "{{ searchQuery }}"
+      </p>
+      <p v-if="activeTab === 'browse' && getAgentExpertise()" class="text-center text-white/80 text-sm mt-1">
+        Filtered by your expertise: {{ getAgentExpertise() }}
+      </p>
         </div>
       </div>
 
@@ -214,6 +217,7 @@ const selectedServices = ref<any[]>([])
 const assignedJobs = ref<JobCard[]>([])
 const assignedLoading = ref(false)
 const assignedError = ref<string | null>(null)
+const agentData = ref<any>(null)
 
 const router = useRouter()
 
@@ -236,6 +240,12 @@ onMounted(async () => {
     selectedServices.value = JSON.parse(stored)
   }
 
+  // Load agent expertise data
+  const agentStored = localStorage.getItem('agentWelcomeData')
+  if (agentStored) {
+    agentData.value = JSON.parse(agentStored)
+  }
+
   await fetchData()
 })
 
@@ -247,7 +257,12 @@ watch(activeTab, async () => {
 const fetchData = async () => {
   applicationsLoading.value = true
   applicationsError.value = null
-  await getAvailableJobs(paginationParams)
+
+  // Pass agent expertise data to getAvailableJobs for filtering
+  const agentExpertise = getAgentExpertise()
+  const agentParams = agentExpertise ? { ...paginationParams, agentData: { primaryExpertise: agentExpertise } } : paginationParams
+  await getAvailableJobs(agentParams)
+
   try {
     const response = await applicationsService.listAgentApplications()
     if (response.success && response.data) {
@@ -434,10 +449,53 @@ const browseJobs = computed(() =>
     .map(job => ({ ...job, status: isJobApprovedForAgent(job.raw) ? 'approved' : 'pending_review' }))
 )
 
+const getAgentExpertise = (): string | null => {
+  try {
+    // First try agentWelcomeData
+    const welcomeData = localStorage.getItem('agentWelcomeData')
+    if (welcomeData) {
+      const parsed = JSON.parse(welcomeData)
+      if (parsed.primaryExpertise) return parsed.primaryExpertise
+    }
+
+    // Fallback to userInfo
+    const userInfo = localStorage.getItem('userInfo')
+    if (userInfo) {
+      const parsed = JSON.parse(userInfo)
+      const agentData = parsed.agentProfile || parsed.profile || parsed
+      if (agentData?.primaryExpertise || agentData?.primary_expertise) {
+        return agentData.primaryExpertise || agentData.primary_expertise
+      }
+    }
+
+    // Last fallback to agentProfile
+    const agentProfile = localStorage.getItem('agentProfile')
+    if (agentProfile) {
+      const parsed = JSON.parse(agentProfile)
+      if (parsed.primaryExpertise) return parsed.primaryExpertise
+    }
+  } catch (error) {
+    console.warn('Failed to parse agent data:', error)
+  }
+  return null
+}
+
 const filteredGigs = computed(() => {
   const source = activeTab.value === 'active' ? activeJobs.value : browseJobs.value
 
   let result = [...source]
+
+  // Apply expertise-based filtering for browse tab
+  if (activeTab.value === 'browse') {
+    const agentExpertise = getAgentExpertise()
+    if (agentExpertise) {
+      result = result.filter(job => {
+        const jobCategory = (job.category || '').toLowerCase().trim()
+        const normalizedExpertise = agentExpertise.toLowerCase().trim()
+        return jobCategory === normalizedExpertise
+      })
+    }
+  }
 
   if (selectedServices.value.length > 0) {
     const serviceTitles = selectedServices.value.map(service => service.title.toLowerCase())

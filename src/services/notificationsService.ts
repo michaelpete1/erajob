@@ -1,6 +1,6 @@
 // src/services/alertsService.ts
 
-import apiClient from './api'
+import apiClient from './apiClient'
 import type {
   AlertOut,
   AlertState,
@@ -57,7 +57,9 @@ export class AlertsService {
 
     try {
       // According to OpenAPI, alerts list does not paginate; we ignore start/stop
-      const response = await apiClient.get<ApiResponse<{ alerts: AlertOut[]; total_number_of_unread?: number }>>(`/v1/alertss/${role}`)
+      const response = await apiClient.get<ApiResponse<{ alerts: AlertOut[]; total_number_of_unread?: number }>>(`/v1/alertss/${role}`, {
+        timeout: 15000 // Increase timeout to 15 seconds
+      })
 
       if (response.data.status_code === 200) {
         const payload = (response.data.data as any) || {}

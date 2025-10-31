@@ -45,7 +45,13 @@ const finishSignup = async () => {
 
     // Normalize enums
     const allowedExpertise = [
-      'Web Devlopment',
+      'Sales',
+      'Customer Service',
+      'Editing',
+      'Book Keeping',
+      'Executive Assistant',
+      'Appointment Setting',
+      'Web Development',
       'Mobile Development',
       'UI/UX Design',
       'Content Writing',
@@ -114,12 +120,26 @@ const finishSignup = async () => {
   }
 }
 
-onBeforeRouteLeave((_to, _from, next) => {
-  if (hasCompletedSignup.value) {
+function handleBackToWelcome() {
+  // Set hours to 20 before returning to welcome
+  const welcome = JSON.parse(localStorage.getItem('agentWelcomeData') || '{}')
+  welcome.available_hours_agent_can_commit = 20
+  localStorage.setItem('agentWelcomeData', JSON.stringify(welcome))
+  router.push('/agent/welcome')
+}
+
+onBeforeRouteLeave((to, _from, next) => {
+  // Allow navigation to welcome page or if signup is complete
+  if (to.path === '/agent/welcome' || hasCompletedSignup.value) {
     next()
     return
   }
-  next('/agent/welcome')
+  // Redirect to welcome page only if not already going there
+  if (to.path !== '/agent/welcome') {
+    next('/agent/welcome')
+  } else {
+    next()
+  }
 })
 </script>
 
@@ -138,20 +158,27 @@ onBeforeRouteLeave((_to, _from, next) => {
 
     <div class="relative z-10 w-full max-w-md mx-auto px-4 sm:px-6 py-6 sm:py-8">
       <div class="rounded-2xl bg-white/95 backdrop-blur-sm px-4 sm:px-6 py-8 sm:py-12 text-center shadow-xl animate-fade-up-delay-2">
-        <div class="flex justify-center mb-4 animate-bounce">
-          <span class="text-3xl sm:text-4xl">🎉</span>
-        </div>
-        <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-brand-teal mb-2 animate-fade-up-delay-1">Congratulations!</h2>
-        <p class="text-sm sm:text-base md:text-lg font-semibold text-brand-teal mb-4 animate-fade-up-delay-2">You've successfully completed your application</p>
-        <div class="mx-auto mt-2 max-w-xs sm:max-w-sm text-left space-y-3 text-gray-700 animate-fade-up-delay-3">
-          <p>If you pass the selection process, you'll go through our free onboarding and training program.</p>
-          <ul class="list-disc pl-5 space-y-1">
-            <li>Structured learning to prepare you for real projects.</li>
-            <li>Equip you with the tools and knowledge to succeed as an EBA agent.</li>
-            <li>Completely free, no fees required.</li>
-            <li>Once you pass the training, you'll be eligible to receive jobs as an EBA agent.</li>
-          </ul>
-          <p>We look forward to working with you!</p>
+        <div class="text-center">
+          <button @click="handleBackToWelcome" class="absolute top-4 left-4 text-gray-500 hover:text-gray-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div class="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-teal-50 mb-4 sm:mb-6 animate-bounce">
+            <span class="text-3xl sm:text-4xl">🎉</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-brand-teal mb-2 animate-fade-up-delay-1">Congratulations!</h2>
+          <p class="text-sm sm:text-base md:text-lg font-semibold text-brand-teal mb-4 animate-fade-up-delay-2">You've successfully completed your application</p>
+          <div class="mx-auto mt-2 max-w-xs sm:max-w-sm text-left space-y-3 text-gray-700 animate-fade-up-delay-3">
+            <p>If you pass the selection process, you'll go through our free onboarding and training program.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Structured learning to prepare you for real projects.</li>
+              <li>Equip you with the tools and knowledge to succeed as an EBA agent.</li>
+              <li>Completely free, no fees required.</li>
+              <li>Once you pass the training, you'll be eligible to receive jobs as an EBA agent.</li>
+            </ul>
+            <p>We look forward to working with you!</p>
+          </div>
         </div>
 
         <div v-if="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">

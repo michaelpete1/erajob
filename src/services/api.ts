@@ -263,7 +263,7 @@ export const apiService = {
   async getJobs(params?: { start?: number; stop?: number }): Promise<ServiceResponse<Job[]>> { // Use ApiResponse<Job[]>
     try {
       const { start = 0, stop = 100 } = params || {}
-      const response = await api.get(`${API_VERSION}/jobss/admin/`, {
+      const response = await api.get(`${API_VERSION}/jobs/admin/`, {
         params: {
           start,
           stop
@@ -283,7 +283,7 @@ export const apiService = {
 
   async getJobById(jobId: string): Promise<ServiceResponse<Job>> { // Use ApiResponse<Job>
     try {
-      const response = await api.get(`${API_VERSION}/jobss/me?id=${jobId}`)
+      const response = await api.get(`${API_VERSION}/jobs/me?id=${jobId}`)
       return {
         success: true,
         data: response.data
@@ -298,7 +298,7 @@ export const apiService = {
 
   async createJob(jobData: any): Promise<ServiceResponse<Job>> { // Use ApiResponse<Job>
     try {
-      const response = await api.post(`${API_VERSION}/jobss/`, jobData)
+      const response = await api.post(`${API_VERSION}/jobs/`, jobData)
       return {
         success: true,
         data: response.data
@@ -393,7 +393,7 @@ export const apiService = {
 
   async getClientJobs(params?: { start?: number; stop?: number }): Promise<ServiceResponse<Job[]>> { // Use ApiResponse<Job[]>
     try {
-      const response = await api.get(`${API_VERSION}/jobss/client/created/`, {
+      const response = await api.get(`${API_VERSION}/jobs/client/created/`, {
         params: {
           start: params?.start ?? 0,
           stop: params?.stop ?? 100

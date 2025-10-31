@@ -15,12 +15,25 @@ const ensureArray = <T>(data: T | T[] | null | undefined): T[] => {
  * Lists jobs that an agent qualifies for. (Agent only)
  * @param start - The starting index for the list.
  * @param stop - The ending index for the list.
+ * @param agentData - Optional agent expertise data for filtering
  */
-export const listAvailableAgentJobs = async (start: number, stop: number): Promise<ServiceResponse<Job[]>> => {
+export const listAvailableAgentJobs = async (
+  start: number,
+  stop: number,
+  agentData?: { primaryExpertise?: string; preferredProjects?: string[] }
+): Promise<ServiceResponse<Job[]>> => {
   try {
-    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/`, {
-      params: { start, stop }
-    })
+    const params: any = { start, stop }
+
+    // Include agent expertise data if provided
+    if (agentData?.primaryExpertise) {
+      params.primary_expertise = agentData.primaryExpertise
+    }
+    if (agentData?.preferredProjects && agentData.preferredProjects.length > 0) {
+      params.preferred_projects = agentData.preferredProjects.join(',')
+    }
+
+    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/`, { params })
     if (isSuccessfulStatus(response.data.status_code)) {
       const jobs = ensureArray(response.data.data)
       return {

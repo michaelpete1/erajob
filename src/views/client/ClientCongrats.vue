@@ -119,12 +119,26 @@ const finishSignup = async () => {
   }
 }
 
-onBeforeRouteLeave((_to, _from, next) => {
-  if (hasCompletedSignup.value) {
+function handleBackToWelcome() {
+  // Set hours to 40 before returning to welcome
+  const welcome = JSON.parse(localStorage.getItem('clientWelcomeData') || '{}')
+  welcome.available_hours_agent_can_commit = 40
+  localStorage.setItem('clientWelcomeData', JSON.stringify(welcome))
+  router.push('/client/welcome')
+}
+
+onBeforeRouteLeave((to, _from, next) => {
+  // Allow navigation to welcome page or if signup is complete
+  if (to.path === '/client/welcome' || hasCompletedSignup.value) {
     next()
     return
   }
-  next('/client/welcome')
+  // Redirect to welcome page only if not already going there
+  if (to.path !== '/client/welcome') {
+    next('/client/welcome')
+  } else {
+    next()
+  }
 })
 </script>
 
@@ -142,7 +156,7 @@ onBeforeRouteLeave((_to, _from, next) => {
     <div class="relative z-10 w-full max-w-md mx-auto px-4 py-6">
       <!-- Navigation Header -->
       <header class="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white/10 backdrop-blur-sm rounded-t-2xl animate-fade-up">
-        <button @click="$router.push('/client/services')" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
+        <button @click="handleBackToWelcome" class="text-white/80 hover:text-white transition-colors flex items-center gap-2 text-sm animate-bounce-in">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>

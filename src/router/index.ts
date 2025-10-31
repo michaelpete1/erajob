@@ -43,19 +43,85 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/client/ClientDashboard.vue'),
     meta: { requiresAuth: true, role: 'client' }
   },
-  { path: '/agent/explore-gigs', name: 'agent-explore-gigs', component: () => import('../views/agent/AgentExploreGigs.vue') },
-  { path: '/agent/gigs-listing', name: 'agent-gigs-listing', component: () => import('../views/agent/AgentGigsListing.vue') },
-  { path: '/agent/log-work', name: 'agent-log-work', component: () => import('../views/agent/AgentLogWork.vue') },
-  { path: '/agent/gig/:slug', name: 'agent-gig-detail', component: () => import('../views/agent/AgentGigDetail.vue') },
-  { path: '/agent/job/:slug', name: 'agent-job-overview', component: () => import('../views/agent/AgentJobOverview.vue') },
-  { path: '/agent/congrats', name: 'agent-congrats', component: () => import('../views/agent/AgentCongrats.vue') },
-  { path: '/agent/logs', name: 'agent-logs', component: () => import('../views/agent/AgentLoggingDashboard.vue') },
-  { path: '/agent/logging-dashboard', name: 'agent-logging-dashboard', component: () => import('../views/agent/AgentLoggingDashboard.vue') },
-  { path: '/agent/logging-details', name: 'agent-logging-details', component: () => import('../views/agent/AgentLoggingDetails.vue') },
-  { path: '/agent/log-receipt/:id?', name: 'agent-log-receipt', component: () => import('../views/agent/AgentLogReceipt.vue') },
-  { path: '/agent/proposition-accepted', name: 'agent-proposition-accepted', component: () => import('../views/agent/AgentPropositionAccepted.vue') },
-  { path: '/agent/proposition-rejected', name: 'agent-proposition-rejected', component: () => import('../views/agent/AgentPropositionRejected.vue') },
-  { path: '/agent/welcome-back', name: 'agent-welcome-back', component: () => import('../views/agent/AgentWelcomeBack.vue') },
+  // Agent routes with proper auth and role requirements
+  { 
+    path: '/agent/explore-gigs', 
+    name: 'agent-explore-gigs', 
+    component: () => import('../views/agent/AgentExploreGigs.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/gigs-listing', 
+    name: 'agent-gigs-listing', 
+    component: () => import('../views/agent/AgentGigsListing.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/log-work', 
+    name: 'agent-log-work', 
+    component: () => import('../views/agent/AgentLogWork.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/gig/:slug', 
+    name: 'agent-gig-detail', 
+    component: () => import('../views/agent/AgentGigDetail.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/job/:slug', 
+    name: 'agent-job-overview', 
+    component: () => import('../views/agent/AgentJobOverview.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/congrats', 
+    name: 'agent-congrats', 
+    component: () => import('../views/agent/AgentCongrats.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/logs', 
+    name: 'agent-logs', 
+    component: () => import('../views/agent/AgentLoggingDashboard.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/logging-dashboard', 
+    name: 'agent-logging-dashboard', 
+    component: () => import('../views/agent/AgentLoggingDashboard.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/logging-details', 
+    name: 'agent-logging-details', 
+    component: () => import('../views/agent/AgentLoggingDetails.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/log-receipt/:id?', 
+    name: 'agent-log-receipt', 
+    component: () => import('../views/agent/AgentLogReceipt.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/proposition-accepted', 
+    name: 'agent-proposition-accepted', 
+    component: () => import('../views/agent/AgentPropositionAccepted.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/proposition-rejected', 
+    name: 'agent-proposition-rejected', 
+    component: () => import('../views/agent/AgentPropositionRejected.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
+  { 
+    path: '/agent/welcome-back', 
+    name: 'agent-welcome-back', 
+    component: () => import('../views/agent/AgentWelcomeBack.vue'),
+    meta: { requiresAuth: true, role: 'agent' }
+  },
   {
     path: '/agent/notifications',
     name: 'agent-notifications',
@@ -109,24 +175,60 @@ router.beforeEach(async (to, from, next) => {
   const isPublic = publicPages.includes(to.path)
   const isAuthPage = authPages.includes(to.path)
   
+  // Always allow navigation to auth pages (sign-in, sign-up, etc.) to avoid redirect loops
+  if (isAuthPage) {
+    next()
+    return
+  }
+  
   if (isPublic) {
     next()
     return
   }
 
-  // Check for existing auth data
+  // Check for existing auth data first
   const token = localStorage.getItem('access_token')
   const userRole = localStorage.getItem('userRole')
   
+  // Onboarding allowance must run BEFORE generic no-token redirect
+  const hasSignupData = !!localStorage.getItem('signupBasicData')
+  const onboardingPrefixes = ['/client/welcome', '/client/congrats', '/agent/welcome', '/agent/congrats', '/agent/welcome-back']
+  const isOnboarding = onboardingPrefixes.some(prefix => to.path.startsWith(prefix))
+  if (!token && hasSignupData && isOnboarding) {
+    next()
+    return
+  }
+  if (!token && !hasSignupData && isOnboarding) {
+    toast.error('Signup is incomplete or expired. Please start again.')
+    next('/sign-up')
+    return
+  }
+
+  
   // If no token but trying to access protected route, redirect to sign-in
   if (!token && !isAuthPage) {
-    next({ name: 'sign-in', query: { redirect: to.fullPath } })
+    // Store the intended path in sessionStorage instead of URL
+    if (to.path !== '/sign-in') {
+      sessionStorage.setItem('intendedPath', to.fullPath)
+      next({ name: 'sign-in' })
+    } else {
+      next()
+    }
     return
   }
   
   // If token exists and going to auth page, redirect to appropriate dashboard
   if (token && isAuthPage) {
-    const defaultRoute = userRole === 'admin' ? 'admin-job-approval' : `${userRole}-dashboard`
+    let defaultRoute = 'sign-in' // Fallback
+    
+    if (userRole === 'admin') {
+      defaultRoute = 'admin-job-approval'
+    } else if (userRole === 'agent') {
+      defaultRoute = 'agent-explore-gigs'
+    } else if (userRole === 'client') {
+      defaultRoute = 'client-dashboard'
+    }
+    
     next({ name: defaultRoute })
     return
   }
@@ -149,46 +251,6 @@ router.beforeEach(async (to, from, next) => {
       next({ name: defaultRoute })
       return
     }
-  }
-
-  const hasSignupData = !!localStorage.getItem('signupBasicData')
-  const signupPages = [
-    '/client/welcome',
-    '/client/congrats',
-    '/agent/welcome',
-    '/agent/congrats',
-    '/agent/welcome-back'
-  ]
-  if (!token && hasSignupData && signupPages.includes(to.path)) {
-    next()
-    return
-  }
-
-  if (token && isAuthPage) {
-    const forceAuthPage = to.query?.force === 'true'
-    if (forceAuthPage) {
-      next()
-      return
-    }
-    if (role === 'admin') return next('/admin/job-approval')
-    if (role === 'client') return next({ name: 'client-dashboard' })
-    if (role === 'agent') return next({ name: 'agent-explore-gigs' })
-    return next('/')
-  }
-
-  if (!token) {
-    if (isAuthPage) {
-      next()
-      return
-    }
-    if (to.path.startsWith('/admin')) {
-      if (to.path !== '/admin/sign-in') next('/admin/sign-in')
-      else next()
-    } else {
-      if (to.path !== '/sign-in') next('/sign-in')
-      else next()
-    }
-    return
   }
 
   const requiredRole = (to.meta as any)?.role as string | undefined
