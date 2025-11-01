@@ -533,13 +533,12 @@ const personalityTestInput = ref<HTMLInputElement | null>(null)
 
 const projectOptions = [
   'Web Development',
-  'Web Development',
   'Mobile Development',
   'Sales',
   'Customer Service',
   'Editing',
   'Book Keeping',
-  'Executive Assitant',
+  'Executive Assistant',
   'Appointment Setting',
   'UI/UX Design',
   'Content Writing',
@@ -556,7 +555,7 @@ const expertiseOptions = [
   'Customer Service',
   'Editing',
   'Book Keeping',
-  'Executive Assitant',
+  'Executive Assistant',
   'Appointment Setting',
   'UI/UX Design',
   'Content Writing',

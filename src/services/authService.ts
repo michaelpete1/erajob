@@ -118,21 +118,43 @@ const prepareSignupData = (data: SignupData): any => {
 }
 
 const signup = async (credentials: SignupData): Promise<AuthResponse> => {
-  try {
-    const preparedData = prepareSignupData(credentials)
-    const response = await apiClient.post('/v1/users/signup', preparedData)
+  const maxAttempts = 2
 
-    const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
-    if (ok) {
-      return { success: true }
-    }
-
-    return { success: false, error: response.data?.detail || 'Signup failed.' }
-  } catch (err: any) {
-    const error = err.response?.data?.detail || err.message || 'An unexpected error occurred.'
-    const fieldErrors = err.response?.data?.errors
-    return { success: false, error, fieldErrors }
+  if (typeof navigator !== 'undefined' && navigator && 'onLine' in navigator && !navigator.onLine) {
+    return { success: false, error: 'You appear to be offline. Please check your internet connection.' }
   }
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const preparedData = prepareSignupData(credentials)
+      const response = await apiClient.post('/v1/users/signup', preparedData)
+
+      const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
+      if (ok) {
+        return { success: true }
+      }
+
+      return { success: false, error: response.data?.detail || 'Signup failed.' }
+    } catch (err: any) {
+      const axiosError = err
+      const message = axiosError?.message ?? ''
+      const isNetworkError =
+        axiosError?.code === 'ERR_NETWORK' ||
+        axiosError?.code === 'ECONNABORTED' ||
+        message === 'Network Error' ||
+        message.toLowerCase().includes('timeout')
+
+      if (!isNetworkError || attempt === maxAttempts - 1) {
+        const error = err.response?.data?.detail || err.message || 'An unexpected error occurred.'
+        const fieldErrors = err.response?.data?.errors
+        return { success: false, error, fieldErrors }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
+  }
+
+  return { success: false, error: 'Signup failed after retries.' }
 }
 const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {

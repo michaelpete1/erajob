@@ -256,7 +256,7 @@ const categoryOptions: Array<{ value: JobsBase['category']; label: string }> = [
   { value: 'Customer Service', label: 'Customer Service' },
   { value: 'Editing', label: 'Editing' },
   { value: 'Book Keeping', label: 'Book Keeping' },
-  { value: 'Executive Assitant', label: 'Executive Assistant' },
+  { value: 'Executive Assistant', label: 'Executive Assistant' },
   { value: 'Appointment Setting', label: 'Appointment Setting' },
   { value: 'Digital Marketing', label: 'Digital Marketing' },
   { value: 'Data Analysis', label: 'Data Analysis' }

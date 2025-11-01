@@ -55,11 +55,32 @@ export const validateSession = async (): Promise<boolean> => {
     const token = localStorage.getItem('access_token')
     if (!token || typeof token !== 'string' || token.trim() === '') return false
 
+    // Check if token is expired (basic check - can be enhanced with JWT decoding)
     // For now, we'll just check if the token exists and has content
     // TODO: Implement proper token validation with API call
     return true
   } catch (error) {
     console.error('Session validation error:', error)
+    return false
+  }
+}
+
+/**
+ * Attempts to refresh the current session using refresh token
+ */
+export const refreshSession = async (): Promise<boolean> => {
+  try {
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (!refreshToken) return false
+
+    // Import auth store dynamically to avoid circular dependencies
+    const { useAuthStore } = await import('@/stores/auth')
+    const authStore = useAuthStore()
+
+    const result = await authStore.refreshToken()
+    return result.success
+  } catch (error) {
+    console.error('Session refresh error:', error)
     return false
   }
 }

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { api } from '@/services/apiService';
+import { api, apiService } from '@/services/apiService';
 
 interface User {
   id: string;
@@ -80,6 +80,31 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  const refreshToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      // Call refresh endpoint - use the correct API structure
+      const response = await apiService.adminRefreshToken({ refresh_token: refreshToken });
+
+      if (response.success && response.data?.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+        if (response.data.refresh_token) {
+          localStorage.setItem('refresh_token', response.data.refresh_token);
+        }
+        return { success: true };
+      }
+      throw new Error('Token refresh failed');
+    } catch (err: any) {
+      console.error('Token refresh error:', err);
+      logout();
+      return { success: false, error: err.message };
+    }
+  };
+
   return {
     user,
     isAuthenticated,
@@ -87,6 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     login,
     logout,
-    initialize
+    initialize,
+    refreshToken
   };
 });

@@ -7,6 +7,15 @@ import router from './router'
 const app = createApp(App)
 const pinia = createPinia()
 
+// Initialize authentication state on app startup
+const initializeAuth = () => {
+  const authStore = useAuthStore(pinia)
+  authStore.initialize()
+}
+
+// Import auth store after pinia is created
+import { useAuthStore } from './stores/auth'
+
 // Global Vue error handler (dev helper)
 app.config.errorHandler = (err: unknown, vm, info) => {
   // log to console
@@ -37,5 +46,8 @@ window.addEventListener('unhandledrejection', (e) => {
   // eslint-disable-next-line no-console
   console.error('Unhandled rejection:', e.reason || e)
 })
+
+// Initialize auth before mounting
+initializeAuth()
 
 app.use(pinia).use(router).mount('#app')

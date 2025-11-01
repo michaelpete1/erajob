@@ -237,11 +237,21 @@ router.beforeEach(async (to, from, next) => {
   if (token && !isAuthPage) {
     const isValidSession = await validateSession()
     if (!isValidSession) {
-      // Clear invalid session data
-      clearAuthData()
-      toast.warning('Your session has expired. Please sign in again.')
-      next({ name: 'sign-in', query: { redirect: to.fullPath } })
-      return
+      // Try to refresh the session first
+      const { refreshSession } = await import('@/utils/auth')
+      const refreshSuccess = await refreshSession()
+
+      if (refreshSuccess) {
+        // Session refreshed successfully, continue
+        next()
+        return
+      } else {
+        // Clear invalid session data
+        clearAuthData()
+        toast.warning('Your session has expired. Please sign in again.')
+        next({ name: 'sign-in', query: { redirect: to.fullPath } })
+        return
+      }
     }
     
     // Check route permissions based on user role

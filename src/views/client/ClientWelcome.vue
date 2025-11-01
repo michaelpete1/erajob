@@ -274,7 +274,7 @@ const expertiseOptions = [
   'Customer Service',
   'Editing',
   'Book Keeping',
-  'Executive Assitant',
+  'Executive Assistant',
   'Appointment Setting'
 ]
 
