@@ -24,8 +24,11 @@ export default defineConfig({
           proxy.on('error', (err, _req, _res) => {
             console.log('proxy error', err);
           });
-          proxy.on('proxyReq', (_proxyReq, req, _res) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
             console.log('Sending Request to the Target:', req.method, req.url);
+            // Ensure proper headers are forwarded
+            proxyReq.setHeader('Accept', 'application/json');
+            proxyReq.setHeader('Content-Type', 'application/json');
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
@@ -34,6 +37,6 @@ export default defineConfig({
         ws: true, // proxy websockets if needed
       },
     },
-    cors: false, // Disable CORS in dev server since we're using a proxy
+    cors: true, // Enable CORS for better browser compatibility
   }
 })

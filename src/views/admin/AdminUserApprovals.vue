@@ -79,13 +79,13 @@
           </div>
           <div class="flex space-x-2">
             <button
-              @click="approveUser(user.id)"
+              @click="handleApproveUser(user.id)"
               class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-brand-teal hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
             >
               Approve
             </button>
             <button
-              @click="rejectUser(user.id)"
+              @click="handleRejectUser(user.id)"
               class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-teal"
             >
               Reject
@@ -100,7 +100,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { format } from 'date-fns'
-import { api } from '../../services/apiService'
+import { getUsersList, approveUser, rejectUser } from '../../services/adminService'
 
 interface User {
   id: string
@@ -207,10 +207,10 @@ const fetchUsers = async () => {
   isLoading.value = true
   fetchError.value = null
   try {
-    const resp = await api.user.listUsers(0, 50)
-    if (resp.success && Array.isArray(resp.data)) {
+    const resp = await getUsersList(0, 50)
+    if (resp.success && resp.data && resp.data.users && Array.isArray(resp.data.users)) {
       // Map server users to local UI model, skipping admin accounts
-      const mappedUsers: User[] = resp.data
+      const mappedUsers: User[] = resp.data.users
         .filter((u: any) => !u.is_admin)
         .map((u: any) => ({
           id: u.id || u.user_id || String(u._id || ''),
@@ -224,7 +224,8 @@ const fetchUsers = async () => {
         }))
       users.value = mappedUsers.filter(user => {
         const id = String(user.id)
-        return !approvedUserIds.value.has(id) && !rejectedUserIds.value.has(id)
+        // Exclude users already approved by admin or locally approved/rejected
+        return user.admin_approved !== true && !approvedUserIds.value.has(id) && !rejectedUserIds.value.has(id)
       })
     } else {
       fetchError.value = resp.error || 'Failed to load users.'
@@ -237,9 +238,9 @@ const fetchUsers = async () => {
   }
 }
 
-const approveUser = async (userId: string) => {
+const handleApproveUser = async (userId: string) => {
   try {
-    const resp = await api.user.approveUser(userId)
+    const resp = await approveUser(userId)
     if (resp.success) {
       const id = String(userId)
       approvedUserIds.value.add(id)
@@ -256,9 +257,9 @@ const approveUser = async (userId: string) => {
   }
 }
 
-const rejectUser = async (userId: string) => {
+const handleRejectUser = async (userId: string) => {
   try {
-    const resp = await api.user.rejectUser(userId)
+    const resp = await rejectUser(userId, 'Rejected by admin')
     if (resp.success) {
       const id = String(userId)
       rejectedUserIds.value.add(id)

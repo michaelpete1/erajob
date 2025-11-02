@@ -143,6 +143,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/admin/job/:id', name: 'admin-job-details', component: () => import('../views/admin/AdminJobDetails.vue'), meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin/job/:id/reject', name: 'admin-job-rejection', component: () => import('../views/admin/AdminJobRejection.vue'), meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin/user-approvals', name: 'admin-user-approvals', component: () => import('../views/admin/AdminUserApprovals.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/user-management', name: 'admin-user-management', component: () => import('../views/admin/AdminUserManagement.vue'), meta: { requiresAuth: true, role: 'admin' } },
   // Utility pages
   { path: '/alerts', name: 'alerts', component: () => import('../views/Notifications.vue') },
   { path: '/call/:id', name: 'call', component: () => import('../views/Call.vue') },
