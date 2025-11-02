@@ -34,9 +34,40 @@
       <p class="mt-1 text-sm text-gray-500">No users currently require approval.</p>
     </div>
     
+    <!-- Rejection Reason Modal -->
+    <div v-if="showRejectModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click="closeRejectModal">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" @click.stop>
+        <div class="mt-3">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Reject User</h3>
+          <p class="text-sm text-gray-600 mb-4">Please provide a reason for rejecting this user:</p>
+          <textarea
+            v-model="rejectionReason"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-teal focus:border-brand-teal resize-none"
+            rows="4"
+            placeholder="Enter rejection reason..."
+          ></textarea>
+          <div class="flex justify-end space-x-3 mt-4">
+            <button
+              @click="closeRejectModal"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+              Cancel
+            </button>
+            <button
+              @click="submitReject"
+              :disabled="!rejectionReason.trim()"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-red-400 disabled:cursor-not-allowed"
+            >
+              Reject User
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div v-else class="space-y-4">
-      <div 
-        v-for="user in users" 
+      <div
+        v-for="user in users"
         :key="user.id"
         class="bg-white overflow-hidden shadow rounded-lg"
       >
@@ -65,11 +96,11 @@
               <span v-if="user.admin_approved === true" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-green-100 text-green-700 border-green-200 text-xs font-semibold">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Approved
               </span>
-              <span v-else-if="user.admin_approved === false" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-red-100 text-red-700 border-red-200 text-xs font-semibold">
+              <span v-else-if="user.admin_approved === false && user.rejection_reason" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-red-100 text-red-700 border-red-200 text-xs font-semibold">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Rejected
-                <span v-if="user.rejection_reason" class="ml-1 text-xs text-red-500 font-normal">({{ user.rejection_reason }})</span>
+                <span class="ml-1 text-xs text-red-500 font-normal">({{ user.rejection_reason }})</span>
               </span>
-              <span v-else class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200 text-xs font-semibold">
+              <span v-else-if="user.admin_approved === null || user.admin_approved === undefined" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200 text-xs font-semibold">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Pending
               </span>
             </div>
@@ -77,7 +108,7 @@
               Submitted: {{ formatDate(user.createdAt) }}
             </p>
           </div>
-          <div class="flex space-x-2">
+          <div v-if="user.admin_approved === null || user.admin_approved === undefined" class="flex space-x-2">
             <button
               @click="approveUser(user.id)"
               class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-brand-teal hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
@@ -116,9 +147,11 @@ interface User {
 const users = ref<User[]>([])
 const isLoading = ref(true)
 const fetchError = ref<string | null>(null)
-
 const APPROVED_USERS_STORAGE_KEY = 'adminApprovedUserIds'
 const REJECTED_USERS_STORAGE_KEY = 'adminRejectedUserIds'
+const showRejectModal = ref(false)
+const rejectionReason = ref('')
+const userToReject = ref<string | null>(null)
 
 const loadIdSet = (key: string): Set<string> => {
   try {
@@ -223,8 +256,9 @@ const fetchUsers = async () => {
           rejection_reason: u.rejection_reason // Assuming rejection_reason is returned by the API
         }))
       users.value = mappedUsers.filter(user => {
-        const id = String(user.id)
-        return !approvedUserIds.value.has(id) && !rejectedUserIds.value.has(id)
+        // Only hide users who are approved (admin_approved === true)
+        // Keep pending (null/undefined) and rejected (false with reason) users visible
+        return user.admin_approved !== true
       })
     } else {
       fetchError.value = resp.error || 'Failed to load users.'
@@ -246,7 +280,9 @@ const approveUser = async (userId: string) => {
       rejectedUserIds.value.delete(id)
       persistIdSet(APPROVED_USERS_STORAGE_KEY, approvedUserIds.value)
       persistIdSet(REJECTED_USERS_STORAGE_KEY, rejectedUserIds.value)
-      users.value = users.value.filter(u => u.id !== id)
+      // Don't filter out approved users - keep them visible with approved status
+      // Refresh the users list to show updated status
+      await fetchUsers()
     } else {
       fetchError.value = resp.error || 'Failed to approve user. Please try again.'
     }
@@ -256,22 +292,43 @@ const approveUser = async (userId: string) => {
   }
 }
 
-const rejectUser = async (userId: string) => {
+const rejectUser = (userId: string) => {
+  userToReject.value = userId
+  rejectionReason.value = ''
+  showRejectModal.value = true
+}
+
+const closeRejectModal = () => {
+  showRejectModal.value = false
+  userToReject.value = null
+  rejectionReason.value = ''
+}
+
+const submitReject = async () => {
+  if (!userToReject.value || !rejectionReason.value.trim()) {
+    return
+  }
+
   try {
-    const resp = await api.user.rejectUser(userId)
+    const resp = await api.user.rejectUser(userToReject.value, rejectionReason.value.trim())
     if (resp.success) {
-      const id = String(userId)
+      const id = String(userToReject.value)
       rejectedUserIds.value.add(id)
       approvedUserIds.value.delete(id)
       persistIdSet(REJECTED_USERS_STORAGE_KEY, rejectedUserIds.value)
       persistIdSet(APPROVED_USERS_STORAGE_KEY, approvedUserIds.value)
-      users.value = users.value.filter(u => u.id !== id)
+      // Don't filter out rejected users - keep them visible with rejected status
+      closeRejectModal()
+      // Refresh the users list to show updated status
+      await fetchUsers()
     } else {
       fetchError.value = resp.error || 'Failed to reject user. Please try again.'
+      closeRejectModal()
     }
   } catch (error) {
     console.error('Error rejecting user:', error)
     fetchError.value = 'Failed to reject user. Please try again.'
+    closeRejectModal()
   }
 }
 

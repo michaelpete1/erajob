@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { api, apiService } from '@/services/apiService';
 
 interface User {
@@ -11,7 +10,6 @@ interface User {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const router = useRouter();
   const user = ref<User | null>(null);
   const isAuthenticated = ref(false);
   const loading = ref(false);
@@ -63,7 +61,8 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userInfo');
-    router.push('/login');
+    // Navigate to login - will be handled by the component using this store
+    window.location.href = '/login';
   };
 
   const initialize = () => {
