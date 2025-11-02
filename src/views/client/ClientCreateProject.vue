@@ -258,14 +258,26 @@ const categoryOptions: Array<{ value: JobsBase['category']; label: string }> = [
   { value: 'Book Keeping', label: 'Book Keeping' },
   { value: 'Executive Assistant', label: 'Executive Assistant' },
   { value: 'Appointment Setting', label: 'Appointment Setting' },
+  { value: 'UI/UX Design', label: 'UI/UX Design' },
+  { value: 'Content Writing', label: 'Content Writing' },
   { value: 'Digital Marketing', label: 'Digital Marketing' },
-  { value: 'Data Analysis', label: 'Data Analysis' }
+  { value: 'Data Analysis', label: 'Data Analysis' },
+  { value: 'Other', label: 'Other' }
 ];
 
-const skillOptions: Array<{ value: JobsBase['skills_needed']; label: string }> = categoryOptions.map(option => ({
-  value: option.value,
-  label: option.label
-}));
+const skillOptions: Array<{ value: JobsBase['skills_needed']; label: string }> = [
+  { value: 'Web Devlopment', label: 'Web Development' },
+  { value: 'Mobile Development', label: 'Mobile Development' },
+  { value: 'Sales', label: 'Sales' },
+  { value: 'Customer Service', label: 'Customer Service' },
+  { value: 'Editing', label: 'Editing' },
+  { value: 'Book Keeping', label: 'Book Keeping' },
+  { value: 'Executive Assitant', label: 'Executive Assistant' },
+  { value: 'Appointment Setting', label: 'Appointment Setting' },
+  { value: 'Digital Marketing', label: 'Digital Marketing' },
+  { value: 'Data Analysis', label: 'Data Analysis' },
+  { value: 'Other', label: 'Other' }
+];
 
 const formData = ref<FormData>({
   requirements: [{ text: '' }],

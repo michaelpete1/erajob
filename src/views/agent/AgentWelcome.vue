@@ -549,16 +549,13 @@ const projectOptions = [
 
 const expertiseOptions = [
   'Web Development',
-  'Web Devlopment',
   'Mobile Development',
   'Sales',
   'Customer Service',
   'Editing',
-  'Book Keeping',
+  'Bookkeeping',
   'Executive Assistant',
   'Appointment Setting',
-  'UI/UX Design',
-  'Content Writing',
   'Digital Marketing',
   'Data Analysis',
   'Other'

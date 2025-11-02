@@ -8,21 +8,19 @@ const selectedCategories = ref([]);
 const showPreferredProjects = ref(false);
 
 const categories = [
-  { title: 'Graphic Design', description: 'Logo & brand identity', icon: PencilSquareIcon },
+  { title: 'Web Development', description: 'Web & Mobile development', icon: CodeBracketIcon },
+  { title: 'Mobile Development', description: 'Mobile app development', icon: CodeBracketIcon },
+  { title: 'Sales', description: 'Lead Generation & Sales', icon: CurrencyDollarIcon },
+  { title: 'Customer Service', description: 'Customer support services', icon: GlobeAltIcon },
+  { title: 'Editing', description: 'Content editing', icon: DocumentTextIcon },
+  { title: 'Book Keeping', description: 'Bookkeeping & Tax', icon: ChartBarIcon },
+  { title: 'Executive Assistant', description: 'Virtual Assistant & Admin', icon: GlobeAltIcon },
+  { title: 'Appointment Setting', description: 'Appointment scheduling', icon: GlobeAltIcon },
+  { title: 'UI/UX Design', description: 'Digital Art & Design', icon: PencilIcon },
+  { title: 'Content Writing', description: 'Content & Copywriting', icon: DocumentTextIcon },
   { title: 'Digital Marketing', description: 'Social media marketing, SEO', icon: MegaphoneIcon },
-  { title: 'Video & Animation', description: 'Video editing & Video Reels', icon: FilmIcon },
-  { title: 'Music & Audio', description: 'Producers & Composers', icon: MusicalNoteIcon },
-  { title: 'Programming & Tech', description: 'Web & Mobile development', icon: CodeBracketIcon },
-  { title: 'Business', description: 'Virtual Assistant & Admin', icon: GlobeAltIcon },
-  { title: 'Finance & Accounting', description: 'Bookkeeping & Tax', icon: ChartBarIcon },
-  { title: 'Writing & Translation', description: 'Content & Copywriting', icon: DocumentTextIcon },
-  { title: 'Photography', description: 'Product & Portrait', icon: CameraIcon },
-  { title: 'Voice Over', description: 'Narration & Dubbing', icon: MicrophoneIcon },
-  { title: 'AI Services', description: 'AI Integration & Development', icon: PuzzlePieceIcon },
-  { title: 'Art & Illustration', description: 'Digital Art & Design', icon: PencilIcon },
-  { title: 'Consulting', description: 'Business & Career Advice', icon: LightBulbIcon },
-  { title: 'Sales & Marketing', description: 'Lead Generation & Sales', icon: CurrencyDollarIcon },
-  { title: 'E-commerce', description: 'Store Management & Dropshipping', icon: ShoppingCartIcon }
+  { title: 'Data Analysis', description: 'Data analysis services', icon: ChartBarIcon },
+  { title: 'Other', description: 'Other services', icon: PuzzlePieceIcon }
 ];
 
 // Load any previously selected services
@@ -33,12 +31,12 @@ onMounted(() => {
       // Reconstruct minimal category objects for UI selection state
       // We only need title matches; map saved service enum back to categories heuristically
       const reverseMap = {
-        'Digital Marketing': 'Sales & Marketing',
-        'Content Writing': 'Writing & Translation',
-        'Web Development': 'Programming & Tech',
-        'Other': 'Graphic Design'
+        'Digital Marketing': 'Digital Marketing',
+        'Content Writing': 'Content Writing',
+        'Web Development': 'Web Development',
+        'Other': 'Other'
       }
-      const titles = saved.map((s) => reverseMap[s] || 'Graphic Design')
+      const titles = saved.map((s) => reverseMap[s] || 'Other')
       selectedCategories.value = categories.filter(c => titles.includes(c.title))
     }
   } catch {}
@@ -48,21 +46,19 @@ onMounted(() => {
 watch(selectedCategories, (val) => {
   try {
     const serviceMapping = {
-      'Graphic Design': 'Other',
+      'Web Development': 'Web Development',
+      'Mobile Development': 'Mobile Development',
+      'Sales': 'Sales',
+      'Customer Service': 'Customer Service',
+      'Editing': 'Editing',
+      'Book Keeping': 'Book Keeping',
+      'Executive Assistant': 'Executive Assistant',
+      'Appointment Setting': 'Appointment Setting',
+      'UI/UX Design': 'UI/UX Design',
+      'Content Writing': 'Content Writing',
       'Digital Marketing': 'Digital Marketing',
-      'Video & Animation': 'Other',
-      'Music & Audio': 'Other',
-      'Programming & Tech': 'Web Development',
-      'Business': 'Other',
-      'Finance & Accounting': 'Other',
-      'Writing & Translation': 'Content Writing',
-      'Photography': 'Other',
-      'Voice Over': 'Other',
-      'AI Services': 'Other',
-      'Art & Illustration': 'Other',
-      'Consulting': 'Other',
-      'Sales & Marketing': 'Digital Marketing',
-      'E-commerce': 'Other'
+      'Data Analysis': 'Data Analysis',
+      'Other': 'Other'
     };
     const selectedServices = [...new Set(val.map(cat => serviceMapping[cat.title] || 'Other'))];
     localStorage.setItem('selectedClientServices', JSON.stringify(selectedServices));
@@ -73,20 +69,19 @@ const goNext = () => {
   if (selectedCategories.value.length >= 3) {
     // Map UI service titles to API enum values
     const serviceMapping = {
-      'Graphic Design': 'Other',
+      'Web Development': 'Web Development',
+      'Mobile Development': 'Mobile Development',
+      'Sales': 'Sales',
+      'Customer Service': 'Customer Service',
+      'Editing': 'Editing',
+      'Book Keeping': 'Book Keeping',
+      'Executive Assistant': 'Executive Assistant',
+      'Appointment Setting': 'Appointment Setting',
+      'UI/UX Design': 'UI/UX Design',
+      'Content Writing': 'Content Writing',
       'Digital Marketing': 'Digital Marketing',
-      'Video & Animation': 'Other',
-      'Music & Audio': 'Other',
-      'Programming & Tech': 'Web Development', // Map to closest match
-      'Business': 'Other',
-      'Finance & Accounting': 'Other',
-      'Writing & Translation': 'Content Writing',
-      'Photography': 'Other',
-      'Voice Over': 'Other',
-      'AI Services': 'Other',
-      'Art & Illustration': 'Other',
-      'Consulting': 'Other',
-      'Sales & Marketing': 'Digital Marketing'
+      'Data Analysis': 'Data Analysis',
+      'Other': 'Other'
     };
 
     // Store selected services as API enum values, removing duplicates

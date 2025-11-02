@@ -524,7 +524,7 @@ class ApiService {
   // --- Jobs Endpoints ---
   async createJob(jobData: JobsBase): Promise<ServiceResponse<JobsOut>> {
     try {
-      const response = await apiClient.post<EJApiResponse<JobsOut>>('/v1/jobs/', jobData)
+      const response = await apiClient.post<EJApiResponse<JobsOut>>('/v1/jobss/', jobData)
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to create job' }
@@ -533,7 +533,7 @@ class ApiService {
 
   async getJob(id: string): Promise<ServiceResponse<JobsOut>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut>>('/v1/jobs/me', { params: { id } })
+      const response = await apiClient.get<EJApiResponse<JobsOut>>('/v1/jobss/me', { params: { id } })
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to get job' }
@@ -542,7 +542,7 @@ class ApiService {
 
   async getMyJobs(): Promise<ServiceResponse<JobsOut>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut>>('/v1/jobs/me')
+      const response = await apiClient.get<EJApiResponse<JobsOut>>('/v1/jobss/me')
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to get my jobs' }
@@ -551,7 +551,7 @@ class ApiService {
 
   async listAdminJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobs/admin/', {
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/admin/', {
         params: { start, stop }
       })
       return { success: true, data: response.data.data }
@@ -562,7 +562,7 @@ class ApiService {
 
   async listClientJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobs/client/created/', {
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/client/created/', {
         params: { start, stop }
       })
       return { success: true, data: response.data.data }
@@ -573,7 +573,7 @@ class ApiService {
 
   async listAgentAvailableJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobs/agent/available/', {
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/agent/available/', {
         params: { start, stop }
       })
       return { success: true, data: response.data.data }
@@ -584,21 +584,21 @@ class ApiService {
 
   async updateJob(jobId: string, updates: Partial<JobsBase> & Record<string, any> = {}): Promise<ServiceResponse<JobsOut>> {
     try {
-      const response = await apiClient.patch<EJApiResponse<JobsOut>>(`/v1/jobs/${jobId}`, updates)
+      const response = await apiClient.patch<EJApiResponse<JobsOut>>(`/v1/jobss/${jobId}`, updates)
       return { success: true, data: response.data.data }
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Failed to update job' }
     }
   }
 
-  async deleteJob(jobId: string): Promise<ServiceResponse<null>> {
-    try {
-      const response = await apiClient.delete<EJApiResponse<null>>(`/v1/jobs/${jobId}`)
-      return { success: true, data: response.data.data }
-    } catch (error: any) {
-      return { success: false, error: error.response?.data?.detail || 'Failed to delete job' }
-    }
-  }
+  async deleteJob(jobId: string): Promise<ServiceResponse<null>> {
+    try {
+      const response = await apiClient.delete<EJApiResponse<null>>(`/v1/jobss/${jobId}`)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to delete job' }
+    }
+  }
 
   // --- Alerts Endpoints ---
   async getAlerts(userType: 'client' | 'agent' | 'admin'): Promise<ServiceResponse<AlertsOut[]>> {
@@ -653,7 +653,7 @@ class ApiService {
           Tax: options?.taxPercent ?? 7,
         },
       }
-      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobs/approve/${jobId}`, body)
+      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobss/approve/${jobId}`, body)
       return { success: true, data: response.data.data }
     } catch (error: any) {
       const detail = error?.response?.data
@@ -663,7 +663,7 @@ class ApiService {
 
   async rejectJob(jobId: string, reason?: string): Promise<ServiceResponse<null>> {
     try {
-      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobs/reject/${jobId}`, {
+      const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobss/reject/${jobId}`, {
         admin_approved: false,
         rejection_reason: reason || 'No reason provided'
       })
