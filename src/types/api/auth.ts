@@ -27,8 +27,8 @@ export interface SignupData {
   full_name: string
   phone_number: string
   certificate_url: string[]
-  video_url: string
-  personality_url: string
+  video_url?: string
+  personality_url?: string
   // Client-specific fields
   company_name: string
   company_email: string

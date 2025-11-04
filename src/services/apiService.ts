@@ -629,17 +629,18 @@ class ApiService {
     }
   }
 
-  async rejectUser(userId: string, reason?: string): Promise<ServiceResponse<null>> {
-    try {
-      const payload = {
-        rejection_reason: reason?.trim() || 'No reason provided'
-      }
-      const response = await apiClient.patch<EJApiResponse<null>>(`/v1/users/${userId}/reject`, payload)
-      return { success: true, data: response.data.data }
-    } catch (error: any) {
-      return { success: false, error: error.response?.data?.detail || 'Failed to reject user' }
-    }
-  }
+  async rejectUser(userId: string, reason?: string): Promise<ServiceResponse<null>> {
+    try {
+      const payload = {
+        admin_approved: false,
+        rejection_reason: reason?.trim() || 'No reason provided'
+      }
+      const response = await apiClient.patch<EJApiResponse<null>>(`/v1/users/${userId}/reject`, payload)
+      return { success: true, data: response.data.data }
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Failed to reject user' }
+    }
+  }
 
   async approveJob(
     jobId: string,

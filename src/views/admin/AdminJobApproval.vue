@@ -30,24 +30,6 @@
         Rejected jobs are queued for automatic removal in the backend. No manual deletion is required.
       </div>
 
-      <div class="mb-4 sm:mb-6 lg:mb-8 flex items-center justify-center">
-        <div class="bg-white/95 backdrop-blur-sm rounded-full p-1 flex items-center gap-1 shadow-sm w-full max-w-xs lg:max-w-sm">
-          <button
-            @click="currentTab = 'Approved'"
-            :class="currentTab === 'Approved' ? 'bg-brand-teal text-white animate-pulse-subtle' : 'text-gray-700 hover:bg-gray-100'"
-            class="flex-1 px-3 sm:px-4 lg:px-6 py-2 lg:py-3 rounded-full text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 min-h-[40px] lg:min-h-[48px] touch-manipulation btn-pressable"
-          >
-            Approved
-          </button>
-          <button
-            @click="currentTab = 'Pending'"
-            :class="currentTab === 'Pending' ? 'bg-brand-teal text-white animate-pulse-subtle' : 'text-gray-700 hover:bg-gray-100'"
-            class="flex-1 px-3 sm:px-4 lg:px-6 py-2 lg:py-3 rounded-full text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 min-h-[40px] lg:min-h-[48px] touch-manipulation btn-pressable"
-          >
-            Pending
-          </button>
-        </div>
-      </div>
 
       <div v-if="loading" class="flex justify-center py-8 lg:py-12">
         <div class="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-b-2 border-white"></div>
@@ -113,7 +95,7 @@
           <div class="mt-4 lg:mt-6 pt-4 border-t border-gray-100">
             <div class="flex flex-col sm:flex-row lg:flex-row gap-2 sm:gap-3 lg:gap-4">
               <button
-                v-if="!job.admin_approved"
+                v-if="job.status !== 'approved'"
                 @click="approveJob(job.id!)"
                 :disabled="approvingJobs.has(job.id!)"
                 class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 min-h-[44px] lg:min-h-[52px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
@@ -127,7 +109,7 @@
                 {{ approvingJobs.has(job.id!) ? 'Approving...' : 'Approve' }}
               </button>
               <button
-                v-if="!job.admin_approved"
+                v-if="job.status !== 'approved'"
                 @click="rejectJob(job)"
                 :disabled="rejectingJobs.has(job.id!)"
                 class="flex-1 inline-flex items-center justify-center px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 rounded-md bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 min-h-[44px] lg:min-h-[52px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02] disabled:hover:scale-100"

@@ -100,7 +100,7 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Rejected
                 <span class="ml-1 text-xs text-red-500 font-normal">({{ user.rejection_reason }})</span>
               </span>
-              <span v-else-if="user.admin_approved === null || user.admin_approved === undefined" class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200 text-xs font-semibold">
+              <span v-else class="inline-flex items-center gap-1 px-2 py-1 rounded-full border bg-yellow-100 text-yellow-700 border-yellow-200 text-xs font-semibold">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Pending
               </span>
             </div>
@@ -108,7 +108,7 @@
               Submitted: {{ formatDate(user.createdAt) }}
             </p>
           </div>
-          <div v-if="user.admin_approved === null || user.admin_approved === undefined" class="flex space-x-2">
+          <div v-if="!user.admin_approved && !user.rejection_reason" class="flex space-x-2">
             <button
               @click="handleApproveUser(user.id)"
               class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-brand-teal hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
