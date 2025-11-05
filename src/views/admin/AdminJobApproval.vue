@@ -15,6 +15,34 @@
         </div>
       </header>
 
+      <!-- Tab Navigation -->
+      <div class="mt-4 mb-4 sm:mb-6 lg:mb-8 flex justify-center">
+        <div class="flex bg-white/10 rounded-lg p-1">
+          <button
+            @click="currentTab = 'Pending'"
+            :class="[
+              'px-4 py-2 rounded-md text-sm font-medium transition-all duration-300',
+              currentTab === 'Pending'
+                ? 'bg-white text-teal-700 shadow-md'
+                : 'text-white hover:bg-white/20'
+            ]"
+          >
+            Pending
+          </button>
+          <button
+            @click="currentTab = 'Approved'"
+            :class="[
+              'px-4 py-2 rounded-md text-sm font-medium transition-all duration-300',
+              currentTab === 'Approved'
+                ? 'bg-white text-teal-700 shadow-md'
+                : 'text-white hover:bg-white/20'
+            ]"
+          >
+            Approved
+          </button>
+        </div>
+      </div>
+
       <div class="mt-2 mb-4 sm:mb-6 lg:mb-8 flex items-center justify-between">
         <div class="flex items-center text-sm sm:text-base lg:text-lg text-white/90">
           <svg class="w-4 h-4 sm:w-5 lg:w-6 sm:h-5 lg:h-6 mr-1 sm:mr-2 lg:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
