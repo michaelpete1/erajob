@@ -121,7 +121,8 @@ export type Skills =
   | 'Other'
 
 export interface JobsBase {
-  project_title: string
+  job_title?: string
+  project_title?: string
   category: JobCategories
   budget: number
   description: string

@@ -13,10 +13,10 @@ const routes: RouteRecordRaw[] = [
   // Client flow
   { path: '/client/welcome', name: 'client-welcome', component: () => import('../views/client/ClientWelcome.vue') },
   { path: '/client/explore-gigs', name: 'client-explore-gigs', component: () => import('../views/client/ClientExploreGigs.vue') },
-  { path: '/client/projects', name: 'client-projects', component: () => import('../views/client/ClientProjects.vue') },
-  { path: '/client/projects/:id', name: 'client-project-details', component: () => import('../views/client/ClientProjectDetails.vue') },
+  { path: '/client/jobs', name: 'client-jobs', component: () => import('../views/client/ClientJobs.vue') },
+  { path: '/client/jobs/:id', name: 'client-job-details', component: () => import('../views/client/ClientJobDetails.vue') },
   { path: '/client/jobs/:id', name: 'client-job-description', component: () => import('../views/client/ClientJobDescription.vue') },
-  { path: '/client/projects/create', name: 'client-create-project', component: () => import('../views/client/ClientCreateProject.vue') },
+  { path: '/client/jobs/create', name: 'client-create-job', component: () => import('../views/client/ClientCreateJob.vue') },
   { path: '/client/add-post', name: 'add-post', component: () => import('../views/client/ClientSummary.vue') },
   { path: '/client/congrats', name: 'client-congrats', component: () => import('../views/client/ClientCongrats.vue') },
   { path: '/client/job-application', name: 'client-job-application', component: () => import('../views/client/ClientJobApplication.vue') },

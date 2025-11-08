@@ -63,55 +63,6 @@
 
       <!-- Main Content -->
       <div class="mt-20 max-w-4xl mx-auto">
-        <!-- Earnings Overview Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-lg mb-6 animate-fade-up">
-          <div class="text-center mb-6">
-            <h2 class="text-2xl sm:text-3xl font-bold text-brand-teal mb-2">Earnings Structure</h2>
-            <p class="text-gray-600">Transparent pricing for your freelance success</p>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <!-- Basic Tier -->
-            <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-4 sm:p-6 text-center">
-              <div class="text-3xl mb-3">🌟</div>
-              <h3 class="text-lg font-bold text-brand-teal mb-2">Basic Projects</h3>
-              <div class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">$50 - $200</div>
-              <p class="text-sm text-gray-600">Simple tasks, quick completion</p>
-              <ul class="mt-3 text-left text-sm text-gray-600 space-y-1">
-                <li>• Content writing</li>
-                <li>• Data entry</li>
-                <li>• Virtual assistance</li>
-              </ul>
-            </div>
-
-            <!-- Professional Tier -->
-            <div class="bg-gradient-to-br from-teal-100 to-teal-200 rounded-xl p-4 sm:p-6 text-center transform scale-105 shadow-md">
-              <div class="text-3xl mb-3">💎</div>
-              <h3 class="text-lg font-bold text-brand-teal mb-2">Professional</h3>
-              <div class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">$200 - $500</div>
-              <p class="text-sm text-gray-600">Specialized expertise required</p>
-              <ul class="mt-3 text-left text-sm text-gray-600 space-y-1">
-                <li>• Graphic design</li>
-                <li>• Web development</li>
-                <li>• Marketing campaigns</li>
-              </ul>
-            </div>
-
-            <!-- Expert Tier -->
-            <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-4 sm:p-6 text-center">
-              <div class="text-3xl mb-3">🚀</div>
-              <h3 class="text-lg font-bold text-brand-teal mb-2">Expert Level</h3>
-              <div class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">$500 - $2000+</div>
-              <p class="text-sm text-gray-600">Complex, high-value projects</p>
-              <ul class="mt-3 text-left text-sm text-gray-600 space-y-1">
-                <li>• Full-stack development</li>
-                <li>• Business consulting</li>
-                <li>• Project management</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
         <!-- Commission Structure -->
         <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-lg mb-6 animate-fade-up-delay-1">
           <h3 class="text-xl sm:text-2xl font-bold text-brand-teal mb-4">Commission Structure</h3>

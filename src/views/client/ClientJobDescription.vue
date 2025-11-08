@@ -36,7 +36,7 @@
             <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-lg">💰</div>
             <div>
               <p class="text-xs uppercase tracking-wide text-gray-400">Budget</p>
-              <p class="text-sm font-semibold text-gray-800">${{ job.budget }}</p>
+              <p class="text-sm font-semibold text-gray-800">${{ (Number(job.budget) * 1.17).toFixed(2) }}</p>
             </div>
           </div>
           <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">

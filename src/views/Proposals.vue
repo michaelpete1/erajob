@@ -133,7 +133,7 @@
               <div class="flex items-center text-sm text-gray-600 mb-2">
                 <span>For: {{ proposal.clientName }}</span>
                 <span class="mx-2">•</span>
-                <span>Budget: ${{ proposal.budget.toLocaleString() }}</span>
+                <span>Budget: ${{ (proposal.budget * 1.17).toFixed(2) }}</span>
               </div>
               
               <p class="text-sm text-gray-600 line-clamp-2 mb-3">{{ proposal.description }}</p>

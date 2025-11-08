@@ -73,7 +73,7 @@ export function useJobManagementExample() {
   
   // Job creation form
   const jobForm = ref<JobsBase>({
-    project_title: '',
+    job_title: '',
     category: 'Web Development',
     budget: 1000,
     description: '',
@@ -93,7 +93,7 @@ export function useJobManagementExample() {
       console.log('Job created successfully:', result)
       // Reset form
       jobForm.value = {
-        project_title: '',
+        job_title: '',
         category: 'Web Development',
         budget: 1000,
         description: '',

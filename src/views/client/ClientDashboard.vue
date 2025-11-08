@@ -3,18 +3,18 @@
     <ClientNavbar />
     <header class="bg-white shadow-sm p-4 sticky top-0 z-10 mt-4">
       <h1 class="text-2xl font-bold text-gray-800">Client Dashboard</h1>
-      <p class="text-sm text-gray-500">Manage your projects and agents.</p>
+      <p class="text-sm text-gray-500">Manage your jobs and agents.</p>
     </header>
 
     <main class="p-4 space-y-6">
       <section class="bg-white p-6 rounded-lg shadow">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold">My Projects</h2>
+          <h2 class="text-xl font-semibold">My Jobs</h2>
           <button
-            @click="$router.push({ name: 'client-create-project' })"
+            @click="$router.push('/client/projects/create')"
             class="bg-brand-teal text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 transition-colors"
           >
-            Post a New Project
+            Post a New Job
           </button>
         </div>
 
@@ -23,14 +23,14 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
           </svg>
-          <p class="mt-2 text-sm text-gray-500">Loading your projects...</p>
+          <p class="mt-2 text-sm text-gray-500">Loading your jobs...</p>
         </div>
 
         <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 error-message">
-          <p class="font-medium">Error loading projects</p>
+          <p class="font-medium">Error loading jobs</p>
           <p class="text-sm">{{ error }}</p>
-          <button 
-            @click="loadJobs" 
+          <button
+            @click="loadJobs"
             class="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
           >
             Retry
@@ -38,8 +38,8 @@
         </div>
 
         <div v-else-if="projects.length === 0" class="text-center text-gray-500 py-10">
-          <p class="mb-2">You have no active projects yet.</p>
-          <p class="text-sm">Post a new project to start receiving proposals.</p>
+          <p class="mb-2">You have no active jobs yet.</p>
+          <p class="text-sm">Post a new job to start receiving proposals.</p>
         </div>
 
         <div v-else class="space-y-4">
@@ -50,11 +50,11 @@
           >
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
-                <h3 class="text-lg font-semibold text-gray-800">{{ project.project_title }}</h3>
+                <h3 class="text-lg font-semibold text-gray-800">{{ project.project_title || project.job_title }}</h3>
                 <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ project.description }}</p>
               </div>
               <div class="text-sm text-gray-500">
-                <p><span class="font-semibold text-gray-700">Budget:</span> {{ formatBudget(project.budget) }}</p>
+                <p><span class="font-semibold text-gray-700">Budget:</span> {{ formatBudget(project.budget * 1.17) }}</p>
                 <p><span class="font-semibold text-gray-700">Status:</span> {{ formatStatus(project.status) }}</p>
               </div>
             </div>
@@ -141,7 +141,7 @@ const viewWorkLogs = (project: LocalJobOut) => {
   try {
     localStorage.setItem('selectedProject', JSON.stringify({
       id: projectId,
-      title: project.project_title,
+      title: project.project_title || project.job_title,
       job_id: project.job_id || projectId
     }))
     localStorage.setItem('selectedClientProject', JSON.stringify(project))
@@ -155,22 +155,22 @@ const loadJobs = async () => {
   try {
     console.log('Loading client jobs...')
     const result = await getClientJobs(pagination.start, pagination.stop)
-    console.log('Jobs loaded:', { 
-      success: result.success, 
+    console.log('Jobs loaded:', {
+      success: result.success,
       data: result.data,
       jobsCount: jobs.value?.length
     })
-    
+
     if (result.success) {
       // Jobs are already updated in the store via the useJobs composable
       console.log('Jobs loaded successfully')
     } else {
-      const errorMessage = result.error || 'Failed to load projects'
+      const errorMessage = result.error || 'Failed to load jobs'
       toast.error(errorMessage)
     }
   } catch (err) {
     console.error('Error loading jobs:', err)
-    const errorMessage = 'An error occurred while loading projects'
+    const errorMessage = 'An error occurred while loading jobs'
     toast.error(errorMessage)
   }
 }

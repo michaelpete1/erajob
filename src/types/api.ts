@@ -21,7 +21,7 @@ export interface EJPriceBreakDown {
 }
 
 export interface EJJobBase {
-  project_title: string;
+  job_title: string;
   category: string; // JobCatgeries enum in spec
   budget: number;
   description: string;

@@ -644,15 +644,18 @@ class ApiService {
 
   async approveJob(
     jobId: string,
-    options?: { adminApproved?: boolean; chargesPercent?: number; taxPercent?: number }
+    options?: { adminApproved?: boolean; chargesPercent?: number; taxPercent?: number; budget?: number }
   ): Promise<ServiceResponse<null>> {
     try {
-      const body = {
+      const body: any = {
         admin_approved: options?.adminApproved ?? true,
         break_down: {
           Charges: options?.chargesPercent ?? 10,
           Tax: options?.taxPercent ?? 7,
         },
+      }
+      if (options?.budget !== undefined) {
+        body.budget = options.budget
       }
       const response = await apiClient.post<EJApiResponse<null>>(`/v1/jobss/approve/${jobId}`, body)
       return { success: true, data: response.data.data }

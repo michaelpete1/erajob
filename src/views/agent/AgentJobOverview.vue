@@ -91,7 +91,7 @@ const jobDisplay = computed(() => {
     title: job.value.project_title,
     description: job.value.description,
     client: job.value.client_name,
-    rate: formatCurrency(job.value.budget),
+    budget: formatCurrency(job.value.budget * 1.17),
     deadline: formatDate(job.value.timeline_deadline),
     requirement: job.value.requirement,
     status: job.value.status
@@ -209,7 +209,7 @@ const sendUpdate = () => {
                 Client: <span class="font-medium text-gray-800 block break-words">{{ jobDisplay?.client }}</span>
               </div>
               <div class="text-xs sm:text-sm text-gray-600">
-                Rate: <span class="font-medium text-gray-800 block break-words">{{ jobDisplay?.rate ?? '—' }}</span>
+                Budget: <span class="font-medium text-gray-800 block break-words">{{ jobDisplay?.budget ? '$' + (parseFloat(jobDisplay.budget.replace('$', '')) * 1.17).toFixed(2) : '—' }}</span>
               </div>
               <div v-if="jobDisplay?.deadline" class="text-xs sm:text-sm text-gray-600">
                 Deadline: <span class="font-medium text-gray-800 block break-words">{{ jobDisplay.deadline }}</span>

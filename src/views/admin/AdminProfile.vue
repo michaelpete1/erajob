@@ -177,7 +177,7 @@
                         <p class="text-xs text-gray-500">{{ job.client_name || job.client || 'Client not specified' }}</p>
                       </div>
                       <div class="text-sm text-gray-700">{{ job.category || 'Other' }}</div>
-                      <div class="text-sm font-semibold text-teal-600">{{ formatCurrency(job.budget) }}</div>
+                      <div class="text-sm font-semibold text-teal-600">{{ formatCurrency(job.budget * 1.17) }}</div>
                       <div class="text-sm text-gray-700">{{ formatDate(job.last_updated || job.date_created || job.created_at) }}</div>
                     </li>
                   </ul>

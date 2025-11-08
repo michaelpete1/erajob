@@ -174,7 +174,7 @@ export const postNewJob = async (data: JobPostData): Promise<ServiceResponse<Job
 /**
  * Approves a job posting. (Admin only)
  * @param jobId - The ID of the job to approve.
- * @param data - The approval data, including charges and tax.
+ * @param data - The approval data, including charges, tax, and optional budget adjustment.
  */
 export const approveJob = async (jobId: string, data: JobApprovalData): Promise<ServiceResponse<string>> => {
   try {

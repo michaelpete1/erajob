@@ -165,7 +165,7 @@ const extractIdFromSlug = (slug: string): string => {
 
 const formattedBudget = computed(() => {
   if (!gig.value?.budget || gig.value.budget <= 0) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(gig.value.budget)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(gig.value.budget * 1.17)
 })
 
 const formattedRequirements = computed(() => {

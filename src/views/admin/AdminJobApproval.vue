@@ -102,7 +102,7 @@
             </span>
           </div>
 
-          <h4 class="text-sm sm:text-lg lg:text-xl font-bold mb-3 lg:mb-4 text-gray-900 display-font">{{ job.project_title }}</h4>
+          <h4 class="text-sm sm:text-lg lg:text-xl font-bold mb-3 lg:mb-4 text-gray-900 display-font">{{ job.project_title || job.job_title || 'Job Title' }}</h4>
 
           <div class="flex flex-col sm:flex-row lg:flex-row sm:items-center justify-between gap-2 lg:gap-4 text-sm lg:text-base">
             <div class="flex items-center text-gray-600">
@@ -115,7 +115,7 @@
               <svg class="w-3 h-3 sm:w-4 lg:w-5 sm:h-4 lg:h-5 mr-1 lg:mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-3.293 8.707a1 1 0 011.414 0L10 12.586l3.879-3.879a1 1 0 011.414 1.414l-4.5 4.5a1 1 0 01-1.414 0l-4.5-4.5a1 1 0 010-1.414z" />
               </svg>
-              <span class="text-xs sm:text-sm lg:text-base">${{ job.budget }}</span>
+              <span class="text-xs sm:text-sm lg:text-base">${{ (job.budget * 1.17).toFixed(2) }}</span>
             </div>
           </div>
 
@@ -196,6 +196,7 @@ type AdminJob = JobsOut & {
   admin_approved?: boolean | null;
   status?: string | null;
   id?: string | null;
+  project_title?: string;
 };
 
 const router = useRouter();
@@ -303,17 +304,62 @@ const approveJob = async (jobId: string) => {
 
     const jobIdStr = String(jobId);
 
+    // Find the job to get current budget
+    const job = allJobs.value.find(j => j.id === jobIdStr);
+    if (!job) {
+        alert('Job not found.');
+        return;
+    }
+
+    // Prompt admin for new total budget (including fees)
+    const currentTotalBudget = job.budget || 0;
+    const newTotalBudgetInput = prompt(`Current total budget (including fees): $${currentTotalBudget}\n\nEnter new total budget (leave empty to keep current):`, currentTotalBudget.toString());
+
+    if (newTotalBudgetInput === null) {
+        return; // User cancelled
+    }
+
+    let newTotalBudget: number | undefined;
+    if (newTotalBudgetInput.trim() !== '' && newTotalBudgetInput.trim() !== currentTotalBudget.toString()) {
+        const parsedBudget = parseFloat(newTotalBudgetInput.trim());
+        if (isNaN(parsedBudget) || parsedBudget < 0) {
+            alert('Please enter a valid budget amount (positive number).');
+            return;
+        }
+        newTotalBudget = parsedBudget;
+    }
+
+    // Calculate base budget from total (total / 1.17)
+    const newBudget = newTotalBudget !== undefined ? newTotalBudget / 1.17 : undefined;
+
     approvingJobs.value.add(jobIdStr);
 
     try {
-        const response = await api.jobs.approveJob(jobId);
+        const response = await api.jobs.approveJob(jobId, {
+            adminApproved: true,
+            chargesPercent: 10,
+            taxPercent: 7
+        });
         if (!response.success) {
             console.error('Approve job failed with response:', response.error);
             alert(response.error || 'Failed to approve job.');
             return;
         }
 
-        alert('Job approved successfully');
+        // Update the local job object with the new budget if it was changed
+        if (newBudget !== undefined) {
+            const jobIndex = allJobs.value.findIndex(j => j.id === jobIdStr);
+            if (jobIndex !== -1) {
+                allJobs.value[jobIndex] = {
+                    ...allJobs.value[jobIndex],
+                    budget: newBudget,
+                    status: 'approved'
+                };
+            }
+        }
+
+        const budgetMessage = newTotalBudget !== undefined ? ` with updated total budget: $${newTotalBudget}` : '';
+        alert(`Job approved successfully${budgetMessage}`);
         currentTab.value = 'Approved';
         await fetchJobs();
     } catch (error: any) {

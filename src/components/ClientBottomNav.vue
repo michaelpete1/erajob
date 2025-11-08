@@ -2,14 +2,14 @@
   <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg z-50 lg:hidden">
     <div class="max-w-lg mx-auto px-2 py-1.5">
       <div class="flex items-center justify-around">
-        <!-- Projects Button -->
-        <router-link 
-          to="/client/projects" 
-          :class="navItemClass('/client/projects')"
+        <!-- Jobs Button -->
+        <router-link
+          to="/client/jobs"
+          :class="navItemClass('/client/jobs')"
           class="flex flex-col items-center justify-center flex-1 py-1.5"
         >
-          <PencilSquareIcon :class="iconClass('/client/projects')" />
-          <span class="text-[11px] mt-0.5">Projects</span>
+          <PencilSquareIcon :class="iconClass('/client/jobs')" />
+          <span class="text-[11px] mt-0.5">Jobs</span>
         </router-link>
 
         <!-- Proposals Button -->
@@ -93,23 +93,23 @@ onMounted(async () => {
     console.warn('ClientBottomNav: failed to load alerts', error)
   }
 })
-// Check if plus button should be shown (only for clients on project-related pages)
+
 const showPlusButton = computed(() => {
-  const clientProjectPages = [
-    '/client/projects',
-    '/client/projects/create',
-    '/client/explore-gigs'
+  const clientJobPages = [
+    '/client/jobs',
+    '/client/jobs/create',
+    '/client/explore-gigs',
+    '/client-dashboard'
   ]
-  
+
   // Uses startsWith to match nested routes under the primary paths
-  return clientProjectPages.some(page => route.path.startsWith(page))
+  return clientJobPages.some(page => route.path.startsWith(page))
 })
 
 // Handle plus button click
 function handlePlusClick() {
-  router.push('/client/projects/create')
+  router.push('/client/jobs/create')
 }
-
 // Navigation item classes
 function navItemClass(path: string) {
   // Use startsWith to handle nested routes (e.g., /client/settings/profile)

@@ -4,8 +4,8 @@
     <div class="px-4 sm:px-6 py-4 sm:py-6 max-w-4xl mx-auto">
       <!-- Page Title -->
       <div class="mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Projects</h1>
-        <p class="text-gray-600 mt-1">Manage your active and browse projects</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Jobs</h1>
+        <p class="text-gray-600 mt-1">Manage your active and browse jobs</p>
       </div>
       <div class="flex bg-gray-100 rounded-lg overflow-hidden max-w-md mx-auto mb-6">
         <button
@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <!-- Projects Grid -->
+      <!-- Jobs Grid -->
       <div v-if="!loading && !error" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 pb-32">
         <div 
           v-for="project in activeProjects"
@@ -72,7 +72,7 @@
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div class="flex items-center text-teal-600 font-semibold">
             <span class="text-lg sm:text-xl">💰</span>
-            <span class="ml-1 text-lg sm:text-xl font-bold">${{ project.budget.toLocaleString() }}</span>
+            <span class="ml-1 text-lg sm:text-xl font-bold">${{ (project.budget * 1.17).toFixed(2) }}</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs text-gray-500">{{ formatDate(project.timeline?.deadline) }}</span>
@@ -133,23 +133,23 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Active Projects Yet</h3>
+              <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Active Jobs Yet</h3>
               <p class="text-gray-600 text-sm sm:text-base max-w-md mx-auto">
-                You don't have any active projects with assigned agents. Start by browsing available projects or create a new one to get started.
+                You don't have any active jobs with assigned agents. Start by browsing available jobs or create a new one to get started.
               </p>
             </div>
           <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <button 
+            <button
               @click="activeTab = 'pending'"
               class="px-6 py-3 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 transition-colors duration-200"
             >
-              Browse Projects
+              Browse Jobs
             </button>
-            <button 
+            <button
               @click="goToCreateProject"
               class="px-6 py-3 border border-teal-500 text-teal-500 rounded-lg font-medium hover:bg-teal-50 transition-colors duration-200"
             >
-              Create Project
+              Create Job
             </button>
           </div>
         </div>
@@ -180,7 +180,7 @@
               <p class="text-xs font-medium text-yellow-700 mb-3" v-if="!project.admin_approved">Awaiting admin approval before work can begin.</p>
               <p class="text-xs font-medium text-green-700 mb-3" v-else>Approved and ready for work.</p>
               <div class="flex items-center justify-between">
-                <span class="text-lg font-bold text-teal-600">${{ project.budget.toLocaleString() }}</span>
+                <span class="text-lg font-bold text-teal-600">${{ (project.budget * 1.17).toFixed(2) }}</span>
                 <button
                   class="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm sm:text-base transition-colors"
                   @click.stop="goToProject(project)"
@@ -202,9 +202,9 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Available Projects</h3>
+              <h3 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">No Available Jobs</h3>
               <p class="text-gray-600 text-sm sm:text-base max-w-md mx-auto">
-                There are no available projects at the moment. Check back later or create your own project to get started.
+                There are no available jobs at the moment. Check back later or create your own job to get started.
               </p>
             </div>
             <div class="flex justify-center">
@@ -212,7 +212,7 @@
                 @click="goToCreateProject"
                 class="px-6 py-3 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 transition-colors duration-200"
               >
-                Create Project
+                Create Job
               </button>
             </div>
           </div>
@@ -599,7 +599,9 @@ const fetchPendingProjects = async () => {
       return
     }
     const jobsData = Array.isArray(response.data) ? response.data : [response.data]
-    pendingProjects.value = jobsData.map((job) => toProject(job))
+    // Filter out approved jobs - only show pending (unapproved) jobs
+    const pendingJobs = jobsData.filter((job: any) => job.admin_approved !== true)
+    pendingProjects.value = pendingJobs.map((job) => toProject(job))
   } catch (err) {
     console.error('Error fetching pending projects:', err)
     error.value = 'Failed to load pending projects'
@@ -666,7 +668,7 @@ const cacheProjectContext = (project: Project) => {
 const goToProject = (project: Project) => {
   if (!project?.id) return
   cacheProjectContext(project)
-  router.push({ name: 'client-project-details', params: { id: String(project.id) } })
+  router.push({ name: 'client-job-details', params: { id: String(project.id) } })
 }
 
 const goToJobPage = (project: Project) => {
@@ -682,7 +684,7 @@ const goToProjectWorkLogs = (project: Project) => {
 }
 
 const goToCreateProject = () => {
-  router.push('/client/create-project')
+  router.push({ name: 'client-create-job' })
 }
 
 const confirmDeleteProject = async (project: Project) => {

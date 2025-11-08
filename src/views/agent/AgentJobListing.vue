@@ -162,8 +162,8 @@
               </div>
               <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{{ gig.description }}</p>
               <div class="flex items-center justify-between mb-3 sm:mb-4">
-                <span class="text-xl sm:text-2xl font-bold text-brand-teal">${{ gig.price }}</span>
-                <span class="text-xs sm:text-sm text-gray-500">per hour</span>
+                <span class="text-xl sm:text-2xl font-bold text-brand-teal">${{ (Number(gig.price) * 1.17).toFixed(2) }}</span>
+                <span class="text-xs sm:text-sm text-gray-500">per hour (total)</span>
               </div>
 
               <div>

@@ -65,7 +65,7 @@
             <p class="text-gray-600">Submitted on {{ formatDate(proposal.submittedDate) }}</p>
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-2xl font-bold text-gray-900">${{ proposal.budget.toLocaleString() }}</span>
+            <span class="text-2xl font-bold text-gray-900">${{ (proposal.budget * 1.17).toFixed(2) }}</span>
             <span class="text-sm text-gray-500">Budget</span>
           </div>
         </div>

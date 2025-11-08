@@ -68,7 +68,8 @@ export interface LocalJobOut {
   date_created?: number | null;
   last_updated?: number | null;
   admin_approved?: boolean;
-  project_title: string;
+  job_title: string;
+  project_title?: string; // Keep for API compatibility
   description: string;
   category: string;
   skills_needed: string;  // Changed to string to match API
@@ -136,19 +137,23 @@ const deriveJobStatus = (job: any): string => {
 // Convert service job to our local job type
 function toLocalJobOut(job: EJJobOut): LocalJobOut {
   // Convert skills array to comma-separated string for API compatibility
-  const skillsString = Array.isArray(job.skills_needed) 
+  const skillsString = Array.isArray(job.skills_needed)
     ? job.skills_needed.join(', ')
     : (job.skills_needed || '');
 
   const adminApproved = isTruthy((job as any)?.admin_approved ?? (job as any)?.adminApproved ?? (job as any)?.is_admin_approved)
   const normalizedStatus = deriveJobStatus(job)
 
+  // Use project_title from API, fallback to job_title
+  const title = (job as any).project_title || job.job_title || '';
+
   return {
     id: job.id || null,
     date_created: job.date_created || null,
     last_updated: job.last_updated || null,
     admin_approved: adminApproved,
-    project_title: job.project_title || '',
+    job_title: title,
+    project_title: (job as any).project_title || title, // Keep both for compatibility
     description: job.description || '',
     category: job.category as string,
     skills_needed: skillsString, // Now matches API's string type

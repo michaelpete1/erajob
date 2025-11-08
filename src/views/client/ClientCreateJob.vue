@@ -41,7 +41,7 @@
             <span class="text-xs text-gray-500">{{ titleLength }}/{{ TITLE_MAX_LENGTH }}</span>
           </div>
           <input
-            v-model="project.project_title"
+            v-model="project.job_title"
             type="text"
             placeholder="Enter project title..."
             :maxlength="TITLE_MAX_LENGTH"
@@ -292,7 +292,7 @@ const getOptionLabel = (value: JobsBase['category'] | JobsBase['skills_needed'])
 };
 
 const project = ref<JobsBase>({
-  project_title: '',
+  job_title: '',
   category: '' as JobsBase['category'],
   budget: 0,
   description: '',
@@ -304,8 +304,8 @@ const project = ref<JobsBase>({
   }
 });
 
-const titleLength = computed(() => project.value.project_title.length);
-const descriptionLength = computed(() => project.value.description.length);
+const titleLength = computed(() => project.value.job_title?.length || 0);
+const descriptionLength = computed(() => project.value.description?.length || 0);
 
 const isFormValid = computed(() => {
   const hasValidRequirements =
@@ -313,7 +313,7 @@ const isFormValid = computed(() => {
     formData.value.requirements.every(req => req.text.trim() !== '');
 
   return (
-    project.value.project_title.trim() !== '' &&
+    (project.value.job_title?.trim() || '') !== '' &&
     project.value.category.trim() !== '' &&
     project.value.budget > 0 &&
     project.value.description.trim() !== '' &&
@@ -383,7 +383,7 @@ const submitProject = async () => {
 
     // Transform to JobPostData format
     const jobPayload: JobsBase = {
-      project_title: project.value.project_title.trim(),
+      project_title: project.value.job_title?.trim() || '',
       category: project.value.category,
       budget: project.value.budget,
       description: project.value.description.trim(),
@@ -398,7 +398,7 @@ const submitProject = async () => {
     const response = await api.jobs.createJob(jobPayload);
 
     if (response.success && response.data) {
-      router.push('/client/projects');
+      router.push({ name: 'client-jobs' });
     } else {
       error.value = response.error || 'Failed to create project';
     }

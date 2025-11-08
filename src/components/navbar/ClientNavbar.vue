@@ -9,12 +9,12 @@
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-1 flex-1 justify-center px-4">
-          <router-link 
-            :to="'/client/projects'" 
-            :class="navLinkClass('/client/projects')"
+          <router-link
+            :to="'/client/jobs'"
+            :class="navLinkClass('/client/jobs')"
           >
-            <PencilSquareIcon :class="navIconClass('/client/projects')" />
-            <span>Projects</span>
+            <PencilSquareIcon :class="navIconClass('/client/jobs')" />
+            <span>Jobs</span>
           </router-link>
           
           <!-- FIX: Scoped to /client/proposals -->
@@ -27,11 +27,11 @@
             <span>Proposals</span>
           </router-link>
           
-          <router-link 
-            :to="'/client/projects/create'" 
-            :class="navLinkClass('/client/projects/create')"
+          <router-link
+            :to="'/client/jobs/create'"
+            :class="navLinkClass('/client/jobs/create')"
           >
-            <UserGroupIcon :class="navIconClass('/client/projects/create')" />
+            <UserGroupIcon :class="navIconClass('/client/jobs/create')" />
             <span>Post Job</span>
           </router-link>
 
@@ -98,13 +98,13 @@
       @click.away="closeMobileMenu"
     >
       <div class="px-2 pt-2 pb-3 space-y-1 bg-white border-t border-gray-200 shadow-lg">
-        <router-link 
-          :to="'/client/projects'" 
-          :class="mobileNavLinkClass('/client/projects')"
+        <router-link
+          :to="'/client/jobs'"
+          :class="mobileNavLinkClass('/client/jobs')"
           @click="closeMobileMenu"
         >
-          <PencilSquareIcon :class="mobileNavIconClass('/client/projects')" />
-          <span>Projects</span>
+          <PencilSquareIcon :class="mobileNavIconClass('/client/jobs')" />
+          <span>Jobs</span>
         </router-link>
         
         <!-- NEW: Added Proposals to Mobile Menu and Scoped -->
@@ -117,12 +117,12 @@
           <span>Proposals</span>
         </router-link>
         
-        <router-link 
-          :to="'/client/projects/create'" 
-          :class="mobileNavLinkClass('/client/projects/create')"
+        <router-link
+          :to="'/client/jobs/create'"
+          :class="mobileNavLinkClass('/client/jobs/create')"
           @click="closeMobileMenu"
         >
-          <UserGroupIcon :class="mobileNavIconClass('/client/projects/create')" />
+          <UserGroupIcon :class="mobileNavIconClass('/client/jobs/create')" />
           <span>Post Job</span>
         </router-link>
 

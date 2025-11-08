@@ -455,7 +455,7 @@ const filteredGigs = computed<MappedGigCard[]>(() => {
       key,
       title,
       snippet: description.length > 160 ? `${description.slice(0, 157)}...` : description,
-      budget: formatBudget(job.budget),
+      budget: formatBudget(job.budget * 1.17),
       created: formatDate(job.date_created),
       categoryIcon: getCategoryIcon(category),
       searchable: `${title} ${description} ${category}`.toLowerCase(),

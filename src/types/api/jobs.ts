@@ -57,9 +57,9 @@ export interface JobBreakdown {
  */
 export interface Job {
   id: string
-  project_title: string
+  job_title: string
   category: string
-  budget: number
+  budget: number // Total budget including service fee (10%) and tax (7%) - total = base_budget * 1.17
   description: string
   requirement: string
   skills_needed: string
@@ -75,7 +75,7 @@ export interface Job {
  * Defines the data required for a client to post a new job.
  */
 export interface JobPostData {
-  project_title: string
+  job_title: string
   category: string
   budget: number
   description: string
@@ -90,6 +90,7 @@ export interface JobPostData {
 export interface JobApprovalData {
   admin_approved: boolean
   break_down: JobBreakdown
+  budget?: number // Optional budget adjustment by admin
 }
 
 /**

@@ -60,7 +60,7 @@ export const postNewJob = (data: JobPostData) => {
 /**
  * Approves a new job posting. (Admin only)
  * @param jobId - The ID of the job to approve.
- * @param data - The approval data, including charges and tax.
+ * @param data - The approval data, including charges, tax, and optional budget adjustment.
  */
 export const approveJob = (jobId: string, data: JobApprovalData) => {
   return apiClient.post<string>(`${BASE_URL}/approve/${jobId}`, data)

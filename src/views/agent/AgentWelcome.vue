@@ -813,7 +813,7 @@ const handlePersonalityTestUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const file = target.files[0]
-    
+
     const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
       alert('File is too large. Maximum size is 5MB.')
@@ -822,12 +822,15 @@ const handlePersonalityTestUpload = (event: Event) => {
       }
       return
     }
-    
+
     personalityTestFile.value = file
+    // Set personality URL to file name when file is uploaded
+    form.personalityUrl = file.name
     // Persist filename
     try {
       const existing = JSON.parse(localStorage.getItem('agentWelcomeData') || '{}')
       existing.personalityTest = personalityTestFile.value?.name
+      existing.personalityUrl = form.personalityUrl
       localStorage.setItem('agentWelcomeData', JSON.stringify(existing))
     } catch {}
   }
