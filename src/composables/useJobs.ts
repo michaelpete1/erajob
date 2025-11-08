@@ -72,7 +72,7 @@ export interface LocalJobOut {
   project_title?: string; // Keep for API compatibility
   description: string;
   category: string;
-  skills_needed: string;  // Changed to string to match API
+  skills_needed: string;  // Converted to string for UI
   timeline: {
     start_date: number;
     deadline: number;
@@ -359,6 +359,28 @@ const deleteJob = async (id: string) => {
   }
 };
 
+const markJobAsCompleted = async (id: string) => {
+  jobState.value.loading = true;
+  try {
+    const response = await jobsService.markJobAsCompleted(id);
+    if (response.success && response.data) {
+      // Update the job in the state with the completed status
+      jobState.value.jobs = jobState.value.jobs.map(job =>
+        job.id === id ? { ...job, ...response.data as unknown as EJJobOut } : job
+      );
+      if (jobState.value.currentJob?.id === id) {
+        jobState.value.currentJob = { ...jobState.value.currentJob, ...response.data as unknown as EJJobOut };
+      }
+    }
+    return response;
+  } catch (err) {
+    jobState.value.error = err instanceof Error ? err.message : 'Failed to mark job as completed';
+    return { success: false, error: jobState.value.error };
+  } finally {
+    jobState.value.loading = false;
+  }
+};
+
 const searchJobs = async (query: string, filters: JobFilters = {}) => {
   jobState.value.loading = true;
   try {
@@ -454,6 +476,7 @@ export function useJobs() {
     getJobById,
     updateJob,
     deleteJob,
+    markJobAsCompleted,
     searchJobs,
     loadMoreJobs,
     resetJobs,

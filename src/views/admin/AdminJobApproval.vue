@@ -312,8 +312,8 @@ const approveJob = async (jobId: string) => {
     }
 
     // Prompt admin for new total budget (including fees)
-    const currentTotalBudget = job.budget || 0;
-    const newTotalBudgetInput = prompt(`Current total budget (including fees): $${currentTotalBudget}\n\nEnter new total budget (leave empty to keep current):`, currentTotalBudget.toString());
+    const currentTotalBudget = (job.budget || 0) * 1.17;
+    const newTotalBudgetInput = prompt(`Current total budget (including fees): $${currentTotalBudget.toFixed(2)}\n\nEnter new total budget (leave empty to keep current):`, currentTotalBudget.toFixed(2));
 
     if (newTotalBudgetInput === null) {
         return; // User cancelled
@@ -338,8 +338,9 @@ const approveJob = async (jobId: string) => {
         const response = await api.jobs.approveJob(jobId, {
             adminApproved: true,
             chargesPercent: 10,
-            taxPercent: 7
-        });
+            taxPercent: 7,
+            budget: newBudget
+        } as any);
         if (!response.success) {
             console.error('Approve job failed with response:', response.error);
             alert(response.error || 'Failed to approve job.');

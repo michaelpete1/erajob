@@ -78,7 +78,7 @@ export function useJobManagementExample() {
     budget: 1000,
     description: '',
     requirement: '',
-    skills_needed: 'Web Devlopment',
+    skills_needed: 'Web Development',
     timeline: {
       start_date: Date.now(),
       deadline: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days from now
@@ -98,7 +98,7 @@ export function useJobManagementExample() {
         budget: 1000,
         description: '',
         requirement: '',
-        skills_needed: 'Web Devlopment',
+        skills_needed: 'Web Development',
         timeline: {
           start_date: Date.now(),
           deadline: Date.now() + (30 * 24 * 60 * 60 * 1000)

@@ -108,13 +108,13 @@ export type JobCategories =
   | 'Other'
 
 export type Skills =
-  | 'Web Devlopment'
+  | 'Web Development'
   | 'Mobile Development'
   | 'Sales'
   | 'Customer Service'
   | 'Editing'
   | 'Book Keeping'
-  | 'Executive Assitant'
+  | 'Executive Assistant'
   | 'Appointment Setting'
   | 'Digital Marketing'
   | 'Data Analysis'

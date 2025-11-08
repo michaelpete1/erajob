@@ -259,6 +259,33 @@ export const updateJob = async (id: string, data: Partial<JobPostData>): Promise
 }
 
 /**
+ * Marks a job as completed. (Client only)
+ * @param jobId - The ID of the job to mark as completed.
+ */
+export const markJobAsCompleted = async (jobId: string): Promise<ServiceResponse<Job>> => {
+  try {
+    const response = await apiClient.patch<ApiResponse<Job>>(`${BASE_URL}/mark-completed/${jobId}`)
+    if (response.data.status_code === 200) {
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'Job marked as completed successfully'
+      }
+    } else {
+      return {
+        success: false,
+        error: response.data.detail || 'Failed to mark job as completed'
+      }
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to mark job as completed'
+    }
+  }
+}
+
+/**
  * Deletes a job posting. (Client only)
  * @param id - The ID of the job to delete.
  */
@@ -295,6 +322,7 @@ export const jobsService = {
   approveJob,
   rejectJob,
   updateJob,
+  markJobAsCompleted,
   deleteJob
 }
 
