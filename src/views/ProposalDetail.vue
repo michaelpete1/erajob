@@ -211,6 +211,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { applicationsService } from '@/services/applicationsService'
+import jobs from '@/services/jobs'
 import { jobsService } from '@/services/jobsService'
 
 const route = useRoute()
@@ -258,11 +259,23 @@ const updateProposalStatus = async (status: string) => {
   error.value = ''
   try {
     if (status === 'accepted') {
-      const resp = await applicationsService.approveAgentApplication(jobId, { id })
-      if (!resp.success) error.value = resp.error || 'Failed to accept proposal'
+      const agentId = String((proposal.value as any)?.agentId || (proposal.value as any)?.agent_id || '')
+      if (!agentId) {
+        error.value = 'Missing agent ID for acceptance'
+      } else {
+        const resp = await jobs.clientAcceptJobProposal(jobId, { client_approved: true, selected_agents: [agentId] })
+        const ok = (resp as any)?.data?.status_code === 200 || (resp as any)?.data?.status_code === 0 || typeof (resp as any)?.data === 'string'
+        if (!ok) error.value = (resp as any)?.data?.detail || 'Failed to accept proposal'
+      }
     } else if (status === 'rejected') {
-      const resp = await applicationsService.rejectAgentApplication(jobId, { application_id: id, rejection_reason: 'Not a fit' })
-      if (!resp.success) error.value = resp.error || 'Failed to reject proposal'
+      let reason = 'Not a fit'
+      try {
+        const val = window.prompt('Please provide a rejection reason:', reason)
+        if (val && typeof val === 'string') reason = val
+      } catch {}
+      const resp = await jobs.clientRejectJobProposal(jobId, { client_approved: false, client_rejection_reason: reason })
+      const ok = (resp as any)?.data?.status_code === 200 || (resp as any)?.data?.status_code === 0 || typeof (resp as any)?.data === 'string'
+      if (!ok) error.value = (resp as any)?.data?.detail || 'Failed to reject proposal'
     }
     proposal.value.status = status
   } catch (err: any) {
@@ -313,6 +326,7 @@ const loadProposal = async () => {
         }
       }
     }
+    const agentId = String((app as any)?.agent_id || (app as any)?.agent?.id || (app as any)?.user_id || '')
     proposal.value = {
       id: app.id,
       jobId,
@@ -331,7 +345,8 @@ const loadProposal = async () => {
         duration: 0,
         milestones: []
       },
-      attachments: []
+      attachments: [],
+      agentId
     }
   } catch (err: any) {
     error.value = err?.message || 'Failed to load proposal details. Please try again.'

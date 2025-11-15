@@ -126,7 +126,7 @@ const submitProposal = async () => {
     const primary = selectedAgents.value[0]
     const primaryAgentId = typeof primary === 'string' ? primary : (primary?.id || '')
     const payload = {
-      agent: primaryAgentId,
+      agent: typeof primary === 'object' && primary ? primary : primaryAgentId,
       timeline: jobTimeline.value || { start_date: Math.floor(Date.now() / 1000), deadline: Math.floor(Date.now() / 1000) },
       proposal: proposalText.value.trim(),
       break_down: {

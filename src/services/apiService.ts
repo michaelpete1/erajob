@@ -102,9 +102,7 @@ apiClient.interceptors.response.use(
             ? '/v1/admins/refresh'
             : isAgentRequest
               ? '/v1/agents/refresh'
-              : isClientRequest
-                ? '/v1/clients/refresh'
-                : '/v1/users/refresh'
+              : '/v1/users/refresh'
           const refreshed = await apiClient.post(refreshEndpoint, { refresh_token: refreshToken }, { headers: { ...authHeader } })
 
           const data = refreshed?.data?.data
@@ -128,20 +126,16 @@ apiClient.interceptors.response.use(
           const refreshStatus = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined
           shouldLogout = refreshStatus === 401 || refreshStatus === 403 || refreshStatus === 422 
         } finally {
-          if (shouldLogout) {
-            localStorage.clear() // Clear all auth/user related data
-            
-            const isAdminPath = window.location.pathname.startsWith('/admin')
-            const target = isAdminPath ? '/admin/sign-in' : '/sign-in'
-            
-            if (!window.location.pathname.includes('/sign-in')) {
-              window.location.href = target
-            }
-          }
-        }
-      }
-      return Promise.reject(error)
-    }
+          if (shouldLogout) {
+            try {
+              localStorage.removeItem('access_token')
+              localStorage.setItem('auth_expired', 'true')
+            } catch {}
+          }
+        }
+      }
+      return Promise.reject(error)
+    }
 
     // For non-401 errors (e.g., 403 Forbidden, 422 Validation), bubble error up
     return Promise.reject(error)

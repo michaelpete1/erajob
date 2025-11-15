@@ -141,18 +141,30 @@ export class MeetingService {
               agentEmail = String(a?.email || a?.user_email || '') || undefined
             }
           } catch {}
-          const alertTitle = meetingData.client_approved === false ? 'Job Proposal Rejected' : 'Meeting Set with Agent'
-          const alertDescription = meetingData.client_approved === false
-            ? `Client has rejected the job proposal and set a meeting with agent. Reason: ${meetingData.rejection_reason || 'No reason provided'}`
-            : 'Client has set a meeting with an agent'
+          const { jobsService } = await import('./jobsService')
+          let jobTitle: string = ''
+          let jobDescription: string = ''
+          let jobBudget: number | string = ''
+          try {
+            const jobResp = await jobsService.getJobById(meetingData.job_id)
+            if (jobResp.success && jobResp.data) {
+              const j: any = jobResp.data
+              jobTitle = String(j?.project_title || j?.job_title || '')
+              jobDescription = String(j?.description || '')
+              jobBudget = typeof j?.budget === 'number' ? j.budget : (typeof j?.budget === 'string' ? j.budget : '')
+            }
+          } catch {}
+          const meetingDateStr = new Date(Number(meetingTimeSeconds) * 1000).toLocaleDateString('en-US')
+          const alertTitle = `Client Created A Meeting to discuss the job: ${jobTitle || meetingData.job_id}`
+          const alertDescription = `Client Created A Meeting to discuss the job: ${jobTitle || meetingData.job_id}${jobDescription ? ', ' + jobDescription : ''}${jobBudget !== '' ? ', ' + jobBudget : ''} on ${meetingDateStr}`
 
           alertsService.createLocalAlert({
             alert_title: alertTitle,
             alert_description: alertDescription,
-            alert_type: 'meeting',
-            alert_primary_action: 'Client',
-            alert_secondary_action: 'Agent',
-            priority: 'high',
+            alert_type: 'meeting_with_agent_and_client',
+            alert_primary_action: 'Mark as Read',
+            alert_secondary_action: 'Cancel',
+            priority: 'very_high',
             alert_target_user_id: 'admin',
             job_id: meetingData.job_id,
             agent_id: meetingData.agent_id,
@@ -160,12 +172,12 @@ export class MeetingService {
             recipients: [adminEmail, agentEmail].filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
           })
           alertsService.createLocalAlert({
-            alert_title: 'New Meeting Scheduled',
-            alert_description: 'A client scheduled a meeting with you',
-            alert_type: 'meeting',
-            alert_primary_action: 'View Details',
-            alert_secondary_action: 'Schedule',
-            priority: 'high',
+            alert_title: `Client Created A Meeting to discuss the job: ${jobTitle || meetingData.job_id}`,
+            alert_description: `Client Created A Meeting to discuss the job: ${jobTitle || meetingData.job_id}${jobDescription ? ', ' + jobDescription : ''}${jobBudget !== '' ? ', ' + jobBudget : ''} on ${meetingDateStr}`,
+            alert_type: 'meeting_with_agent_and_client',
+            alert_primary_action: 'Mark as Read',
+            alert_secondary_action: 'Cancel',
+            priority: 'very_high',
             alert_target_user_id: meetingData.agent_id,
             recipients: [agentEmail].filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
           })
@@ -211,17 +223,29 @@ export class MeetingService {
                   agentEmail = String(a?.email || a?.user_email || '') || undefined
                 }
               } catch {}
-              const alertTitle = retryPayload.client_approved === false ? 'Job Proposal Rejected' : 'Meeting Set with Agent'
-              const alertDescription = retryPayload.client_approved === false
-                ? `Client has rejected the job proposal and set a meeting with agent. Reason: ${retryPayload.rejection_reason || 'No reason provided'}`
-                : 'Client has set a meeting with an agent'
+              const { jobsService } = await import('./jobsService')
+              let jobTitle: string = ''
+              let jobDescription: string = ''
+              let jobBudget: number | string = ''
+              try {
+                const jobResp = await jobsService.getJobById(retryPayload.job_id)
+                if (jobResp.success && jobResp.data) {
+                  const j: any = jobResp.data
+                  jobTitle = String(j?.project_title || j?.job_title || '')
+                  jobDescription = String(j?.description || '')
+                  jobBudget = typeof j?.budget === 'number' ? j.budget : (typeof j?.budget === 'string' ? j.budget : '')
+                }
+              } catch {}
+              const meetingDateStr = new Date(Number(retryPayload.meeting_time) * 1000).toLocaleDateString('en-US')
+              const alertTitle = `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}`
+              const alertDescription = `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}${jobDescription ? ', ' + jobDescription : ''}${jobBudget !== '' ? ', ' + jobBudget : ''} on ${meetingDateStr}`
               alertsService.createLocalAlert({
                 alert_title: alertTitle,
                 alert_description: alertDescription,
-                alert_type: 'meeting',
-                alert_primary_action: 'Client',
-                alert_secondary_action: 'Agent',
-                priority: 'high',
+                alert_type: 'meeting_with_agent_and_client',
+                alert_primary_action: 'Mark as Read',
+                alert_secondary_action: 'Cancel',
+                priority: 'very_high',
                 alert_target_user_id: 'admin',
                 job_id: retryPayload.job_id,
                 agent_id: retryPayload.agent_id,
@@ -229,12 +253,12 @@ export class MeetingService {
                 recipients: [adminEmail, agentEmail].filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
               })
               alertsService.createLocalAlert({
-                alert_title: 'New Meeting Scheduled',
-                alert_description: 'A client scheduled a meeting with you',
-                alert_type: 'meeting',
-                alert_primary_action: 'View Details',
-                alert_secondary_action: 'Schedule',
-                priority: 'high',
+                alert_title: `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}`,
+                alert_description: `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}${jobDescription ? ', ' + jobDescription : ''}${jobBudget !== '' ? ', ' + jobBudget : ''} on ${meetingDateStr}`,
+                alert_type: 'meeting_with_agent_and_client',
+                alert_primary_action: 'Mark as Read',
+                alert_secondary_action: 'Cancel',
+                priority: 'very_high',
                 alert_target_user_id: retryPayload.agent_id,
                 recipients: [agentEmail].filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
               })
@@ -259,17 +283,29 @@ export class MeetingService {
                   agentEmail = String(a?.email || a?.user_email || '') || undefined
                 }
               } catch {}
-              const alertTitle = retryPayload.client_approved === false ? 'Job Proposal Rejected' : 'Meeting Set with Agent'
-              const alertDescription = retryPayload.client_approved === false
-                ? `Client has rejected the job proposal and set a meeting with agent. Reason: ${retryPayload.rejection_reason || 'No reason provided'}`
-                : 'Client has set a meeting with an agent'
+              const { jobsService } = await import('./jobsService')
+              let jobTitle: string = ''
+              let jobDescription: string = ''
+              let jobBudget: number | string = ''
+              try {
+                const jobResp = await jobsService.getJobById(retryPayload.job_id)
+                if (jobResp.success && jobResp.data) {
+                  const j: any = jobResp.data
+                  jobTitle = String(j?.project_title || j?.job_title || '')
+                  jobDescription = String(j?.description || '')
+                  jobBudget = typeof j?.budget === 'number' ? j.budget : (typeof j?.budget === 'string' ? j.budget : '')
+                }
+              } catch {}
+              const meetingDateStr = new Date(Number(retryPayload.meeting_time) * 1000).toLocaleDateString('en-US')
+              const alertTitle = `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}`
+              const alertDescription = `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}${jobDescription ? ', ' + jobDescription : ''}${jobBudget !== '' ? ', ' + jobBudget : ''} on ${meetingDateStr}`
               alertsService.createLocalAlert({
                 alert_title: alertTitle,
                 alert_description: alertDescription,
-                alert_type: 'meeting',
-                alert_primary_action: 'Client',
-                alert_secondary_action: 'Agent',
-                priority: 'high',
+                alert_type: 'meeting_with_agent_and_client',
+                alert_primary_action: 'Mark as Read',
+                alert_secondary_action: 'Cancel',
+                priority: 'very_high',
                 alert_target_user_id: 'admin',
                 job_id: retryPayload.job_id,
                 agent_id: retryPayload.agent_id,
@@ -277,12 +313,12 @@ export class MeetingService {
                 recipients: [adminEmail, agentEmail].filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
               })
               alertsService.createLocalAlert({
-                alert_title: 'New Meeting Scheduled',
-                alert_description: 'A client scheduled a meeting with you',
-                alert_type: 'meeting',
-                alert_primary_action: 'View Details',
-                alert_secondary_action: 'Schedule',
-                priority: 'high',
+                alert_title: `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}`,
+                alert_description: `Client Created A Meeting to discuss the job: ${jobTitle || retryPayload.job_id}${jobDescription ? ', ' + jobDescription : ''}${jobBudget !== '' ? ', ' + jobBudget : ''} on ${meetingDateStr}`,
+                alert_type: 'meeting_with_agent_and_client',
+                alert_primary_action: 'Mark as Read',
+                alert_secondary_action: 'Cancel',
+                priority: 'very_high',
                 alert_target_user_id: retryPayload.agent_id,
                 recipients: [agentEmail].filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
               })

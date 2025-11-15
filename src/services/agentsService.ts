@@ -1,5 +1,6 @@
 // src/services/agentsService.ts
 import api from './api'
+import { apiClient } from './apiService'
 import type {
   AgentOut,
   AgentState,
@@ -594,6 +595,25 @@ export class AgentsService {
         stop: 10,
         hasMore: true
       }
+    }
+  }
+
+  async setAgentMeeting(jobId: string, agentId: string, meetingTime: number): Promise<ServiceResponse<string>> {
+    this.agentState.loading = true
+    this.agentState.error = null
+    try {
+      const payload = { job_id: jobId, agent_id: agentId, meeting_time: meetingTime }
+      const response = await apiClient.post<ApiResponse<string>>('/v1/jobss/client/set-meeting/', payload)
+      if (response.data.status_code === 200 || response.data.status_code === 0) {
+        this.agentState.loading = false
+        return { success: true, data: response.data.data as string, message: 'Meeting successfully scheduled.' }
+      } else {
+        throw new Error(response.data.detail || 'Failed to schedule meeting due to server error')
+      }
+    } catch (error: any) {
+      this.agentState.loading = false
+      this.agentState.error = error?.response?.data?.detail || error?.message || 'Failed to schedule meeting'
+      return { success: false, error: this.agentState.error || 'An unknown error occurred during scheduling' }
     }
   }
 }

@@ -177,17 +177,12 @@
                   </div>
                   <div class="flex items-center gap-2 mt-3">
                     <button
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-teal-600 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors"
-                      @click.stop="selectAgent(agent)"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      :disabled="!agent.id"
+                      :title="!agent.id ? 'Agent has no identifier' : 'Create Meeting'"
+                      @click.stop="openCreateMeeting(agent)"
                     >
-                      Select Agent
-                    </button>
-                    <button
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors disabled:opacity-60"
-                      :disabled="meetingSubmittingId === agent.id"
-                      @click.stop="setMeeting(agent)"
-                    >
-                      {{ meetingSubmittingId === agent.id ? 'Scheduling...' : 'Set Meeting' }}
+                      Create Meeting
                     </button>
                   </div>
                 </div>
@@ -224,14 +219,46 @@
       </div>
     </div>
   </div>
+  <!-- Create Meeting Modal -->
+  <div v-if="meetingModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-5">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Create Meeting</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">job_id</label>
+          <input v-model="meetingModalJobId" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" readonly>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">agent_id</label>
+          <input v-model="meetingModalAgentId" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" readonly>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input v-model="meetingModalDate" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+            <input v-model="meetingModalTime" type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 mt-5">
+        <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" @click="closeMeetingModal">Cancel</button>
+        <button class="px-4 py-2 rounded-md text-sm font-medium text-white bg-teal-600 hover:bg-teal-700" @click="confirmCreateMeeting">Create Meeting</button>
+      </div>
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAgents } from '@/composables/useAgents'
 import type { AgentOut } from '@/types/api'
-import { meetingService } from '@/services/meetingService'
+import { agentsService } from '@/services/agentsService'
 import { useToast } from 'vue-toastification'
+import jobs from '@/services/jobs'
+import { apiClient } from '@/services/apiService'
 
 const router = useRouter()
 const route = useRoute()
@@ -268,11 +295,25 @@ interface NormalizedAgent {
   years_experience: string
   reviews_count: number
   availability_type: string
+  email?: string
 }
 
 const normalizedAgents = computed<NormalizedAgent[]>(() => {
   return (agents.value || []).map(agent => ({
-    id: agent.id ?? '',
+    id: String(
+      (agent as any)?.id ??
+      (agent as any)?.user_id ??
+      (agent as any)?.agent_id ??
+      (agent as any)?.uuid ??
+      (agent as any)?._id ??
+      (agent as any)?.profile_id ??
+      (agent as any)?.account_id ??
+      (agent as any)?.user?.id ??
+      (agent as any)?.user?.uuid ??
+      (agent as any)?.agent?.id ??
+      (agent as any)?.agent?.uuid ??
+      ''
+    ),
     name: normalizeAgentName(agent),
     title: agent.bio || 'Skilled Specialist',
     company_name: agent.company_name || 'Independent Contractor',
@@ -286,7 +327,8 @@ const normalizedAgents = computed<NormalizedAgent[]>(() => {
     response_time: (agent as any)?.response_time || 'Fast responder',
     years_experience: String((agent as any)?.years_experience ?? '2+'),
     reviews_count: Number((agent as any)?.reviews_count ?? 0),
-    availability_type: (agent as any)?.availability?.type || 'Full-time'
+    availability_type: (agent as any)?.availability?.type || 'Full-time',
+    email: String((agent as any)?.email ?? (agent as any)?.user_email ?? '')
   }))
 })
 
@@ -333,73 +375,197 @@ const resetFilters = async () => {
   await getRecommendedAgents(pagination.value)
 }
 
-const goToAgent = (agent: NormalizedAgent) => {
-  const id = typeof agent?.id === 'string' ? agent.id.trim() : ''
-  if (!id || id.length < 5) {
-    alert('Invalid agent profile. Please select another agent.')
+const resolveAgentId = (agent: any): string => {
+  const candidates: (unknown)[] = [
+    (agent as any)?.id,
+    (agent as any)?.user_id,
+    (agent as any)?.agent_id
+  ]
+  for (const c of candidates) {
+    const s = typeof c === 'number' ? String(c) : typeof c === 'string' ? c : ''
+    if (s && s.trim().length > 0) return s.trim()
+  }
+  return ''
+}
+
+const resolveAgentIdAsync = async (agent: any): Promise<string> => {
+  let id = resolveAgentId(agent)
+  if (id) return id
+  try {
+    const expired = localStorage.getItem('auth_expired') === 'true'
+    const token = localStorage.getItem('access_token') || ''
+    if (expired || !token) return ''
+  } catch {}
+  try {
+    const email = String((agent as any)?.email || '')
+    if (email && email.trim()) {
+      const resp = await apiClient.get('/v1/users/', { params: { role: 'agent', email, start: 0, stop: 1 } })
+      const data = resp?.data?.data
+      const list = Array.isArray(data) ? data : data ? [data] : []
+      const first = list[0] as any
+      const fetchedId = typeof first?.id === 'string' ? first.id : ''
+      if (fetchedId && fetchedId.trim()) return fetchedId.trim()
+    }
+  } catch {}
+  try {
+    const stored = localStorage.getItem('selectedAgent')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      const s = resolveAgentId(parsed)
+      if (s) return s
+    }
+  } catch {}
+  return ''
+}
+
+const goToAgent = async (agent: NormalizedAgent) => {
+  const id = await resolveAgentIdAsync(agent)
+  if (!id) {
+    alert('Missing agent identifier. Please select another agent.')
     return
   }
   try {
-    const rawAgent = (agents.value || []).find(a => (a.id ?? '') === id)
+    const rawAgent = (agents.value || []).find(a => resolveAgentId(a) === id)
     localStorage.setItem('selectedAgent', JSON.stringify(rawAgent ?? agent))
   } catch (_) {}
   router.push(`/client/agent/${id}`)
 }
 
 const meetingSubmittingId = ref('')
+const meetingModalOpen = ref(false)
+const meetingModalJobId = ref('')
+const meetingModalAgentId = ref('')
+const meetingModalDate = ref('')
+const meetingModalTime = ref('')
 
-const selectAgent = (agent: NormalizedAgent) => {
-  const id = typeof agent?.id === 'string' ? agent.id.trim() : ''
-  if (!id || id.length < 5) return
+const getCurrentJobId = (): string => {
+  const fromRef = typeof jobId.value === 'string' ? jobId.value : ''
+  if (fromRef && fromRef.trim()) return fromRef.trim()
+  const routeId = route.params.id
+  const fromRoute = typeof routeId === 'string' ? routeId : (Array.isArray(routeId) && typeof routeId[0] === 'string' ? routeId[0] : '')
+  if (fromRoute && fromRoute.trim()) return fromRoute.trim()
+  const queryId = typeof route.query.id === 'string' ? route.query.id : (typeof route.query.job_id === 'string' ? route.query.job_id : '')
+  if (queryId && queryId.trim()) return queryId.trim()
   try {
-    const rawAgent = (agents.value || []).find(a => (a.id ?? '') === id)
-    localStorage.setItem('selectedAgent', JSON.stringify(rawAgent ?? agent))
-  } catch (_) {}
-  router.push({ name: 'client-set-appointment', params: { id } })
+    const sp = localStorage.getItem('selectedProject')
+    if (sp) {
+      const p = JSON.parse(sp)
+      const jid = typeof p?.job_id === 'string' ? p.job_id : (typeof p?.id === 'string' ? p.id : '')
+      if (jid && jid.trim()) return jid.trim()
+    }
+  } catch {}
+  try {
+    const scp = localStorage.getItem('selectedClientProject')
+    if (scp) {
+      const p = JSON.parse(scp)
+      const jid = typeof p?.id === 'string' ? p.id : ''
+      if (jid && jid.trim()) return jid.trim()
+    }
+  } catch {}
+  try {
+    const sjc = localStorage.getItem('selectedJobContext')
+    if (sjc) {
+      const c = JSON.parse(sjc)
+      const jid = typeof c?.project?.id === 'string' ? c.project.id : (typeof c?.admin_job_id === 'string' ? c.admin_job_id : (typeof c?.agent_job_id === 'string' ? c.agent_job_id : ''))
+      if (jid && jid.trim()) return jid.trim()
+    }
+  } catch {}
+  return ''
 }
 
-const setMeeting = async (agent: NormalizedAgent) => {
-  const id = typeof agent?.id === 'string' ? agent.id.trim() : ''
-  const jobId = typeof route.params.id === 'string' ? route.params.id : Array.isArray(route.params.id) ? String(route.params.id[0] || '') : ''
-  if (!id || id.length < 5 || !jobId) {
+const openCreateMeeting = async (agent: NormalizedAgent) => {
+  const agentId = (await resolveAgentIdAsync(agent)) || (agent.id || '').trim()
+  const currentJobId = getCurrentJobId()
+  console.log('Meeting agent:', agent)
+  console.log('Resolved agentId:', agentId)
+  console.log('Resolved jobId:', currentJobId)
+  if (!agentId) {
+    toast.error('Missing agent ID. Cannot open meeting modal.')
+    return
+  }
+  if (!currentJobId) {
+    toast.error('Missing job ID. Please select a project or ensure the URL is correct.')
+    return
+  }
+  meetingModalAgentId.value = agentId
+  meetingModalJobId.value = currentJobId
+  meetingModalDate.value = ''
+  meetingModalTime.value = ''
+  meetingModalOpen.value = true
+}
+
+const confirmCreateMeeting = async () => {
+  if (!meetingModalOpen.value) return
+  const jobId = (meetingModalJobId.value || getCurrentJobId()).trim()
+  const agentId = meetingModalAgentId.value.trim()
+  if (!jobId || !agentId) {
     toast.error('Missing agent or job information')
     return
   }
-  const now = new Date()
-  const defaultDate = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-  const yyyy = defaultDate.getFullYear()
-  const mm = String(defaultDate.getMonth() + 1).padStart(2, '0')
-  const dd = String(defaultDate.getDate()).padStart(2, '0')
-  const hh = String(defaultDate.getHours()).padStart(2, '0')
-  const mi = String(defaultDate.getMinutes()).padStart(2, '0')
-  const suggested = `${yyyy}-${mm}-${dd} ${hh}:${mi}`
-  let input = suggested
+  if (!meetingModalDate.value || !meetingModalTime.value) {
+    toast.error('Select date and time')
+    return
+  }
+  const dateTimeString = `${meetingModalDate.value}T${meetingModalTime.value}:00`
+  const meetingTime = Math.floor(new Date(dateTimeString).getTime() / 1000)
   try {
-    const val = window.prompt('Enter meeting time (YYYY-MM-DD HH:mm, local time):', suggested)
-    if (val && typeof val === 'string') input = val
-  } catch (_) {}
-  let epochSeconds = Math.floor(defaultDate.getTime() / 1000)
-  try {
-    const parts = (input || '').trim().replace('T', ' ').split(' ')
-    const datePart = parts[0] || ''
-    const timePart = parts[1] || '09:00'
-    const [Y, M, D] = datePart.split('-').map(n => Number(n))
-    const [H, Min] = timePart.split(':').map(n => Number(n))
-    const dt = new Date(Y, (M || 1) - 1, D || 1, H || 9, Min || 0, 0)
-    if (!Number.isNaN(dt.getTime())) epochSeconds = Math.floor(dt.getTime() / 1000)
-  } catch (_) {}
-  try {
-    meetingSubmittingId.value = id
-    const resp = await meetingService.setMeeting({ job_id: jobId, agent_id: id, meeting_time: epochSeconds, client_approved: true })
-    meetingSubmittingId.value = ''
+    const resp = await agentsService.setAgentMeeting(jobId, agentId, meetingTime)
     if (resp.success) {
-      toast.success('Meeting scheduled successfully')
+      toast.success('Meeting created successfully')
+      meetingModalOpen.value = false
     } else {
-      toast.error(resp.error || 'Failed to schedule meeting')
+      toast.error(resp.error || 'Failed to create meeting')
     }
   } catch (e: any) {
-    meetingSubmittingId.value = ''
-    toast.error(e?.message || 'Failed to schedule meeting')
+    toast.error(e?.message || 'Failed to create meeting')
+  }
+}
+
+const closeMeetingModal = () => {
+  meetingModalOpen.value = false
+}
+
+const chooseAgentForProposal = async (agent: NormalizedAgent) => {
+  const idCandidates: (unknown)[] = [
+    (agent as any)?.id,
+    (agent as any)?.user_id,
+    (agent as any)?.agent_id
+  ]
+  let id = ''
+  for (const c of idCandidates) {
+    if (typeof c === 'string' && c.trim().length > 0) { id = c.trim(); break }
+  }
+  const currentJobId = typeof route.params.id === 'string' ? route.params.id : Array.isArray(route.params.id) ? String(route.params.id[0] || '') : ''
+  if (!id || !currentJobId) {
+    toast.error('Missing agent or job information')
+    return
+  }
+  try {
+    const role = (localStorage.getItem('userRole') || '').toLowerCase()
+    if (role === 'admin') {
+      const payload: any = {
+        agent: { id },
+        proposal: 'Admin proposes this agent for the job',
+        break_down: { Charges: 7, Tax: 10 }
+      }
+      const resp = await jobs.proposeJob(currentJobId, payload)
+      const ok = (resp as any)?.data?.status_code === 200 || (resp as any)?.data?.status_code === 0 || typeof (resp as any)?.data === 'string'
+      if (ok) {
+        toast.success('Proposal sent successfully')
+      } else {
+        toast.error((resp as any)?.data?.detail || 'Failed to send proposal')
+      }
+    } else {
+      const resp = await jobs.clientAcceptJobProposal(currentJobId, { client_approved: true as true, selected_agents: [id] })
+      const ok = (resp as any)?.data?.status_code === 200 || (resp as any)?.data?.status_code === 0 || typeof (resp as any)?.data === 'string'
+      if (ok) {
+        toast.success('Agent selected successfully')
+      } else {
+        toast.error((resp as any)?.data?.detail || 'Failed to select agent')
+      }
+    }
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to select agent')
   }
 }
 
@@ -454,6 +620,10 @@ onMounted(async () => {
       const resp = await apiClient.get('/v1/jobss/client/created/', { params: { start: 0, stop: 100 } })
       const raw = resp?.data?.data
       const jobs = Array.isArray(raw) ? raw : []
+      if (!jobId.value && jobs.length > 0) {
+        const firstId = String((jobs[0] as any)?.id || '')
+        if (firstId && firstId.trim()) jobId.value = firstId.trim()
+      }
       let derivedCategory: string | null = null
       for (const j of jobs) {
         const cat = (j as any)?.primary_area_of_expertise || (j as any)?.category
@@ -469,5 +639,6 @@ onMounted(async () => {
   } catch (err) {
     console.error('Error in onMounted:', err)
   }
-})
+});
+
 </script>

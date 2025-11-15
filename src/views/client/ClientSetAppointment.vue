@@ -287,9 +287,39 @@ const setAppointment = async () => {
   const dateTimeString = `${appointment.value.date}T${appointment.value.time}:00`
   const meetingTime = new Date(dateTimeString).getTime()
 
+  // Resolve job ID from stored project context or route
+  let jobId = ''
+  try {
+    const storedProjectRaw = localStorage.getItem('selectedClientProject') || localStorage.getItem('selectedProject')
+    if (storedProjectRaw) {
+      const parsed = JSON.parse(storedProjectRaw)
+      jobId = String(parsed?.job_id || parsed?.id || '')
+    }
+    if (!jobId) {
+      const jobCtxRaw = localStorage.getItem('selectedJobContext')
+      if (jobCtxRaw) {
+        const ctx = JSON.parse(jobCtxRaw)
+        jobId = String(ctx?.agent_job_id || ctx?.admin_job_id || '')
+      }
+    }
+  } catch (_) {}
+  if (!jobId) {
+    const q = route.query || {}
+    jobId = String((q && q.job_id) || (q && q.jobId) || '')
+  }
+
+  if (!jobId) {
+    alert('No active job context found. Open your project first, then try again.')
+    return
+  }
+  if (!agent.value.id || typeof agent.value.id !== 'string') {
+    alert('Missing agent information. Please reselect the agent and try again.')
+    return
+  }
+
   const meetingData = {
-    job_id: route.params.jobId || '',
-    agent_id: agent.value.id,
+    job_id: jobId,
+    agent_id: String(agent.value.id),
     meeting_time: meetingTime,
     client_approved: false,
     rejection_reason: 'Client rejected admin job proposal and set meeting'
@@ -301,7 +331,6 @@ const setAppointment = async () => {
 
     if (response.success) {
       alert('Meeting set successfully! The admin has been notified.')
-      // Navigate back to agent profile
       router.push(`/client/agent/${agent.value.id}`)
     } else {
       console.error('Error setting meeting:', response.error)
@@ -315,27 +344,28 @@ const setAppointment = async () => {
 
 // Load agent data
 onMounted(() => {
-  const agentId = route.params.id
-  
+  const agentParam = String(route.params.id || '')
   // Try to load agent data from localStorage (from previous navigation)
   try {
     const savedAgentData = localStorage.getItem('selectedAgent')
     if (savedAgentData) {
-      const parsedAgentData = JSON.parse(savedAgentData)
+      const parsed = JSON.parse(savedAgentData)
+      const resolvedId = String(parsed?.id || parsed?.user_id || parsed?.agent_id || agentParam || parsed?.email || '')
       agent.value = {
-        id: parsedAgentData.id || agentId,
-        name: parsedAgentData.name || 'Unknown Agent',
-        title: parsedAgentData.title || 'Unknown Title'
+        id: resolvedId,
+        name: parsed?.name || parsed?.full_name || 'Unknown Agent',
+        title: parsed?.title || parsed?.primary_area_of_expertise || 'Unknown Title'
       }
+      return
     }
   } catch (error) {
     console.error('Error loading agent data:', error)
-    // Fallback to basic data
-    agent.value = {
-      id: agentId,
-      name: 'Unknown Agent',
-      title: 'Unknown Title'
-    }
+  }
+  // Fallback to basic param
+  agent.value = {
+    id: agentParam,
+    name: 'Unknown Agent',
+    title: 'Unknown Title'
   }
 })
 </script>

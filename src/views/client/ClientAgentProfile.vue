@@ -524,6 +524,7 @@ const rejectionReason = ref('')
 
 // Create meeting function
 const openMeetingPrompt = (): void => {
+  if (meetingLoading.value) return
   showMeetingPrompt.value = true
 }
 
