@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
-import authService from '../../services/authService'
+import axios from 'axios'
 import type { SignupData } from '../../types/api/auth'
+
+const API_BASE_URL = import.meta.env.DEV
+  ? '/api'
+  : import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
 
 const router = useRouter()
 const isSubmitting = ref(false)
@@ -72,7 +76,7 @@ const finishSignup = async () => {
       return
     }
 
-    const payload: any = {
+    const payload: SignupData = {
       email: basic.email,
       password: basic.password,
       role: 'agent',
@@ -93,9 +97,9 @@ const finishSignup = async () => {
       is_agent_comfortable_with_time_tracking_tools: Boolean(welcome?.comfortableWithTracking)
     }
 
-    const resp = await authService.signup(payload as SignupData)
-    if (!resp.success) {
-      errorMessage.value = resp.error || 'Signup failed. Please try again.'
+    const resp = await axios.post(`${API_BASE_URL}/v1/users/signup`, payload)
+    if (resp.status < 200 || resp.status >= 300) {
+      errorMessage.value = resp.data?.detail || 'Signup failed. Please try again.'
       return
     }
 

@@ -2,12 +2,13 @@
 
 import { ref, computed, onMounted } from 'vue'
 import { agentsService } from '../services'
-import type { ApplicationOut } from '../types/api'
+import type { ApplicationOut, UserOut } from '../types/api'
 import type {
   AgentOut,
   AgentState,
   AgentFilters,
-  PaginationParams
+  PaginationParams,
+  ServiceResponse
 } from '../types/api'
 
 interface RecommendedSeed {
@@ -98,6 +99,54 @@ export function useAgents(seed?: RecommendedSeed) {
     return searchAgents({ status: 'Available' }, params)
   }
 
+  // Get agents by category
+  const getAgentsByCategory = async (category: string, params?: PaginationParams & { jobId?: string }) => {
+    const result = await agentsService.getAgentsByCategory(category, params)
+
+    if (result.success && result.data) {
+      agentState.value.agents = result.data
+      agentState.value.pagination = {
+        start: params?.start || 0,
+        stop: params?.stop || 10,
+        hasMore: result.data.length === (params?.stop || 10) - (params?.start || 0)
+      }
+    } else {
+      agentState.value.error = result.error || 'Failed to fetch agents by category'
+    }
+
+    return result
+  }
+
+  // Get recommended agents by expertise
+  const getRecommendedAgentsByExpertise = async (
+    currentUser: UserOut,
+    params?: PaginationParams
+  ): Promise<ServiceResponse<AgentOut[]>> => {
+    const result = await agentsService.getRecommendedAgentsByExpertise(currentUser, {
+      ...params,
+      start: agentState.value.pagination.start,
+      stop: agentState.value.pagination.stop
+    });
+
+    if (result.success && result.data) {
+      agentState.value.agents = params?.start === 0 
+        ? result.data 
+        : [...agentState.value.agents, ...result.data];
+      
+      agentState.value.pagination = {
+        start: params?.start || 0,
+        stop: (params?.start || 0) + result.data.length,
+        hasMore: result.data.length === ((params?.stop || 10) - (params?.start || 0))
+      };
+      
+      agentState.value.error = null;
+    } else {
+      agentState.value.error = result.error || 'Failed to fetch recommended agents';
+    }
+
+    return result;
+  }
+
   // Reset state
   const resetAgents = () => {
     agentState.value.agents = []
@@ -175,6 +224,8 @@ export function useAgents(seed?: RecommendedSeed) {
     getAgentsBySkills,
     getAgentsByLocation,
     getAvailableAgents,
+    getAgentsByCategory,
+    getRecommendedAgentsByExpertise,
     resetAgents,
     clearError,
     seedRecommendedAgents

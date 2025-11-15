@@ -1,4 +1,4 @@
-import apiClient from './apiClient'
+import { apiClient } from './apiService'
 import type { AlertApiResponse, AlertListApiResponse } from '../types/api/alerts'
 
 // API specification exposes endpoints under `/v1/alertss`

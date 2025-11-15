@@ -54,7 +54,7 @@
                 <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ project.description }}</p>
               </div>
               <div class="text-sm text-gray-500">
-                <p><span class="font-semibold text-gray-700">Budget:</span> {{ formatBudget(project.budget * 1.17) }}</p>
+                <p><span class="font-semibold text-gray-700">Budget:</span> {{ formatBudget(project.budget) }}</p>
                 <p><span class="font-semibold text-gray-700">Status:</span> {{ formatStatus(project.status) }}</p>
               </div>
             </div>

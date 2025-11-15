@@ -282,61 +282,34 @@ const isCalendarDateSelected = (day) => {
 
 const setAppointment = async () => {
   if (!isFormValid.value) return
-  
-  const appointmentData = {
-    agentId: agent.value.id,
-    agentName: agent.value.name,
-    agentTitle: agent.value.title,
-    date: appointment.value.date,
-    time: appointment.value.time,
-    timezone: appointment.value.timezone,
-    createdAt: new Date().toISOString()
+
+  // Convert date and time to Unix timestamp
+  const dateTimeString = `${appointment.value.date}T${appointment.value.time}:00`
+  const meetingTime = new Date(dateTimeString).getTime()
+
+  const meetingData = {
+    job_id: route.params.jobId || '',
+    agent_id: agent.value.id,
+    meeting_time: meetingTime,
+    client_approved: false,
+    rejection_reason: 'Client rejected admin job proposal and set meeting'
   }
-  
-  // Simulate API call for appointment scheduling
-const scheduleAppointment = async (appointmentData) => {
-  // In a real implementation, this would call:
-  // const result = await appointmentsService.scheduleAppointment(appointmentData)
-
-  // For now, simulate successful API response
-  const mockApiResponse = {
-    success: true,
-    data: {
-      id: Date.now().toString(),
-      status: 'scheduled',
-      scheduledAt: new Date().toISOString(),
-      ...appointmentData
-    }
-  }
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-
-  return mockApiResponse
-}
 
   try {
-    const response = await scheduleAppointment(appointmentData)
+    const { meetingService } = await import('../../services/meetingService')
+    const response = await meetingService.setMeeting(meetingData)
+
     if (response.success) {
-      // Save to localStorage
-      const existingAppointments = JSON.parse(localStorage.getItem('savedAppointments') || '[]')
-      existingAppointments.push(response.data)
-      localStorage.setItem('savedAppointments', JSON.stringify(existingAppointments))
-      
-      // Show success message (you could use a toast notification here)
-      alert('Appointment set successfully!')
-      
+      alert('Meeting set successfully! The admin has been notified.')
       // Navigate back to agent profile
       router.push(`/client/agent/${agent.value.id}`)
     } else {
-      console.error('Error scheduling appointment:', response.error)
-      alert('Error scheduling appointment. Please try again.')
+      console.error('Error setting meeting:', response.error)
+      alert('Error setting meeting. Please try again.')
     }
-    // Navigate back to agent profile
-    router.push(`/client/agent/${agent.value.id}`)
   } catch (error) {
-    console.error('Error saving appointment:', error)
-    alert('Error saving appointment. Please try again.')
+    console.error('Error setting meeting:', error)
+    alert('Error setting meeting. Please try again.')
   }
 }
 

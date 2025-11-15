@@ -96,11 +96,12 @@ export interface ApiResponse<T> {
 }
 
 // Service response for frontend
-export interface ServiceResponse<T> {
+export interface ServiceResponse<T = any> {
   success: boolean;
   data?: T | null;
-  error?: string;
+  error?: string | null;
   message?: string;
+  errors?: Record<string, string[]> | null;
 }
 
 // ===========================
@@ -226,6 +227,9 @@ export interface AgentOut extends EJUserOut {
   portfolio?: any[];
   company_name?: string | null;
   time_zone?: string | null;
+  primary_area_of_expertise?: string | null;
+  years_of_experience?: number | null;
+  available_hours_agent_can_commit?: number | null;
 }
 
 export interface AgentState {
@@ -245,6 +249,7 @@ export interface AgentFilters {
   skills?: string[];
   location?: string;
   status?: string;
+  query?: string;
 }
 
 // Alert types
@@ -305,6 +310,7 @@ export interface JobState {
 export interface PaginationParams {
   start: number
   stop: number
+  jobId?: string
 }
 
 export interface JobFilters {

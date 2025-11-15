@@ -175,6 +175,21 @@
                       </p>
                     </div>
                   </div>
+                  <div class="flex items-center gap-2 mt-3">
+                    <button
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-teal-600 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors"
+                      @click.stop="selectAgent(agent)"
+                    >
+                      Select Agent
+                    </button>
+                    <button
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors disabled:opacity-60"
+                      :disabled="meetingSubmittingId === agent.id"
+                      @click.stop="setMeeting(agent)"
+                    >
+                      {{ meetingSubmittingId === agent.id ? 'Scheduling...' : 'Set Meeting' }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -212,11 +227,15 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAgents } from '@/composables/useAgents'
 import type { AgentOut } from '@/types/api'
+import { meetingService } from '@/services/meetingService'
+import { useToast } from 'vue-toastification'
 
 const router = useRouter()
+const route = useRoute()
+const toast = useToast()
 
 const {
   agents,
@@ -224,11 +243,13 @@ const {
   error,
   hasMore,
   getRecommendedAgents,
+  getAgentsByCategory,
   clearError
 } = useAgents()
 
 const searchQuery = ref('')
 const pagination = ref({ start: 0, stop: 10 })
+const jobId = ref('')
 
 const normalizeAgentName = (agent: AgentOut) => agent.full_name || agent.id || 'Agent'
 interface NormalizedAgent {
@@ -313,21 +334,140 @@ const resetFilters = async () => {
 }
 
 const goToAgent = (agent: NormalizedAgent) => {
-  if (!agent?.id) return
-  try {
-    const rawAgent = (agents.value || []).find(a => (a.id ?? '') === agent.id)
-    localStorage.setItem('selectedAgent', JSON.stringify(rawAgent ?? agent))
-  } catch (err) {
-    console.warn('Unable to cache agent data', err)
+  const id = typeof agent?.id === 'string' ? agent.id.trim() : ''
+  if (!id || id.length < 5) {
+    alert('Invalid agent profile. Please select another agent.')
+    return
   }
-  router.push(`/client/agent/${agent.id}`)
+  try {
+    const rawAgent = (agents.value || []).find(a => (a.id ?? '') === id)
+    localStorage.setItem('selectedAgent', JSON.stringify(rawAgent ?? agent))
+  } catch (_) {}
+  router.push(`/client/agent/${id}`)
+}
+
+const meetingSubmittingId = ref('')
+
+const selectAgent = (agent: NormalizedAgent) => {
+  const id = typeof agent?.id === 'string' ? agent.id.trim() : ''
+  if (!id || id.length < 5) return
+  try {
+    const rawAgent = (agents.value || []).find(a => (a.id ?? '') === id)
+    localStorage.setItem('selectedAgent', JSON.stringify(rawAgent ?? agent))
+  } catch (_) {}
+  router.push({ name: 'client-set-appointment', params: { id } })
+}
+
+const setMeeting = async (agent: NormalizedAgent) => {
+  const id = typeof agent?.id === 'string' ? agent.id.trim() : ''
+  const jobId = typeof route.params.id === 'string' ? route.params.id : Array.isArray(route.params.id) ? String(route.params.id[0] || '') : ''
+  if (!id || id.length < 5 || !jobId) {
+    toast.error('Missing agent or job information')
+    return
+  }
+  const now = new Date()
+  const defaultDate = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  const yyyy = defaultDate.getFullYear()
+  const mm = String(defaultDate.getMonth() + 1).padStart(2, '0')
+  const dd = String(defaultDate.getDate()).padStart(2, '0')
+  const hh = String(defaultDate.getHours()).padStart(2, '0')
+  const mi = String(defaultDate.getMinutes()).padStart(2, '0')
+  const suggested = `${yyyy}-${mm}-${dd} ${hh}:${mi}`
+  let input = suggested
+  try {
+    const val = window.prompt('Enter meeting time (YYYY-MM-DD HH:mm, local time):', suggested)
+    if (val && typeof val === 'string') input = val
+  } catch (_) {}
+  let epochSeconds = Math.floor(defaultDate.getTime() / 1000)
+  try {
+    const parts = (input || '').trim().replace('T', ' ').split(' ')
+    const datePart = parts[0] || ''
+    const timePart = parts[1] || '09:00'
+    const [Y, M, D] = datePart.split('-').map(n => Number(n))
+    const [H, Min] = timePart.split(':').map(n => Number(n))
+    const dt = new Date(Y, (M || 1) - 1, D || 1, H || 9, Min || 0, 0)
+    if (!Number.isNaN(dt.getTime())) epochSeconds = Math.floor(dt.getTime() / 1000)
+  } catch (_) {}
+  try {
+    meetingSubmittingId.value = id
+    const resp = await meetingService.setMeeting({ job_id: jobId, agent_id: id, meeting_time: epochSeconds, client_approved: true })
+    meetingSubmittingId.value = ''
+    if (resp.success) {
+      toast.success('Meeting scheduled successfully')
+    } else {
+      toast.error(resp.error || 'Failed to schedule meeting')
+    }
+  } catch (e: any) {
+    meetingSubmittingId.value = ''
+    toast.error(e?.message || 'Failed to schedule meeting')
+  }
 }
 
 onMounted(async () => {
+  const token = localStorage.getItem('access_token')
+  const role = (localStorage.getItem('userRole') || '').toLowerCase()
+  if (!token || role !== 'client') {
+    router.push({ name: 'sign-in', query: { redirect: route.fullPath } })
+    return
+  }
+  const routeId = route.params.id
+  if (typeof routeId === 'string') {
+    jobId.value = routeId
+  } else if (Array.isArray(routeId) && routeId.length > 0 && typeof routeId[0] === 'string') {
+    jobId.value = routeId[0]
+  }
+
   try {
+    // If we have a job ID, try to get agents based on the job's category
+    if (jobId.value) {
+      // Prefer category from route query if provided
+      let jobCategory: string | null = null
+      const categoryFromQuery = typeof route.query.category === 'string' ? route.query.category : null
+      if (categoryFromQuery && categoryFromQuery.trim()) {
+        jobCategory = categoryFromQuery.trim()
+      }
+      try {
+        if (!jobCategory) {
+          const storedProject = localStorage.getItem('selectedProject') || localStorage.getItem('selectedClientProject')
+          if (storedProject) {
+            const parsed = JSON.parse(storedProject)
+            if (parsed && (parsed.job_id === jobId.value || parsed.id === jobId.value)) {
+              jobCategory = parsed.primary_area_of_expertise || parsed.category || null
+              console.log('Found job category in localStorage:', jobCategory)
+            }
+          }
+        }
+      } catch (storageErr) {
+        console.warn('Error reading from localStorage:', storageErr)
+      }
+
+      // If we have a category, get agents by that category
+      if (jobCategory) {
+        console.log('Fetching agents for category:', jobCategory)
+        await getAgentsByCategory(jobCategory, { start: 0, stop: 10, jobId: jobId.value })
+        return
+      }
+    }
+
+    try {
+      const { apiClient } = await import('../../services/apiService')
+      const resp = await apiClient.get('/v1/jobss/client/created/', { params: { start: 0, stop: 100 } })
+      const raw = resp?.data?.data
+      const jobs = Array.isArray(raw) ? raw : []
+      let derivedCategory: string | null = null
+      for (const j of jobs) {
+        const cat = (j as any)?.primary_area_of_expertise || (j as any)?.category
+        if (typeof cat === 'string' && cat.trim()) { derivedCategory = cat.trim(); break }
+      }
+      if (derivedCategory) {
+        await getAgentsByCategory(derivedCategory, { start: 0, stop: 10 })
+        return
+      }
+    } catch (_) {}
+
     await getRecommendedAgents({ start: 0, stop: 10 })
   } catch (err) {
-    console.error('Error loading recommended agents:', err)
+    console.error('Error in onMounted:', err)
   }
 })
 </script>

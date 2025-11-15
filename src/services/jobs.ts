@@ -66,11 +66,34 @@ export const approveJob = (jobId: string, data: JobApprovalData) => {
   return apiClient.post<string>(`${BASE_URL}/approve/${jobId}`, data)
 }
 
+export const proposeJob = (
+  jobId: string,
+  data: {
+    agent: any,
+    timeline?: { start_date: number; deadline: number },
+    proposal: string,
+    break_down: { service?: number; Charges: number; Tax: number }
+  }
+) => {
+  return apiClient.post<string>(`${BASE_URL}/propose/${jobId}`, data)
+}
+
+export const clientAcceptJobProposal = (jobId: string, data: { client_approved: true; selected_agents: string[] }) => {
+  return apiClient.patch<string>(`${BASE_URL}/client/accept-proposal/${jobId}`, data)
+}
+
+export const clientRejectJobProposal = (jobId: string, data: { client_approved: false; client_rejection_reason: string }) => {
+  return apiClient.patch<string>(`${BASE_URL}/client/reject-proposal/${jobId}`, data)
+}
+
 export default {
   listAvailableAgentJobs,
   listClientCreatedJobs,
   listAllJobsAdmin,
   getJobById,
   postNewJob,
-  approveJob
+  approveJob,
+  proposeJob,
+  clientAcceptJobProposal,
+  clientRejectJobProposal
 }

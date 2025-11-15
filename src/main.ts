@@ -3,6 +3,8 @@ import { createPinia } from 'pinia'
 import './style.css'
 import App from './App.vue'
 import router from './router'
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -50,4 +52,17 @@ window.addEventListener('unhandledrejection', (e) => {
 // Initialize auth before mounting
 initializeAuth()
 
-app.use(pinia).use(router).mount('#app')
+app.use(pinia).use(router).use(Toast as any, {
+  position: 'top-right',
+  timeout: 5000,
+  closeOnClick: true,
+  pauseOnFocusLoss: true,
+  pauseOnHover: true,
+  draggable: true,
+  draggablePercent: 0.6,
+  showCloseButtonOnHover: false,
+  hideProgressBar: false,
+  closeButton: 'button',
+  icon: true,
+  rtl: false
+}).mount('#app')

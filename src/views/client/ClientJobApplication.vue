@@ -123,6 +123,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { jobsService } from '../../services/jobsService'
+import { applicationsService } from '../../services/applicationsService'
 
 const route = useRoute()
 const router = useRouter()
@@ -140,28 +141,6 @@ interface JobApplication {
   jobId: string
   proposal: string
   sendCopy: boolean
-}
-
-// Simulate API call for job application submission
-const submitJobApplication = async (applicationData: JobApplication): Promise<{ success: boolean; data?: any; error?: string }> => {
-  // In a real implementation, this would call:
-  // const result = await jobsService.submitJobApplication(applicationData)
-
-  // For now, simulate successful API response
-  const mockApiResponse = {
-    success: true,
-    data: {
-      id: Date.now().toString(),
-      status: 'pending',
-      submittedAt: new Date().toISOString(),
-      ...applicationData
-    }
-  }
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-
-  return mockApiResponse
 }
 
 // Load job data on mount
@@ -222,14 +201,17 @@ const submitApplication = async () => {
       sendCopy: sendCopy.value
     }
 
-    const result = await submitJobApplication(applicationData)
+    const resp = await applicationsService.applyForJob({
+      job_id: applicationData.jobId,
+      proposal: applicationData.proposal
+    })
 
-    if (result.success) {
-      console.log('Job application submitted successfully:', result.data)
+    if (resp.success) {
+      console.log('Job application submitted successfully:', resp.data)
       // Navigate to success page or back to job listing
       router.push('/client/gigs-listing')
     } else {
-      error.value = result.error || 'Failed to submit application'
+      error.value = resp.error || 'Failed to submit application'
     }
   } catch (caughtError) {
     console.error('Error submitting application:', caughtError)

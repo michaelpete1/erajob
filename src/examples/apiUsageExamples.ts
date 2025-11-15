@@ -73,12 +73,10 @@ export function useJobManagementExample() {
   
   // Job creation form
   const jobForm = ref<JobsBase>({
-    job_title: '',
-    category: 'Web Development',
+    project_title: '',
+    primary_area_of_expertise: 'Web Development',
     budget: 1000,
     description: '',
-    requirement: '',
-    skills_needed: 'Web Development',
     timeline: {
       start_date: Date.now(),
       deadline: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days from now
@@ -93,12 +91,10 @@ export function useJobManagementExample() {
       console.log('Job created successfully:', result)
       // Reset form
       jobForm.value = {
-        job_title: '',
-        category: 'Web Development',
+        project_title: '',
+        primary_area_of_expertise: 'Web Development',
         budget: 1000,
         description: '',
-        requirement: '',
-        skills_needed: 'Web Development',
         timeline: {
           start_date: Date.now(),
           deadline: Date.now() + (30 * 24 * 60 * 60 * 1000)

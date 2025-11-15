@@ -14,8 +14,23 @@ const routes: RouteRecordRaw[] = [
   { path: '/client/welcome', name: 'client-welcome', component: () => import('../views/client/ClientWelcome.vue') },
   { path: '/client/explore-gigs', name: 'client-explore-gigs', component: () => import('../views/client/ClientExploreGigs.vue') },
   { path: '/client/jobs', name: 'client-jobs', component: () => import('../views/client/ClientJobs.vue') },
-  { path: '/client/jobs/:id', name: 'client-job-details', component: () => import('../views/client/ClientJobDetails.vue') },
-  { path: '/client/jobs/:id', name: 'client-job-description', component: () => import('../views/client/ClientJobDescription.vue') },
+  { 
+    path: '/client/jobs/:id', 
+    name: 'client-job-details', 
+    component: () => import('../views/client/ClientJobDetails.vue'),
+    children: [
+      {
+        path: '',
+        name: 'client-job-overview',
+        component: () => import('../views/client/ClientJobDescription.vue')
+      },
+      {
+        path: 'agents',
+        name: 'client-job-agents',
+        component: () => import('../views/client/ClientRecommendedAgents.vue')
+      }
+    ]
+  },
   { path: '/client/jobs/create', name: 'client-create-job', component: () => import('../views/client/ClientCreateJob.vue') },
   { path: '/client/add-post', name: 'add-post', component: () => import('../views/client/ClientSummary.vue') },
   { path: '/client/congrats', name: 'client-congrats', component: () => import('../views/client/ClientCongrats.vue') },
@@ -130,22 +145,24 @@ const routes: RouteRecordRaw[] = [
   },
   { path: '/agent/account', name: 'agent-account', component: () => import('../views/agent/AgentAccount.vue') },
   // removed duplicate/placeholder logging routes; use /agent/logs
-  // Admin flow
-  { path: '/admin/job-approval', name: 'admin-job-approval', component: () => import('../views/admin/AdminJobApproval.vue'), meta: { requiresAuth: true, role: 'admin' } },
+
   {
     path: '/admin/notifications',
     name: 'admin-notifications',
-    component: () => import('../views/admin/AdminNotifications.vue'),
+    component: () => import('../views/Notifications.vue'),
     meta: { requiresAuth: true, role: 'admin' },
     alias: '/admin/alerts'
   },
   { path: '/admin/profile', name: 'admin-profile', component: () => import('../views/admin/AdminProfile.vue'), meta: { requiresAuth: true, role: 'admin' } },
-  { path: '/admin/job/:id', name: 'admin-job-details', component: () => import('../views/admin/AdminJobDetails.vue'), meta: { requiresAuth: true, role: 'admin' } },
-  { path: '/admin/job/:id/reject', name: 'admin-job-rejection', component: () => import('../views/admin/AdminJobRejection.vue'), meta: { requiresAuth: true, role: 'admin' } },
+
   { path: '/admin/user-approvals', name: 'admin-user-approvals', component: () => import('../views/admin/AdminUserApprovals.vue'), meta: { requiresAuth: true, role: 'admin' } },
   { path: '/admin/user-management', name: 'admin-user-management', component: () => import('../views/admin/AdminUserManagement.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/propose/:jobId', name: 'admin-propose-job', component: () => import('../views/admin/AdminProposeJob.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/memo/:agentId', name: 'admin-agent-memo', component: () => import('../views/admin/AdminMemo.vue'), meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/admin/jobs', name: 'admin-jobs', component: () => import('../views/admin/AdminJobs.vue'), meta: { requiresAuth: true, role: 'admin' } },
   // Utility pages
   { path: '/alerts', name: 'alerts', component: () => import('../views/Notifications.vue') },
+  { path: '/notifications', redirect: '/alerts' },
   { path: '/call/:id', name: 'call', component: () => import('../views/Call.vue') },
   { path: '/settings', name: 'settings', component: () => import('../views/Settings.vue') },
   { path: '/profile-settings', name: 'profile-settings', component: () => import('../views/ProfileSettings.vue') },
@@ -223,7 +240,7 @@ router.beforeEach(async (to, from, next) => {
     let defaultRoute = 'sign-in' // Fallback
     
     if (userRole === 'admin') {
-      defaultRoute = 'admin-job-approval'
+      defaultRoute = 'admin-user-management'
     } else if (userRole === 'agent') {
       defaultRoute = 'agent-explore-gigs'
     } else if (userRole === 'client') {
@@ -258,7 +275,7 @@ router.beforeEach(async (to, from, next) => {
     // Check route permissions based on user role
     if (to.meta.role && to.meta.role !== userRole) {
       // If user doesn't have permission, redirect to their dashboard
-      const defaultRoute = userRole === 'admin' ? 'admin-job-approval' : `${userRole}-dashboard`
+      const defaultRoute = userRole === 'admin' ? 'admin-user-management' : `${userRole}-dashboard`
       next({ name: defaultRoute })
       return
     }
@@ -267,7 +284,7 @@ router.beforeEach(async (to, from, next) => {
   const requiredRole = (to.meta as any)?.role as string | undefined
   if (requiredRole && userRole !== requiredRole) {
     // Redirect based on user's role
-    if (userRole === 'admin') return next('/admin/job-approval')
+    if (userRole === 'admin') return next('/admin/user-management')
     if (userRole === 'client') return next({ name: 'client-dashboard' })
     if (userRole === 'agent') return next({ name: 'agent-explore-gigs' })
     

@@ -30,15 +30,15 @@ export interface SignupData {
   video_url?: string
   personality_url?: string
   // Client-specific fields
-  company_name: string
-  company_email: string
-  company_address: string
-  company_website: string
-  client_reason_for_signing_up: string
-  client_need_agent_work_hours_to_be: string
+  company_name?: string
+  company_email?: string
+  company_address?: string
+  company_website?: string
+  client_reason_for_signing_up?: string
+  client_need_agent_work_hours_to_be?: string
   // Agent-specific fields
   primary_expertise?: string
-  years_of_experience?: string
+  years_of_experience?: number
   tools?: string
   hours_per_week?: string
   timezone?: string
@@ -52,12 +52,12 @@ export interface SignupData {
   primary_area_of_expertise?: string
   time_zone?: string
   portfolio_link?: string
-  is_agent_open_to_calls_and_video_meetings?: string
-  does_agent_have_working_computer?: string
-  does_agent_have_stable_internet?: string
-  is_agent_comfortable_with_time_tracking_tools?: string
+  is_agent_open_to_calls_and_video_meetings?: boolean | string
+  does_agent_have_working_computer?: boolean | string
+  does_agent_have_stable_internet?: boolean | string
+  is_agent_comfortable_with_time_tracking_tools?: boolean | string
   three_most_commonly_used_tools_or_platforms?: string[]
-  available_hours_agent_can_commit?: string
+  available_hours_agent_can_commit?: number | string
   services?: string[]
 }
 

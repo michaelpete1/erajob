@@ -45,8 +45,12 @@ function normalizeJobCategory(category: string): JobCategoryType {
   const validCategories: JobCategoryType[] = [
     'Web Development',
     'Mobile Development',
-    'UI/UX Design',
-    'Content Writing',
+    'Sales',
+    'Customer Service',
+    'Editing',
+    'Book Keeping',
+    'Executive Assistant',
+    'Appointment Setting',
     'Digital Marketing',
     'Data Analysis',
     'Other'

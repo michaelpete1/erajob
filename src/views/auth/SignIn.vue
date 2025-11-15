@@ -219,6 +219,7 @@ async function onSubmit() {
       if (result.success && result.data?.access_token) {
         response = { success: true, user: mapUser('admin', result.data), token: result.data.access_token ?? null }
         localStorage.setItem('userInfo', JSON.stringify(result.data))
+        try { localStorage.setItem('adminEmail', String(result.data?.email || '')) } catch {}
       } else if (result.success && !result.data?.access_token) {
         response = { success: false, error: missingTokenError }
       } else {
@@ -237,7 +238,7 @@ async function onSubmit() {
       if (role === 'agent') {
         router.push({ name: 'agent-explore-gigs' })
       } else if (role === 'admin') {
-        router.push({ name: 'admin-job-approval' })
+        router.push({ name: 'admin-user-management' })
       } else {
         router.push({ name: 'client-dashboard' })
       }

@@ -90,14 +90,21 @@ apiClient.interceptors.response.use(
         originalRequest._retry = true
         let shouldLogout = false
         try {
-          const role = localStorage.getItem('userRole') || ''
+          const role = (localStorage.getItem('userRole') || '').toLowerCase()
 
-          // Determine refresh endpoint
-          const isAdminRequest = role === 'admin' || (originalRequest?.url?.toString()?.includes('/v1/admins/'))
+          const isAdminRequest = role === 'admin' || (originalRequest?.url?.toString()?.includes('/v1/admins/'))
+          const isAgentRequest = role === 'agent' || (originalRequest?.url?.toString()?.includes('/v1/agents/'))
+          const isClientRequest = role === 'client' || (originalRequest?.url?.toString()?.includes('/v1/clients/'))
           const expiredAccess = localStorage.getItem('access_token') || ''
           const authHeader = expiredAccess ? { Authorization: `Bearer ${expiredAccess}` } : {}
 
-          const refreshEndpoint = isAdminRequest ? '/v1/admins/refresh' : '/v1/users/refresh'
+          const refreshEndpoint = isAdminRequest
+            ? '/v1/admins/refresh'
+            : isAgentRequest
+              ? '/v1/agents/refresh'
+              : isClientRequest
+                ? '/v1/clients/refresh'
+                : '/v1/users/refresh'
           const refreshed = await apiClient.post(refreshEndpoint, { refresh_token: refreshToken }, { headers: { ...authHeader } })
 
           const data = refreshed?.data?.data
@@ -524,10 +531,21 @@ class ApiService {
   // --- Jobs Endpoints ---
   async createJob(jobData: JobsBase): Promise<ServiceResponse<JobsOut>> {
     try {
-      const response = await apiClient.post<EJApiResponse<JobsOut>>('/v1/jobss/', jobData)
-      return { success: true, data: response.data.data }
+      const response = await apiClient.post<EJApiResponse<JobsOut>>('/v1/jobss/', jobData);
+      return { 
+        success: true, 
+        data: response.data.data,
+        message: 'Job created successfully'
+      };
     } catch (error: any) {
-      return { success: false, error: error.response?.data?.detail || 'Failed to create job' }
+      // Create a response that matches the ServiceResponse type
+      const response: ServiceResponse<JobsOut> = { 
+        success: false, 
+        error: error.response?.data?.detail || error.message || 'Failed to create job',
+        // Include errors in the data field to maintain type safety
+        data: error.response?.data?.errors ? { errors: error.response.data.errors } as unknown as JobsOut : undefined
+      };
+      return response;
     }
   }
 
@@ -703,7 +721,58 @@ export function handleApiResponse<T>(response: ServiceResponse<T>): T {
 }
 
 // API object structure for composable compatibility
-export const api = {
+interface ApiInterface {
+  user: {
+    signup: (userData: UserBase) => Promise<ServiceResponse<UserOut>>;
+    login: (credentials: UserLogin) => Promise<ServiceResponse<UserOut>>;
+    getCurrentUser: () => Promise<ServiceResponse<UserOut>>;
+    listUsers: (start: number, stop: number) => Promise<ServiceResponse<UserOut[]>>;
+    deleteAccount: () => Promise<ServiceResponse<null>>;
+    forgotPassword: (request: ForgotPasswordRequest) => Promise<ServiceResponse<{ message: string }>>;
+    resetPassword: (request: ResetPasswordRequest) => Promise<ServiceResponse<{ message: string }>>;
+    approveUser: (userId: string) => Promise<ServiceResponse<null>>;
+    rejectUser: (userId: string, reason?: string) => Promise<ServiceResponse<null>>;
+  };
+  admin: {
+    login: (credentials: UserLogin) => Promise<ServiceResponse<UserOut>>;
+    getCurrentUser: () => Promise<ServiceResponse<UserOut>>;
+    updateProfile: (adminData: any) => Promise<ServiceResponse<UserOut>>;
+    refreshToken: (refreshData: UserRefresh) => Promise<ServiceResponse<UserOut>>;
+  };
+  agent: {
+    login: (credentials: UserLogin) => Promise<ServiceResponse<UserOut>>;
+    getCurrentUser: () => Promise<ServiceResponse<UserOut>>;
+    updateProfile: (agentData: any) => Promise<ServiceResponse<UserOut>>;
+  };
+  client: {
+    login: (credentials: UserLogin) => Promise<ServiceResponse<UserOut>>;
+    getCurrentUser: () => Promise<ServiceResponse<UserOut>>;
+    updateProfile: (clientData: any) => Promise<ServiceResponse<UserOut>>;
+    sendResetToken: (email: string) => Promise<ServiceResponse<{ reset_token: string }>>;
+    resetPassword: (payload: { reset_token: string; otp: string; new_password: string }) => Promise<ServiceResponse<UserOut>>;
+  };
+  jobs: {
+    createJob: (jobData: JobsBase) => Promise<ServiceResponse<JobsOut>>;
+    getJob: (id: string) => Promise<ServiceResponse<JobsOut>>;
+    getMyJobs: () => Promise<ServiceResponse<JobsOut>>;
+    listAdminJobs: (start: number, stop: number) => Promise<ServiceResponse<JobsOut[]>>;
+    listClientJobs: (start: number, stop: number) => Promise<ServiceResponse<JobsOut[]>>;
+    listAgentAvailableJobs: (start: number, stop: number) => Promise<ServiceResponse<JobsOut[]>>;
+    approveJob: (jobId: string, options?: { adminApproved?: boolean; chargesPercent?: number; taxPercent?: number; budget?: number }) => Promise<ServiceResponse<null>>;
+    rejectJob: (jobId: string, reason?: string) => Promise<ServiceResponse<null>>;
+    updateJob: (jobId: string, updates: Partial<JobsBase> & Record<string, any>) => Promise<ServiceResponse<JobsOut>>;
+    deleteJob: (jobId: string) => Promise<ServiceResponse<null>>;
+  };
+  alerts: {
+    getAlerts: (userType: 'client' | 'agent' | 'admin') => Promise<ServiceResponse<AlertsOut[]>>;
+    getAlert: (id: string, userType: 'client' | 'agent' | 'admin') => Promise<ServiceResponse<AlertsOut>>;
+  };
+  auth: {
+    logout: (redirectPath?: string) => void;
+  };
+}
+
+export const api: ApiInterface = {
   user: {
     signup: (userData: UserBase) => apiService.signup(userData),
     login: (credentials: UserLogin) => apiService.login(credentials),

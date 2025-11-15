@@ -49,26 +49,15 @@
           />
         </div>
 
-        <!-- Job Title -->
-        <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
-          <div class="flex items-center justify-between mb-2 sm:mb-3">
-            <label class="block text-gray-700 text-sm font-medium">Job Title</label>
-            <span class="text-xs text-gray-500">{{ titleLength }}/{{ TITLE_MAX_LENGTH }}</span>
-          </div>
-          <input
-            v-model="job.job_title"
-            type="text"
-            placeholder="Enter job title..."
-            :maxlength="TITLE_MAX_LENGTH"
-            class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
-          />
-        </div>
 
-        <!-- Category -->
+
+        
+
+        <!-- Primary Area of Expertise -->
         <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
-          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Category</label>
+          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Primary Area of Expertise</label>
           <select
-            v-model="job.category"
+            v-model="job.primary_area_of_expertise"
             class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
           >
             <option value="" disabled>Please select</option>
@@ -133,92 +122,7 @@
             class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
           ></textarea>
         </div>
-        <!-- Requirements -->
-        <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
-          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Requirements</label>
-          <div class="space-y-3">
-            <div v-for="(requirement, index) in formData.requirements" :key="index" class="flex items-center gap-2">
-              <input
-                v-model="requirement.text"
-                type="text"
-                :placeholder="`Requirement ${index + 1}`"
-                class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
-              />
-              <button
-                @click="removeRequirement(index)"
-                type="button"
-                class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                :disabled="formData.requirements.length <= 1"
-                :class="{ 'opacity-50 cursor-not-allowed': formData.requirements.length <= 1 }"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-            <button
-              @click="addRequirement"
-              type="button"
-              class="mt-2 flex items-center text-sm text-green-600 hover:text-green-700 font-medium"
-            >
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Add Requirement
-            </button>
-          </div>
-        </div>
-
-        <!-- Skills -->
-        <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
-          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Required Skills</label>
-          <p class="text-xs text-gray-500 mb-3">Select skills that match the agents' expertise. Jobs are matched based on these skills.</p>
-          <div class="flex flex-wrap gap-2 mb-3">
-            <span
-              v-for="(skill, index) in formData.skills"
-              :key="index"
-              class="inline-flex items-center bg-green-100 text-green-800 text-xs sm:text-sm px-2.5 py-1 rounded-full"
-            >
-              {{ getOptionLabel(skill) }}
-              <button
-                @click="removeSkill(index)"
-                type="button"
-                class="ml-1.5 text-green-500 hover:text-green-700 focus:outline-none"
-              >
-                <span class="sr-only">Remove skill</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </span>
-          </div>
-          <div class="flex gap-2">
-            <select
-              v-model="selectedSkill"
-              class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
-            >
-              <option value="" disabled>Please select</option>
-              <option
-                v-for="option in skillOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-            <button
-              @click="addSkill"
-              type="button"
-              :disabled="!selectedSkill"
-              :class="[
-                'px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
-                selectedSkill ? 'bg-green-500 hover:bg-green-600' : 'bg-green-300 cursor-not-allowed'
-              ]"
-            >
-              Add
-            </button>
-          </div>
-        </div>
+        
 
         <!-- Submit Button -->
         <div class="sticky bottom-28 sm:bottom-32 lg:bottom-6 bg-white border-t border-gray-200 py-3 px-4 sm:px-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 rounded-b-xl shadow-lg">
@@ -237,6 +141,12 @@
             </span>
             <span v-else>Create Job</span>
           </button>
+          <div v-if="!loading && !isFormValid && disabledReasons.length" class="mt-3 text-xs text-red-600">
+            <p class="font-semibold">Please fix the following:</p>
+            <ul class="list-disc ml-4 mt-1">
+              <li v-for="r in disabledReasons" :key="r">{{ r }}</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -247,14 +157,15 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@/services/apiService';
-import type { JobsBase } from '@/types/api/openapi';
+import type { JobsBase, JobCategories, JobsOut } from '@/types/api/openapi';
+import type { ServiceResponse } from '@/types/api';
 
 interface FormData {
-  requirements: Array<{ text: string }>;
-  skills: JobsBase['skills_needed'][];
   startDate: string;
   deadline: string;
 }
+
+
 
 const router = useRouter();
 const loading = ref(false);
@@ -262,9 +173,8 @@ const error = ref('');
 
 const TITLE_MAX_LENGTH = 120;
 const DESCRIPTION_MAX_LENGTH = 2000;
-const selectedSkill = ref<JobsBase['skills_needed'] | ''>('');
 
-const categoryOptions: Array<{ value: JobsBase['category']; label: string }> = [
+const categoryOptions: Array<{ value: JobCategories; label: string }> = [
   { value: 'Web Development', label: 'Web Development' },
   { value: 'Mobile Development', label: 'Mobile Development' },
   { value: 'Sales', label: 'Sales' },
@@ -274,71 +184,90 @@ const categoryOptions: Array<{ value: JobsBase['category']; label: string }> = [
   { value: 'Executive Assistant', label: 'Executive Assistant' },
   { value: 'Appointment Setting', label: 'Appointment Setting' },
   { value: 'Digital Marketing', label: 'Digital Marketing' },
-  { value: 'Data Analysis', label: 'Data Analysis' },
-  { value: 'Other', label: 'Other' }
+  { value: 'Data Analysis', label: 'Data Analysis' }
 ];
 
-const skillOptions: Array<{ value: JobsBase['skills_needed']; label: string }> = [
-  { value: 'Web Development', label: 'Web Development' },
-  { value: 'Mobile Development', label: 'Mobile Development' },
-  { value: 'Sales', label: 'Sales' },
-  { value: 'Customer Service', label: 'Customer Service' },
-  { value: 'Editing', label: 'Editing' },
-  { value: 'Book Keeping', label: 'Book Keeping' },
-  { value: 'Executive Assistant', label: 'Executive Assistant' },
-  { value: 'Appointment Setting', label: 'Appointment Setting' },
-  { value: 'Digital Marketing', label: 'Digital Marketing' },
-  { value: 'Data Analysis', label: 'Data Analysis' },
-  { value: 'Other', label: 'Other' }
-];
 
 const formData = ref<FormData>({
-  requirements: [{ text: '' }],
-  skills: [],
   startDate: '',
   deadline: ''
 });
 
-const getOptionLabel = (value: JobsBase['category'] | JobsBase['skills_needed']) => {
+const getOptionLabel = (value: JobCategories) => {
   const match = categoryOptions.find(option => option.value === value);
   return match?.label ?? value;
 };
 
 const job = ref<JobsBase>({
-  job_title: '',
   project_title: '',
-  category: '' as JobsBase['category'],
+  primary_area_of_expertise: '' as JobCategories,
   budget: 0,
   description: '',
-  requirement: '',
-  skills_needed: '' as JobsBase['skills_needed'],
   timeline: {
     start_date: 0,
     deadline: 0
-  }
+  },
+  selected_agents: []
 });
 
 const projectTitleLength = computed(() => job.value.project_title?.length || 0);
-const titleLength = computed(() => job.value.job_title?.length || 0);
 const descriptionLength = computed(() => job.value.description?.length || 0);
 
-const isFormValid = computed(() => {
-  const hasValidRequirements =
-    formData.value.requirements.length > 0 &&
-    formData.value.requirements.every(req => req.text.trim() !== '');
+const disabledReasons = computed(() => {
+  const reasons: string[] = []
+  if ((job.value.project_title?.trim() || '').length < 5) reasons.push('Title must be at least 5 characters')
+  if (!(job.value.primary_area_of_expertise || '').toString().trim()) reasons.push('Select a primary expertise')
+  if (!(job.value.budget > 0)) reasons.push('Budget must be greater than 0')
+  if (job.value.description.trim().length < 20) reasons.push('Description must be at least 20 characters')
 
-  return (
-    (job.value.project_title?.trim() || '') !== '' &&
-    (job.value.job_title?.trim() || '') !== '' &&
-    job.value.category.trim() !== '' &&
-    job.value.budget > 0 &&
-    job.value.description.trim() !== '' &&
-    hasValidRequirements &&
-    formData.value.skills.length > 0 &&
-    formData.value.startDate &&
-    formData.value.deadline
-  );
-});
+  const startDate = formData.value.startDate ? new Date(formData.value.startDate) : null
+  const deadline = formData.value.deadline ? new Date(formData.value.deadline) : null
+  if (!startDate) reasons.push('Start date is required')
+  if (!deadline) reasons.push('Deadline is required')
+  if (startDate && deadline) {
+    const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
+    const deadlineOnly = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate())
+    if (deadlineOnly < startDateOnly) reasons.push('Deadline must be after start date')
+  }
+  return reasons
+})
+
+const isFormValid = computed(() => disabledReasons.value.length === 0)
+
+const validationErrors = ref<Record<string, string>>({});
+
+const validateField = (field: string, value: any) => {
+  switch (field) {
+    case 'project_title':
+      if (!value || value.trim().length < 5) {
+        validationErrors.value[field] = 'Title must be at least 5 characters long';
+      } else {
+        delete validationErrors.value[field];
+      }
+      break;
+    case 'description':
+      if (!value || value.trim().length < 20) {
+        validationErrors.value[field] = 'Description must be at least 20 characters long';
+      } else {
+        delete validationErrors.value[field];
+      }
+      break;
+    case 'budget':
+      if (!value || value <= 0) {
+        validationErrors.value[field] = 'Budget must be greater than 0';
+      } else {
+        delete validationErrors.value[field];
+      }
+      break;
+    case 'primary_area_of_expertise':
+      if (!value) {
+        validationErrors.value[field] = 'Please select a category';
+      } else {
+        delete validationErrors.value[field];
+      }
+      break;
+  }
+};
 
 const updateTimeline = (field: 'start_date' | 'deadline', value: string) => {
   const timestamp = value ? Math.floor(new Date(value).getTime() / 1000) : 0;
@@ -349,30 +278,6 @@ const updateTimeline = (field: 'start_date' | 'deadline', value: string) => {
   }
 };
 
-const addRequirement = () => {
-  formData.value.requirements.push({ text: '' });
-};
-
-const removeRequirement = (index: number) => {
-  if (formData.value.requirements.length > 1) {
-    formData.value.requirements.splice(index, 1);
-  }
-};
-
-const addSkill = () => {
-  if (selectedSkill.value && !formData.value.skills.includes(selectedSkill.value)) {
-    formData.value.skills.push(selectedSkill.value);
-    const primarySkill = formData.value.skills[0];
-    job.value.skills_needed = (primarySkill ?? '') as JobsBase['skills_needed'];
-    selectedSkill.value = '';
-  }
-};
-
-const removeSkill = (index: number) => {
-  formData.value.skills.splice(index, 1);
-  const primarySkill = formData.value.skills[0];
-  job.value.skills_needed = (primarySkill ?? '') as JobsBase['skills_needed'];
-};
 
 const normalizeBudget = () => {
   if (typeof job.value.budget === 'number' && !Number.isNaN(job.value.budget)) {
@@ -382,46 +287,126 @@ const normalizeBudget = () => {
   }
 };
 
+const saveSelectedAgentsToJob = async () => {
+  try {
+    const storedProject = localStorage.getItem('selectedClientProject') || localStorage.getItem('selectedProject')
+    let jobId = ''
+    if (storedProject) {
+      try {
+        const parsed = JSON.parse(storedProject)
+        jobId = String(parsed?.job_id || parsed?.id || '')
+      } catch {}
+    }
+
+    if (!jobId) {
+      alert('No active job found. Create a job first, then save agents.')
+      return
+    }
+
+    if (!(job.value.selected_agents && job.value.selected_agents.length > 0)) {
+      alert('Select at least one agent to save to this job')
+      return
+    }
+
+    const resp = await api.jobs.updateJob(jobId, { selected_agents: job.value.selected_agents })
+    if (resp.success) {
+      alert('Selected agents saved to your job successfully')
+    } else {
+      alert(resp.error || 'Failed to save selected agents')
+    }
+  } catch (e: any) {
+    console.error('Error saving selected agents:', e)
+    alert(e?.message || 'Error saving selected agents')
+  }
+}
+
 const submitJob = async () => {
-  if (!isFormValid.value) return;
+  // Validate all fields before submission
+  validateField('project_title', job.value.project_title);
+  validateField('description', job.value.description);
+  validateField('budget', job.value.budget);
+  validateField('primary_area_of_expertise', job.value.primary_area_of_expertise);
+  
+  if (Object.keys(validationErrors.value).length > 0 || !isFormValid.value) {
+    error.value = 'Please fix the validation errors before submitting';
+    return;
+  }
 
   loading.value = true;
   error.value = '';
+  validationErrors.value = {};
 
   try {
     normalizeBudget();
 
-    // Update job data from form
-    job.value.requirement = formData.value.requirements
-      .map(req => req.text.trim())
-      .filter(text => text !== '')
-      .join('\n');
-
-    // Transform to JobPostData format
-    const jobPayload: JobsBase = {
-      job_title: job.value.job_title?.trim() || '',
+    // Transform to JobPostData format expected by the service
+    const jobPayload: any = {
       project_title: job.value.project_title?.trim() || '',
-      category: job.value.category,
-      budget: job.value.budget,
       description: job.value.description.trim(),
-      requirement: job.value.requirement,
-      skills_needed: job.value.skills_needed,
+      primary_area_of_expertise: job.value.primary_area_of_expertise,
+      budget: job.value.budget,
       timeline: {
         start_date: job.value.timeline.start_date,
         deadline: job.value.timeline.deadline
-      }
+      },
+      selected_agents: job.value.selected_agents || []
     };
 
     const response = await api.jobs.createJob(jobPayload);
 
     if (response.success && response.data) {
-      router.push({ name: 'client-jobs' });
+      try {
+        const jobId = String((response.data as any)?.id || response.data || '');
+        if (jobId) {
+          const cache = {
+            id: jobId,
+            job_id: jobId,
+            title: job.value.project_title,
+            project_title: job.value.project_title,
+            primary_area_of_expertise: job.value.primary_area_of_expertise
+          };
+          
+          // Store job data in localStorage
+          localStorage.setItem('selectedProject', JSON.stringify(cache));
+          localStorage.setItem('selectedClientProject', JSON.stringify(cache));
+
+          // Update job with selected agents if any
+          if ((job.value.selected_agents?.length || 0) > 0) {
+            try { 
+              await api.jobs.updateJob(jobId, { 
+                selected_agents: job.value.selected_agents 
+              }); 
+            } catch (e) {
+              console.warn('Failed to update job with selected agents:', e);
+            }
+          }
+          
+          // Show success message before redirect
+          alert('Job created successfully!');
+          router.push({ name: 'client-dashboard' });
+        }
+      } catch (e) {
+        console.error('Error processing job creation:', e);
+        error.value = 'Job was created, but there was an error processing additional details.';
+      }
     } else {
-      error.value = response.error || 'Failed to create job';
+      // Handle API validation errors
+      const typedResponse = response as ServiceResponse<JobsOut>;
+      if (typedResponse.errors) {
+        validationErrors.value = Object.entries(typedResponse.errors).reduce((acc, [field, messages]) => {
+          acc[field] = Array.isArray(messages) ? messages.join(', ') : String(messages);
+          return acc;
+        }, {} as Record<string, string>);
+        error.value = 'Please fix the validation errors below.';
+      } else {
+        error.value = typedResponse.error || 'Failed to create job. Please try again.';
+      }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error creating job:', err);
-    error.value = 'An error occurred while creating the job';
+    error.value = err.response?.data?.message || 
+                 err.message || 
+                 'An unexpected error occurred while creating the job. Please try again.';
   } finally {
     loading.value = false;
   }

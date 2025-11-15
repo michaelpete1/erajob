@@ -101,11 +101,8 @@ export type JobCategories =
   | 'Book Keeping'
   | 'Executive Assistant'
   | 'Appointment Setting'
-  | 'UI/UX Design'
-  | 'Content Writing'
   | 'Digital Marketing'
   | 'Data Analysis'
-  | 'Other'
 
 export type Skills =
   | 'Web Development'
@@ -121,14 +118,12 @@ export type Skills =
   | 'Other'
 
 export interface JobsBase {
-  job_title?: string
-  project_title?: string
-  category: JobCategories
+  project_title: string
+  primary_area_of_expertise: JobCategories
   budget: number
   description: string
-  requirement: string
-  skills_needed: Skills
   timeline: JobTimeline
+  selected_agents?: string[]
 }
 
 export interface JobsOut extends JobsBase {

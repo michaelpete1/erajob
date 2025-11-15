@@ -149,9 +149,43 @@
               </div>
             </section>
 
+            <!-- Meeting Notification -->
+            <section
+              v-else-if="notification.type === 'meeting'"
+              class="bg-purple-50 border-l-4 border-purple-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">📅</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-purple-600 font-semibold">{{ notification.time }}</p>
+                    <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                      v-for="action in notification.actions"
+                      :key="action"
+                      @click="handleNotificationAction(notification.id, action)"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-purple-600 active:bg-purple-700 transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <!-- Success Notification -->
-            <section 
-              v-else-if="notification.type === 'success'" 
+            <section
+              v-else-if="notification.type === 'success'"
               class="bg-green-50 border-l-4 border-green-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
             >
               <div class="flex items-start gap-3 sm:gap-4">
@@ -170,8 +204,8 @@
                   <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
                   <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
-                    <button 
-                      v-for="action in notification.actions" 
+                    <button
+                      v-for="action in notification.actions"
                       :key="action"
                       @click="handleNotificationAction(notification.id, action)"
                       class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
@@ -183,9 +217,43 @@
               </div>
             </section>
 
+            <!-- Worklog Notification -->
+            <section
+              v-else-if="notification.type === 'worklog'"
+              class="bg-orange-50 border-l-4 border-orange-500 rounded-xl p-4 sm:p-5 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
+            >
+              <div class="flex items-start gap-3 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-400 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-lg sm:text-xl">📝</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1 sm:mb-2">
+                    <p class="text-xs sm:text-sm text-orange-600 font-semibold">{{ notification.time }}</p>
+                    <button @click="removeNotification(notification.id)" class="text-gray-400 hover:text-gray-600">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
+                  <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
+                  <div class="flex flex-wrap gap-2 sm:gap-3">
+                    <button
+                      v-for="action in notification.actions"
+                      :key="action"
+                      @click="handleNotificationAction(notification.id, action)"
+                      class="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 active:bg-orange-700 transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
+                    >
+                      {{ action }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <!-- Default Notification -->
-            <section 
-              v-else 
+            <section
+              v-else
               class="bg-white/95 backdrop-blur-sm border-l-4 border-gray-300 rounded-xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01]"
             >
               <div class="flex items-start gap-3 sm:gap-4">
@@ -202,8 +270,8 @@
                   <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2 display-font">{{ notification.title }}</p>
                   <p class="text-sm text-gray-700 mb-3 sm:mb-4">{{ notification.description }}</p>
                   <div class="flex flex-wrap gap-2 sm:gap-3">
-                    <button 
-                      v-for="action in notification.actions" 
+                    <button
+                      v-for="action in notification.actions"
                       :key="action"
                       @click="handleNotificationAction(notification.id, action)"
                       class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all duration-300 min-h-[36px] touch-manipulation btn-pressable hover:shadow-lg hover:scale-[1.02]"
@@ -241,7 +309,7 @@ import type { AlertsOut } from '../../types/api/openapi';
 
 interface Notification {
   id: string;
-  type: 'priority' | 'info' | 'success' | 'default';
+  type: 'priority' | 'info' | 'success' | 'meeting' | 'worklog' | 'default';
   title: string;
   description: string;
   time: string;
@@ -266,9 +334,13 @@ function mapAlertToNotification(a: AlertsOut): Notification {
   // Derive type from priority/alert_type
   const type: Notification['type'] = a.priority === 'very_high' || a.priority === 'high'
     ? 'priority'
-    : a.alert_type === 'agent_completion_update'
-      ? 'success'
-      : 'info'
+    : a.alert_type === 'meeting'
+      ? 'meeting'
+      : a.alert_type === 'agent_completion_update'
+        ? 'success'
+        : a.alert_type === 'worklog'
+          ? 'worklog'
+          : 'info'
 
   const ts = a.date_created ? new Date(a.date_created * 1000) : new Date()
   return {
@@ -333,7 +405,7 @@ const filteredNotifications = computed(() => {
       return timeA - timeB;
     });
   } else if (sortBy.value === 'priority') {
-    const priorityOrder = { 'priority': 0, 'info': 1, 'success': 2, 'default': 3 };
+    const priorityOrder = { 'priority': 0, 'meeting': 1, 'info': 2, 'success': 3, 'default': 4 };
     filtered.sort((a, b) => priorityOrder[a.type] - priorityOrder[b.type]);
   }
 
@@ -415,7 +487,7 @@ watch([notifications, activeFilter, sortBy], () => {
 const router = useRouter();
 
 const goToJobApproval = () => {
-  router.push('/admin/job-approval');
+  router.push('/admin/user-management');
 };
 
 const goToUserApprovals = () => {

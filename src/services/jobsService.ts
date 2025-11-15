@@ -55,6 +55,35 @@ export const listAvailableAgentJobs = async (
   }
 }
 
+export const listAgentSelectedJobs = async (
+  start: number,
+  stop: number
+): Promise<ServiceResponse<Job[]>> => {
+  try {
+    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/`, {
+      params: { start, stop }
+    })
+    if (isSuccessfulStatus(response.data.status_code)) {
+      const jobs = ensureArray(response.data.data)
+      return {
+        success: true,
+        data: jobs,
+        message: `Retrieved ${jobs.length} selected jobs`
+      }
+    } else {
+      return {
+        success: false,
+        error: response.data.detail || 'Failed to fetch selected jobs'
+      }
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to fetch selected jobs'
+    }
+  }
+}
+
 /**
  * Lists jobs that a client has created. (Client only)
  * @param start - The starting index for the list.
@@ -314,6 +343,7 @@ export const deleteJob = async (id: string): Promise<ServiceResponse<string>> =>
 
 export const jobsService = {
   listAvailableAgentJobs,
+  listAgentSelectedJobs,
   listClientCreatedJobs,
   listAdminJobs,
   getJobById,

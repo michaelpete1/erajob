@@ -9,7 +9,7 @@ import type {
   ServiceResponse
 } from '../types/api'
 
-const BASE_URL = '/v1/applicationss'
+const BASE_URL = '/v1/applications'
 
 const buildListParams = (params?: Partial<ApplicationListParams>) => ({
   start: params?.start ?? 0,
@@ -21,7 +21,7 @@ export const listAgentApplications = async (
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/agent/list`, {
+    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/agent/list/`, {
       params: query
     })
     if (response.data.status_code === 200 || response.data.status_code === 0) {
@@ -48,7 +48,7 @@ export const listClientApplications = async (
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/client/list`, {
+    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/client/list/`, {
       params: { job_id: jobId, ...query }
     })
     if (response.data.status_code === 200 || response.data.status_code === 0) {
@@ -138,7 +138,7 @@ export const listAdminApplicationsForJob = async (
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/admin/list`, {
+    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/admin/list/`, {
       params: { job_id: jobId, ...query }
     })
     if (response.data.status_code === 200 || response.data.status_code === 0) {

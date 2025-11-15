@@ -3,7 +3,7 @@ export type UserRole = 'client' | 'agent' | 'admin'
 // Note: JobCategory is kept as string for flexibility, as the new Job type doesn't explicitly use it.
 export type JobCategory = 'Web Development' | 'Mobile Development' | 'UI/UX Design' | 'Content Writing' | 'Digital Marketing' | 'Data Analysis' | 'Other' | string
 export type JobStatus = 'pending' | 'active' | 'completed' | 'cancelled' | string // Added string for flexibility with new Job type
-export type AlertType = 'new_agent' | 'new_client' | 'job_posted'
+export type AlertType = 'new_agent' | 'new_client' | 'job_posted' | 'worklog'
 export type PriorityStatus = 'very_high' | 'high' | 'medium' | 'low'
 
 // --- Core Data Structures (Updated based on user's prompt) ---
@@ -148,3 +148,6 @@ export interface ValidationError {
 export interface ErrorResponse {
   detail: string | ValidationError[]
 }
+
+// Re-export AgentOut from api.ts
+export type { AgentOut } from '../api'

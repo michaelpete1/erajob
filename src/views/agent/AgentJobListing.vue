@@ -34,11 +34,11 @@
               <PencilSquareIcon class="h-5 w-5" />
               <span class="hidden lg:inline text-sm">Projects</span>
             </router-link>
-            <router-link to="/messages" class="flex items-center gap-2 text-white/90 hover:text-white" aria-label="Messages">
+            <router-link to="/chat/1" class="flex items-center gap-2 text-white/90 hover:text-white" aria-label="Messages">
               <MusicalNoteIcon class="h-5 w-5" />
               <span class="hidden lg:inline text-sm">Proposals</span>
             </router-link>
-            <router-link to="/notifications" class="relative flex items-center gap-2 text-white/90 hover:text-white" aria-label="Notifications">
+            <router-link to="/alerts" class="relative flex items-center gap-2 text-white/90 hover:text-white" aria-label="Notifications">
               <CheckCircleIcon class="h-5 w-5" />
               <span class="absolute -top-2 -right-3 inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-brand-teal text-xs">3</span>
             </router-link>
@@ -60,7 +60,7 @@
           </div>
           <router-link @click="openMobileNav = false" to="/agent/gigs-listing" class="py-2 px-3 rounded hover:bg-gray-100">Projects</router-link>
           <router-link @click="openMobileNav = false" to="/proposals" class="py-2 px-3 rounded hover:bg-gray-100">Proposals</router-link>
-          <router-link @click="openMobileNav = false" to="/notifications" class="py-2 px-3 rounded hover:bg-gray-100">Notifications <span class="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-400 text-white text-xs">3</span></router-link>
+          <router-link @click="openMobileNav = false" to="/alerts" class="py-2 px-3 rounded hover:bg-gray-100">Notifications <span class="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-400 text-white text-xs">3</span></router-link>
           <router-link @click="openMobileNav = false" to="/settings" class="py-2 px-3 rounded hover:bg-gray-100">Settings</router-link>
         </div>
       </div>
@@ -202,9 +202,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { applicationsService } from '@/services/applicationsService'
 import { jobsService } from '@/services/jobsService'
-import type { ApplicationOut } from '@/types/api'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
 import { createGigSlug } from '@/utils/slugUtils'
@@ -228,9 +226,6 @@ const {
   getAvailableJobs
 } = useJobs()
 
-const approvedApplications = ref<ApplicationOut[]>([])
-const applicationsLoading = ref(false)
-const applicationsError = ref<string | null>(null)
 
 const paginationParams = { start: 0, stop: 10 }
 
@@ -255,66 +250,23 @@ watch(activeTab, async () => {
 })
 
 const fetchData = async () => {
-  applicationsLoading.value = true
-  applicationsError.value = null
-
-  // Pass agent expertise data to getAvailableJobs for filtering
   const agentExpertise = getAgentExpertise()
   const agentParams = agentExpertise ? { ...paginationParams, agentData: { primaryExpertise: agentExpertise } } : paginationParams
   await getAvailableJobs(agentParams)
-
-  try {
-    const response = await applicationsService.listAgentApplications()
-    if (response.success && response.data) {
-      approvedApplications.value = response.data.filter(app => isAcceptedProposalStatus(app.proposal_status))
-      const ids = new Set(
-        approvedApplications.value
-          .map(app => (app.job_id ? String(app.job_id) : ''))
-          .filter(id => id.length > 0)
-      )
-      if (ids.size > 0) {
-        await fetchAssignedJobs(ids)
-      } else {
-        assignedJobs.value = []
-      }
-    } else {
-      applicationsError.value = response.error || 'Failed to load approved gigs.'
-      assignedJobs.value = []
-    }
-  } catch (err: any) {
-    applicationsError.value = err?.message || 'Failed to load approved gigs.'
-    assignedJobs.value = []
-  } finally {
-    applicationsLoading.value = false
-  }
+  await fetchAssignedJobs()
 }
 
-const fetchAssignedJobs = async (jobIds: Set<string>) => {
+const fetchAssignedJobs = async () => {
   assignedLoading.value = true
   assignedError.value = null
   try {
-    const results = await Promise.allSettled(
-      Array.from(jobIds).map(async id => {
-        const response = await jobsService.getJobById(id)
-        if (response.success && response.data) {
-          if (isJobApprovedForAgent(response.data)) {
-            return buildJobCard(response.data)
-          }
-          return null
-        }
-        throw new Error(response.error || `Failed to load job ${id}`)
-      })
-    )
-
-    const fulfilled = results
-      .filter((result): result is PromiseFulfilledResult<JobCard | null> => result.status === 'fulfilled')
-      .map(result => result.value)
-      .filter((card): card is JobCard => card !== null)
-    const rejected = results.filter(result => result.status === 'rejected')
-
-    assignedJobs.value = fulfilled
-    if (rejected.length > 0) {
-      assignedError.value = `Unable to load ${rejected.length} assigned job${rejected.length > 1 ? 's' : ''}.`
+    const response = await jobsService.listAgentSelectedJobs(paginationParams.start, paginationParams.stop)
+    if (response.success && response.data) {
+      const items = Array.isArray(response.data) ? response.data : response.data ? [response.data] : []
+      assignedJobs.value = items.map(buildJobCard)
+    } else {
+      assignedJobs.value = []
+      assignedError.value = response.error || 'Failed to load assigned jobs.'
     }
   } catch (error: any) {
     assignedJobs.value = []
@@ -402,22 +354,6 @@ const normalizeJobStatus = (job: any): string => {
   return isJobApprovedForAgent(job) ? 'approved' : 'pending_review'
 }
 
-const isAcceptedProposalStatus = (status: ApplicationOut['proposal_status']) => {
-  if (!status) return false
-  if (typeof status === 'string') {
-    const normalized = status.toLowerCase()
-    const acceptedFlags = [
-      'accepted',
-      'approved',
-      'accepted_by_client',
-      'client_accepted',
-      'client_approved',
-      'selected'
-    ]
-    return acceptedFlags.some(flag => normalized === flag || normalized.includes(flag))
-  }
-  return false
-}
 
 const isJobApprovedForAgent = (job: any): boolean => {
   const adminFlags = [job?.admin_approved, job?.adminApproved, job?.is_admin_approved]
@@ -545,10 +481,7 @@ const goToGig = (gig: typeof normalizedJobs.value[number]) => {
 }
 
 const isLoading = computed(() => jobsLoading.value || assignedLoading.value)
-const currentError = computed(() => {
-  if (activeTab.value === 'active') return assignedError.value || applicationsError.value
-  return jobsError.value
-})
+const currentError = computed(() => (activeTab.value === 'active' ? assignedError.value : jobsError.value))
 
 const statusLabel = (status: string, isActive: boolean) => {
   if (isActive) return 'Approved'

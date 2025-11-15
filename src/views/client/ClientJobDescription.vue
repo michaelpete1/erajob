@@ -56,7 +56,13 @@
         </div>
 
         <div class="mt-5 flex flex-wrap gap-2">
-          <span class="px-3 py-1.5 bg-teal-50 text-teal-700 border border-teal-100 text-xs font-semibold rounded-full">{{ job.category }}</span>
+          <button
+            type="button"
+            @click="goToRecommendedAgents"
+            class="px-3 py-1.5 bg-teal-50 text-teal-700 border border-teal-100 text-xs font-semibold rounded-full hover:bg-teal-100 transition-colors"
+          >
+            {{ job.category }}
+          </button>
           <span v-if="job.skills_needed" class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-semibold rounded-full">
             {{ job.skills_needed }}
           </span>
@@ -196,7 +202,7 @@ const hydrateJobFromContext = (jobId: string): boolean => {
       id: parsed.agent_job_id,
       admin_id: project.admin_id || parsed.admin_job_id || '',
       project_title: project.project_title || 'Untitled Project',
-      category: project.category || 'Other',
+      category: (project as any).primary_area_of_expertise || project.category || 'Other',
       budget: project.budget?.toString() || '0',
       type: 'Remote',
       postedTime: project.date_created
@@ -273,6 +279,21 @@ const goBack = () => {
 const viewProposals = () => {
   if (!job.value.id) return
   router.push({ name: 'client-proposals', query: { jobId: job.value.id } })
+}
+
+const goToRecommendedAgents = () => {
+  if (!job.value.id) return
+  try {
+    const selectedProject = {
+      id: job.value.id,
+      job_id: job.value.id,
+      title: job.value.project_title,
+      category: job.value.category,
+      primary_area_of_expertise: job.value.category
+    }
+    localStorage.setItem('selectedProject', JSON.stringify(selectedProject))
+  } catch (_) {}
+  router.push({ name: 'client-job-agents', params: { id: job.value.id }, query: { category: job.value.category } })
 }
 
 const loadProposals = async () => {
@@ -394,14 +415,14 @@ onMounted(async () => {
             id: jobId,
             admin_id: result.data.id || '',
             project_title: result.data.title || 'Job Title',
-            category: result.data.category || 'Other',
+            category: (result.data as any)?.primary_area_of_expertise || result.data.category || 'Other',
             budget: result.data.budget?.toString() || '0',
             type: 'Remote',
-            postedTime: result.data.createdAt ? new Date(result.data.createdAt).toLocaleDateString() : 'Recently posted',
+            postedTime: (result.data as any)?.date_created ? new Date((result.data as any).date_created * 1000).toLocaleDateString() : (result.data as any)?.createdAt ? new Date((result.data as any).createdAt).toLocaleDateString() : 'Recently posted',
             proposals: '0',
             description: result.data.description || 'No description available',
             requirements: [result.data.description?.split('\n')[0] || 'Requirements not specified'],
-            skills_needed: Array.isArray(result.data.skills_needed) ? result.data.skills_needed.join(', ') : result.data.skills_needed || '',
+            skills_needed: Array.isArray((result.data as any).skills_needed) ? (result.data as any).skills_needed.join(', ') : (result.data as any).skills_needed || '',
             deadline: result.data.timeline?.endDate ? new Date(result.data.timeline.endDate).getTime() : 0,
             status: 'open'
           }

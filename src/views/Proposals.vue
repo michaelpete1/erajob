@@ -178,45 +178,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-
-// Simulate API service for proposals
-const proposalsService = {
-  async getProposals(filters?: { status?: string; jobId?: string }): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    // In a real implementation, this would call:
-    // const result = await api.get('/proposals', { params: filters })
-
-    // For now, simulate API response with filtered data
-    const mockApiResponse = {
-      success: true,
-      data: proposals.value.filter(p => {
-        if (filters?.status && p.status !== filters.status) return false
-        if (filters?.jobId && p.jobId !== filters.jobId) return false
-        return true
-      })
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    return mockApiResponse
-  },
-
-  async getJobs(): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    // In a real implementation, this would call:
-    // const result = await api.get('/jobs')
-
-    // For now, simulate API response
-    const mockApiResponse = {
-      success: true,
-      data: jobs.value
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    return mockApiResponse
-  }
-}
+import { applicationsService } from '@/services/applicationsService'
+import { jobsService } from '@/services/jobsService'
 
 const router = useRouter()
 const route = useRoute()
@@ -247,26 +210,42 @@ async function loadProposals() {
   error.value = null
 
   try {
-    // Load jobs first
-    const jobsResult = await proposalsService.getJobs()
-    if (jobsResult.success && jobsResult.data) {
-      jobs.value = jobsResult.data
-    }
-
-    // Load proposals with filters
-    const filters: any = {}
-    if (activeTab.value !== 'all') {
-      filters.status = activeTab.value
-    }
-    if (currentJobId.value) {
-      filters.jobId = currentJobId.value
-    }
-
-    const proposalsResult = await proposalsService.getProposals(filters)
-    if (proposalsResult.success && proposalsResult.data) {
-      proposals.value = proposalsResult.data
+    const jobsResp = await jobsService.listAgentSelectedJobs(0, 50)
+    if (jobsResp.success && jobsResp.data) {
+      jobs.value = jobsResp.data
     } else {
-      error.value = proposalsResult.error || 'Failed to load proposals'
+      jobs.value = []
+    }
+
+    const appsResp = await applicationsService.listAgentApplications({ start: 0, stop: 100 })
+    if (appsResp.success && appsResp.data) {
+      const items = appsResp.data
+      const jobMap: Record<string, any> = {}
+      jobs.value.forEach((j: any) => {
+        const id = String((j?.id ?? j?.job_id ?? ''))
+        if (id) jobMap[id] = j
+      })
+      const mapped = items.map(app => {
+        const jobId = String(app.job_id)
+        const job = jobMap[jobId]
+        return {
+          id: app.id,
+          jobId: jobId,
+          projectName: job?.title || 'Untitled Job',
+          clientName: 'Client',
+          description: app.proposal,
+          budget: Number(job?.budget ?? 0),
+          submittedDate: new Date((app.date_created || 0) * 1000).toISOString(),
+          status: String(app.proposal_status || 'pending')
+        }
+      }).filter(p => {
+        const matchesStatus = activeTab.value === 'all' || p.status === activeTab.value
+        const matchesJob = !currentJobId.value || p.jobId === currentJobId.value
+        return matchesStatus && matchesJob
+      })
+      proposals.value = mapped
+    } else {
+      error.value = appsResp.error || 'Failed to load proposals'
     }
   } catch (caughtError) {
     console.error('Error loading proposals:', caughtError)
@@ -291,8 +270,8 @@ onMounted(() => {
 
 // Get job title by ID
 const getJobTitle = (jobId: string) => {
-  const job = jobs.value.find(j => j.id === jobId)
-  return job ? `${job.title} (${job.client})` : 'Unknown Job'
+  const job = jobs.value.find((j: any) => String(j.id) === jobId || String(j.job_id) === jobId)
+  return job ? `${job.title}` : 'Unknown Job'
 }
 
 const filteredProposals = computed(() => {

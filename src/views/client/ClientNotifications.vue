@@ -27,373 +27,188 @@
     </header>
 
     <!-- Filter and Sort Bar -->
-    <div class="bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div class="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <button 
-            v-for="filter in filters" 
-            :key="filter.id"
-            @click="activeFilter = filter.id"
-            :class="[
-              'px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-sm sm:text-base font-medium whitespace-nowrap transition-all duration-200 touch-manipulation',
-              activeFilter === filter.id 
-                ? 'bg-teal-500 text-white shadow-sm' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-            ]"
-          >
-            {{ filter.name }}
-            <span v-if="filter.count" class="ml-1 text-xs sm:text-sm">({{ filter.count }})</span>
-          </button>
-        </div>
-        
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-600 whitespace-nowrap">Sort by:</label>
-          <select 
-            v-model="sortBy" 
-            class="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          >
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="priority">Priority</option>
-          </select>
-        </div>
-      </div>
-    </div>
+    <NotificationFilters
+      :filters="filters"
+      :initial-filter="activeFilter"
+      :initial-sort="sortBy"
+      :on-filter-change="handleFilterChange"
+      :on-sort-change="handleSortChange"
+      :on-search="handleSearch"
+    />
 
-    <main class="px-3 sm:px-4 md:px-6 py-4 sm:py-6 pb-24 sm:pb-28 max-w-4xl mx-auto">
-      
-
-      <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
-      </div>
-
-      <!-- Error State -->
-      <div v-if="error && !loading" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-        <div class="flex items-center">
-          <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p class="text-red-700 font-medium">{{ error }}</p>
-        </div>
-      </div>
-
-      <!-- Alerts Content (only show when not loading and no error) -->
-      <div v-if="!loading && !error">
-        <!-- Alerts List -->
-        <div v-if="filteredAlerts.length > 0">
-          <div v-for="alert in filteredAlerts" :key="alert.id" class="mb-4 sm:mb-6">
-            <!-- Priority Notification -->
-            <section
-              v-if="alert.type === 'priority'"
-              class="bg-red-50 border-l-4 border-red-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-            >
-              <div class="flex items-start gap-3 sm:gap-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-400 flex items-center justify-center flex-shrink-0">
-                  <span class="text-white text-lg sm:text-xl">🔥</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-red-600 font-semibold">{{ alert.timeDisplay }}</p>
-                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
-                  <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ alert.description }}</p>
-                  <div class="flex flex-wrap gap-2 sm:gap-3">
-                    <button
-                      v-for="action in alert.actions"
-                      :key="action"
-                      @click="handleAlertActionClick(alert.id, action)"
-                      :class="[
-                        'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium transition-all duration-200 touch-manipulation',
-                        action === 'Review' ? 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
-                      ]"
-                    >
-                      {{ action }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- Project Update Notification -->
-            <section
-              v-else-if="alert.type === 'project'"
-              class="bg-blue-50 border-l-4 border-blue-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-            >
-              <div class="flex items-start gap-3 sm:gap-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-400 flex items-center justify-center flex-shrink-0">
-                  <span class="text-white text-lg sm:text-xl">📋</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-blue-600 font-semibold">{{ alert.timeDisplay }}</p>
-                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
-                  <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ alert.description }}</p>
-                  <div class="flex flex-wrap gap-2 sm:gap-3">
-                    <button
-                      v-for="action in alert.actions"
-                      :key="action"
-                      @click="handleAlertActionClick(alert.id, action)"
-                      class="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-blue-600 active:bg-blue-700 transition-all duration-200 touch-manipulation"
-                    >
-                      {{ action }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- Agent Response Notification -->
-            <section
-              v-else-if="alert.type === 'agent'"
-              class="bg-green-50 border-l-4 border-green-500 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-            >
-              <div class="flex items-start gap-3 sm:gap-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-400 flex items-center justify-center flex-shrink-0">
-                  <span class="text-white text-lg sm:text-xl">👤</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-green-600 font-semibold">{{ alert.timeDisplay }}</p>
-                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
-                  <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">{{ alert.description }}</p>
-                  <div class="flex flex-wrap gap-2 sm:gap-3">
-                    <button
-                      v-for="action in alert.actions"
-                      :key="action"
-                      @click="handleAlertActionClick(alert.id, action)"
-                      class="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-500 text-white rounded-lg text-sm sm:text-base font-medium hover:bg-green-600 active:bg-green-700 transition-all duration-200 touch-manipulation"
-                    >
-                      {{ action }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- General Notification -->
-            <section
-              v-else
-              class="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm"
-            >
-              <div class="flex items-start gap-3 sm:gap-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                  <span class="text-white text-lg sm:text-xl">📢</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between mb-1 sm:mb-2">
-                    <p class="text-xs sm:text-sm text-gray-500 font-semibold">{{ alert.timeDisplay }}</p>
-                    <button @click="handleRemoveAlert(alert.id)" class="text-gray-400 hover:text-gray-600 p-1 -mr-1">
-                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </div>
-                  <p class="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">{{ alert.title }}</p>
-                  <p class="text-sm sm:text-base text-gray-700">{{ alert.description }}</p>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <!-- Empty State -->
-        <div v-else class="text-center py-12 sm:py-16">
-          <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 bg-gray-200 rounded-full flex items-center justify-center">
-            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">No alerts</h3>
-          <p class="text-sm sm:text-base text-gray-500 max-w-md mx-auto">You're all caught up! Check back later for new updates about your projects and agents.</p>
-        </div>
-      </div>
-      
-    </main>
+    <!-- Notifications List -->
+    <NotificationList
+      :alerts="filteredAlerts"
+      :loading="loading"
+      :error="error"
+      :active-filter="activeFilter"
+      :has-more="hasMore"
+      :on-mark-as-read="handleMarkAsRead"
+      :on-delete="handleDelete"
+      :on-action="handleAction"
+      :on-retry="handleRetry"
+      :on-load-more="handleLoadMore"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAlerts } from '../../composables/useAlerts'
+import NotificationFilters from '../../components/NotificationFilters.vue'
+import NotificationList from '../../components/NotificationList.vue'
+import type { AlertOut } from '../../types/api'
 
-interface AlertDisplay {
-  id: string
-  type: 'priority' | 'project' | 'agent' | 'general'
-  title: string
-  description: string
-  created_at: number
-  read: boolean
-  actions: string[]
-  timeDisplay: string
-}
-
-// Filter and sort state
-const activeFilter = ref('all')
-const sortBy = ref('newest')
-
+// Composables
 const {
   alerts,
+  unreadCount,
   loading,
   error,
+  hasMore,
   getAlerts,
+  getUnreadAlerts,
   markAsRead,
   markAllAsRead,
   deleteAlert,
   handleAlertAction
-} = useAlerts()
+} = useAlerts('client')
 
-const mapAlertToDisplay = (alert: any): AlertDisplay => {
-  const priority = String(alert?.priority || '').toLowerCase()
-  const alertType = String(alert?.alert_type || '').toLowerCase()
+// Reactive state
+const activeFilter = ref('all')
+const sortBy = ref('newest')
+const searchQuery = ref('')
 
-  let type: AlertDisplay['type'] = 'general'
-  if (priority.includes('high')) {
-    type = 'priority'
-  } else if (alertType.includes('project')) {
-    type = 'project'
-  } else if (alertType.includes('agent')) {
-    type = 'agent'
-  }
-
-  const createdAtRaw = alert?.date_created ?? alert?.last_updated ?? null
-  let createdAt = Date.now()
-  if (typeof createdAtRaw === 'number') {
-    createdAt = createdAtRaw > 1_000_000_000_000 ? createdAtRaw : createdAtRaw * 1000
-  } else if (typeof createdAtRaw === 'string') {
-    const parsed = Date.parse(createdAtRaw)
-    if (!Number.isNaN(parsed)) {
-      createdAt = parsed
-    }
-  }
-
-  const actions = [alert?.alert_primary_action, alert?.alert_secondary_action]
-    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-
-  const date = new Date(createdAt)
-  const timeDisplay = date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
-  return {
-    id: String(alert?.id || crypto.randomUUID()),
-    type,
-    title: alert?.alert_title || 'Alert',
-    description: alert?.alert_description || '',
-    created_at: createdAt,
-    read: Boolean(alert?.is_read),
-    actions,
-    timeDisplay
-  }
-}
-
-const notifications = computed<AlertDisplay[]>(() => alerts.value.map(mapAlertToDisplay))
-
-// Filters
+// Filters configuration
 const filters = ref([
   { id: 'all', name: 'All', count: 0 },
   { id: 'priority', name: 'Priority', count: 0 },
+  { id: 'unread', name: 'Unread', count: 0 },
   { id: 'project', name: 'Projects', count: 0 },
-  { id: 'agent', name: 'Agents', count: 0 },
-  { id: 'general', name: 'General', count: 0 }
+  { id: 'agent', name: 'Agents', count: 0 }
 ])
 
-// Update filter counts based on notifications data
-const updateFilterCounts = () => {
-  if (notifications.value.length === 0) {
-    filters.value.forEach(filter => { filter.count = 0 })
-    return
-  }
-
-  const counts = {
-    all: notifications.value.length,
-    priority: notifications.value.filter(n => n.type === 'priority').length,
-    project: notifications.value.filter(n => n.type === 'project').length,
-    agent: notifications.value.filter(n => n.type === 'agent').length,
-    general: notifications.value.filter(n => n.type === 'general').length
-  }
-
-  filters.value.forEach(filter => {
-    filter.count = counts[filter.id as keyof typeof counts] || 0
-  })
-}
-
-// Computed filtered notifications
+// Computed filtered alerts
 const filteredAlerts = computed(() => {
-  if (notifications.value.length === 0) return []
+  if (!alerts.value) return []
 
-  let filtered = [...notifications.value]
+  let filtered = [...alerts.value]
 
-  // Apply filter
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(alert =>
+      alert.alert_title?.toLowerCase().includes(query) ||
+      alert.alert_description?.toLowerCase().includes(query)
+    )
+  }
+
+  // Apply type filter
   if (activeFilter.value !== 'all') {
-    filtered = filtered.filter(notification => notification.type === activeFilter.value)
+    if (activeFilter.value === 'unread') {
+      filtered = filtered.filter(alert => !(alert as any).is_read)
+    } else if (activeFilter.value === 'priority') {
+      filtered = filtered.filter(alert => alert.priority === 'high' || alert.alert_type === 'priority')
+    } else if (activeFilter.value === 'project') {
+      filtered = filtered.filter(alert => alert.alert_type === 'project' || alert.alert_type === 'job')
+    } else if (activeFilter.value === 'agent') {
+      filtered = filtered.filter(alert => alert.alert_type === 'agent' || alert.alert_type === 'proposal')
+    }
   }
 
   // Apply sorting
   filtered.sort((a, b) => {
-    if (sortBy.value === 'newest') {
-      return b.created_at - a.created_at
-    } else if (sortBy.value === 'oldest') {
-      return a.created_at - b.created_at
+    if (sortBy.value === 'oldest') {
+      return (a.date_created || 0) - (b.date_created || 0)
     } else if (sortBy.value === 'priority') {
-      const priorityOrder = { priority: 0, project: 1, agent: 2, general: 3 }
-      return priorityOrder[a.type] - priorityOrder[b.type]
+      const priorityOrder = { high: 0, medium: 1, low: 2 }
+      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 3
+      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 3
+      return aPriority - bPriority
+    } else { // newest
+      return (b.date_created || 0) - (a.date_created || 0)
     }
-    return 0
   })
 
   return filtered
 })
 
-// Methods
+// Update filter counts
+const updateFilterCounts = () => {
+  const allCount = alerts.value?.length || 0
+  const priorityCount = alerts.value?.filter(n => n.priority === 'high' || n.alert_type === 'priority').length || 0
+  const unreadCount = alerts.value?.filter(n => !(n as any).is_read).length || 0
+  const projectCount = alerts.value?.filter(n => n.alert_type === 'project' || n.alert_type === 'job').length || 0
+  const agentCount = alerts.value?.filter(n => n.alert_type === 'agent' || n.alert_type === 'proposal').length || 0
+
+  filters.value = [
+    { id: 'all', name: 'All', count: allCount },
+    { id: 'priority', name: 'Priority', count: priorityCount },
+    { id: 'unread', name: 'Unread', count: unreadCount },
+    { id: 'project', name: 'Projects', count: projectCount },
+    { id: 'agent', name: 'Agents', count: agentCount }
+  ]
+}
+
+// Event handlers
+const handleFilterChange = (filterId: string) => {
+  activeFilter.value = filterId
+}
+
+const handleSortChange = (sort: string) => {
+  sortBy.value = sort
+}
+
+const handleSearch = (query: string) => {
+  searchQuery.value = query
+}
+
+const handleMarkAsRead = async (alertId: string) => {
+  await markAsRead(alertId)
+  updateFilterCounts()
+}
+
 const handleMarkAllAsRead = async () => {
-  const result = await markAllAsRead()
-  if (result.success) updateFilterCounts()
+  await markAllAsRead()
+  updateFilterCounts()
 }
 
-const handleRemoveAlert = async (id: string) => {
-  const result = await deleteAlert(id)
-  if (result.success) updateFilterCounts()
+const handleDelete = async (alertId: string) => {
+  await deleteAlert(alertId)
+  updateFilterCounts()
 }
 
-const handleAlertActionClick = async (alertId: string, action: string) => {
+const handleAction = async (alertId: string, action: string) => {
   const result = await handleAlertAction(alertId, action)
-  if (result.success) updateFilterCounts()
+  if (result.success) {
+    updateFilterCounts()
+    // Handle specific client actions
+    if (action === 'View' || action === 'Review') {
+      // Navigate to project details or agent profile
+      console.log('Navigating to details...')
+    }
+  }
 }
 
-// Load alerts on mount
+const handleRetry = () => {
+  getAlerts()
+}
+
+const handleLoadMore = () => {
+  // Implement pagination if needed
+  console.log('Load more notifications')
+}
+
+// Initialize
 onMounted(async () => {
-  try {
-    await getAlerts()
-    updateFilterCounts()
-  } catch (error) {
-    console.error('Error loading alerts:', error)
-  }
+  await getAlerts()
+  updateFilterCounts()
 })
 
-// Watch for alerts changes to update filter counts
-watch(notifications, updateFilterCounts, { immediate: true })
+// Watch for changes
+watch([alerts, activeFilter, sortBy], () => {
+  updateFilterCounts()
+})
 </script>
 
 <style scoped>

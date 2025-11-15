@@ -29,6 +29,9 @@ export interface AlertApiResponse {
  */
 export interface AlertListApiResponse {
   status_code: number
-  data: Alert[]
+  data: {
+    alerts: Alert[]
+    total_number_of_unread?: number
+  }
   detail: string
 }

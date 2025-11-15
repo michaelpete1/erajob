@@ -35,11 +35,11 @@
               <PencilSquareIcon class="h-5 w-5" />
               <span class="hidden lg:inline text-sm">Projects</span>
             </router-link>
-            <router-link to="/messages" class="flex items-center gap-2 text-white/90 hover:text-white" aria-label="Messages">
+            <router-link to="/chat/1" class="flex items-center gap-2 text-white/90 hover:text-white" aria-label="Messages">
               <MusicalNoteIcon class="h-5 w-5" />
               <span class="hidden lg:inline text-sm">Messages</span>
             </router-link>
-            <router-link to="/notifications" class="relative flex items-center gap-2 text-white/90 hover:text-white" aria-label="Notifications">
+          <router-link to="/alerts" class="relative flex items-center gap-2 text-white/90 hover:text-white" aria-label="Notifications">
               <CheckCircleIcon class="h-5 w-5" />
               <span class="absolute -top-2 -right-3 inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-brand-teal text-xs">3</span>
             </router-link>
@@ -55,8 +55,8 @@
       <div v-if="openMobileNav" class="fixed top-16 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-white/95 text-brand-teal rounded-xl shadow-lg z-50 md:hidden">
         <div class="flex flex-col p-3">
           <router-link @click="openMobileNav = false" to="/agent/gigs-listing" class="py-2 px-3 rounded hover:bg-gray-100">Projects</router-link>
-          <router-link @click="openMobileNav = false" to="/messages" class="py-2 px-3 rounded hover:bg-gray-100">Messages</router-link>
-          <router-link @click="openMobileNav = false" to="/notifications" class="py-2 px-3 rounded hover:bg-gray-100">Notifications <span class="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-400 text-white text-xs">3</span></router-link>
+          <router-link @click="openMobileNav = false" to="/chat/1" class="py-2 px-3 rounded hover:bg-gray-100">Messages</router-link>
+          <router-link @click="openMobileNav = false" to="/alerts" class="py-2 px-3 rounded hover:bg-gray-100">Notifications <span class="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-400 text-white text-xs">3</span></router-link>
           <router-link @click="openMobileNav = false" to="/settings" class="py-2 px-3 rounded hover:bg-gray-100">Settings</router-link>
         </div>
       </div>

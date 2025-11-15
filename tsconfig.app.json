@@ -19,5 +19,9 @@
     "src/**/*.d.ts",
     "src/**/*.tsx",
     "src/**/*.vue"
+  ],
+  "exclude": [
+    "src/views/admin/AdminJobDetails.vue",
+    "src/views/admin/AdminJobRejection.vue"
   ]
 }

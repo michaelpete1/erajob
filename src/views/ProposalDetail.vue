@@ -209,38 +209,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { applicationsService } from '@/services/applicationsService'
+import { jobsService } from '@/services/jobsService'
 
-// State
+const route = useRoute()
+
 const loading = ref(true)
 const error = ref('')
-const proposal = ref({
-  id: '',
-  projectName: 'E-commerce Website Development',
-  status: 'pending',
-  budget: 4500,
-  submittedDate: '2023-06-15',
-  description: 'This is a detailed proposal for developing a complete e-commerce website with all the necessary features and functionality. The project will be completed in 8 weeks with regular updates and milestones.',
-  clientName: 'Sarah Johnson',
-  clientCompany: 'Johnson Retail',
-  clientEmail: 'sarah.johnson@example.com',
-  clientPhone: '(555) 123-4567',
-  clientAvatar: 'https://picsum.photos/seed/sarah/100/100.jpg',
-  timeline: {
-    startDate: '2023-07-01',
-    duration: 8,
-    milestones: [
-      'Week 2: Complete design mockups',
-      'Week 4: Frontend development',
-      'Week 6: Backend integration',
-      'Week 8: Testing and deployment'
-    ]
-  },
-  attachments: [
-    { name: 'Project_Proposal.pdf', size: 2450000, url: '#' },
-    { name: 'Design_Mockups.zip', size: 5240000, url: '#' },
-    { name: 'Technical_Specs.docx', size: 1200000, url: '#' }
-  ]
-})
+const proposal = ref<any>({})
 
 // Format status for display
 const formatStatus = (status: string) => {
@@ -273,18 +250,25 @@ const formatFileSize = (bytes: number) => {
 }
 
 // Update proposal status
-const updateProposalStatus = (status: string) => {
-  // In a real app, this would be an API call
-  proposal.value.status = status
-  
-  // Show success message
-  alert(`Proposal ${status === 'accepted' ? 'accepted' : 'rejected'} successfully!`)
-  
-  // In a real app, you might want to update the list of proposals
-  // or navigate back to the proposals list
-  if (status === 'accepted') {
-    // Navigate to project setup or other relevant page
-    // router.push(`/projects/new?proposalId=${proposalId}`)
+const updateProposalStatus = async (status: string) => {
+  const id = String(proposal.value?.id || '')
+  const jobId = String(proposal.value?.jobId || '')
+  if (!id || !jobId) return
+  loading.value = true
+  error.value = ''
+  try {
+    if (status === 'accepted') {
+      const resp = await applicationsService.approveAgentApplication(jobId, { id })
+      if (!resp.success) error.value = resp.error || 'Failed to accept proposal'
+    } else if (status === 'rejected') {
+      const resp = await applicationsService.rejectAgentApplication(jobId, { application_id: id, rejection_reason: 'Not a fit' })
+      if (!resp.success) error.value = resp.error || 'Failed to reject proposal'
+    }
+    proposal.value.status = status
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to update proposal status'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -296,28 +280,64 @@ const startProject = () => {
 }
 
 // Load proposal data
-const loadProposal = () => {
+const loadProposal = async () => {
   loading.value = true
   error.value = ''
-  
-  // In a real app, this would be an API call
-  // fetch(`/api/proposals/${proposalId}`)
-  //   .then(response => response.json())
-  //   .then(data => {
-  //     proposal.value = data
-  //     loading.value = false
-  //   })
-  //   .catch(err => {
-  //     error.value = 'Failed to load proposal details. Please try again.'
-  //     console.error('Error loading proposal:', err)
-  //     loading.value = false
-  //   })
-  
-  // Simulate API call
-  setTimeout(() => {
-    // For demo purposes, we're just using the default data
+  try {
+    const id = String((route.params as any)?.id || '')
+    const jobIdQuery = String((route.query as any)?.jobId || '')
+    if (!id) {
+      error.value = 'No proposal ID provided'
+      loading.value = false
+      return
+    }
+    const resp = await applicationsService.getAgentApplicationById(id)
+    if (!resp.success || !resp.data) {
+      error.value = resp.error || 'Failed to load proposal details'
+      loading.value = false
+      return
+    }
+    const app = resp.data
+    let jobTitle = 'Untitled Job'
+    let budget = 0
+    let startDate = ''
+    const jobId = jobIdQuery || String(app.job_id || '')
+    if (jobId) {
+      const jobResp = await jobsService.getJobById(jobId)
+      if (jobResp.success && jobResp.data) {
+        const job = jobResp.data as any
+        jobTitle = String(job?.title || job?.job_title || jobTitle)
+        budget = Number(job?.budget ?? 0)
+        if (job?.timeline && job?.timeline?.start_date) {
+          startDate = new Date(Number(job.timeline.start_date) * 1000).toISOString()
+        }
+      }
+    }
+    proposal.value = {
+      id: app.id,
+      jobId,
+      projectName: jobTitle,
+      status: String(app.proposal_status || 'pending'),
+      budget,
+      submittedDate: new Date(Number(app.date_created || 0) * 1000).toISOString(),
+      description: app.proposal,
+      clientName: 'Client',
+      clientCompany: '',
+      clientEmail: '',
+      clientPhone: '',
+      clientAvatar: '',
+      timeline: {
+        startDate: startDate || proposal.value?.submittedDate || '',
+        duration: 0,
+        milestones: []
+      },
+      attachments: []
+    }
+  } catch (err: any) {
+    error.value = err?.message || 'Failed to load proposal details. Please try again.'
+  } finally {
     loading.value = false
-  }, 800)
+  }
 }
 
 // Load proposal when component mounts

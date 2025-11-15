@@ -155,74 +155,7 @@
             </div>
           </transition>
         </teleport>
-        <div class="animate-slide-in-left">
-          <div class="relative" ref="projectsRef" style="z-index: 100;">
-            <div
-              @click="toggleProjectsDropdown"
-              role="button"
-              tabindex="0"
-              class="form-input cursor-pointer flex items-center justify-between bg-white min-h-[44px]"
-            >
-              <span class="text-gray-500">
-                {{ form.preferredProjects.length === 0 ? 'Select your preferred projects' : `${form.preferredProjects.length} project${form.preferredProjects.length > 1 ? 's' : ''} selected` }}
-              </span>
-              <svg
-                class="w-4 h-4 text-gray-400 transition-transform duration-200"
-                :class="{ 'rotate-180': showProjectsDropdown }"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
 
-            <!-- Modal Popup Box will be teleported to body -->
-            <teleport to="body">
-              <div
-                v-if="showProjectsDropdown"
-                class="fixed inset-0 z-[9999] bg-black/30 flex items-start pt-16 justify-center sm:items-start sm:justify-center sm:bg-transparent"
-                @click="showProjectsDropdown = false"
-              >
-                <div
-                  class="w-[85%] max-w-sm bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden mt-0 sm:absolute sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:top-20"
-                  @click.stop
-                >
-                  <!-- Modal Header -->
-                  <div class="bg-brand-teal text-white p-3 sm:p-4">
-                    <h3 class="text-base font-semibold">Select Project Types</h3>
-                    <p class="text-teal-100 text-xs">
-                      Choose project types you're interested in working on
-                    </p>
-                  </div>
-                  
-                  <!-- Modal Body -->
-                  <div class="p-3 max-h-[50vh] overflow-y-auto">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                      <div
-                        v-for="project in projectOptions"
-                        :key="project"
-                        @click="toggleProject(project)"
-                        class="px-2.5 py-1.5 cursor-pointer hover:bg-brand-teal/5 rounded-md transition-colors flex items-center justify-between text-xs"
-                      >
-                        <span class="text-gray-700">{{ project }}</span>
-                        <svg
-                          v-if="form.preferredProjects.includes(project)"
-                          class="w-4 h-4 text-brand-teal flex-shrink-0"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </teleport>
-          </div>
-        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="animate-slide-in-right">
             <button type="button" class="modal-trigger" @click="openCallsModal">
@@ -497,8 +430,6 @@ import { useTimezones } from '../../composables/useTimezones'
 
 const router = useRouter()
 const isSubmitting = ref(false)
-const showProjectsDropdown = ref(false)
-const projectsRef = ref<HTMLElement | null>(null)
 const showTimezoneModal = ref(false)
 const showHoursModal = ref(false)
 const showCallsModal = ref(false)
@@ -515,7 +446,6 @@ const form = reactive({
   agentId: '',
   hoursPerWeek: undefined as number | undefined,
   timezone: '',
-  preferredProjects: [] as string[],
   openToCalls: undefined as boolean | undefined,
   hasComputer: undefined as boolean | undefined,
   hasInternet: undefined as boolean | undefined,
@@ -531,7 +461,7 @@ const personalityTestFile = ref<File | null>(null)
 const certificationsInput = ref<HTMLInputElement | null>(null)
 const personalityTestInput = ref<HTMLInputElement | null>(null)
 
-const projectOptions = [
+const expertiseOptions = [
   'Web Development',
   'Mobile Development',
   'Sales',
@@ -540,25 +470,8 @@ const projectOptions = [
   'Book Keeping',
   'Executive Assistant',
   'Appointment Setting',
-  'UI/UX Design',
-  'Content Writing',
   'Digital Marketing',
-  'Data Analysis',
-  'Other'
-]
-
-const expertiseOptions = [
-  'Web Development',
-  'Mobile Development',
-  'Sales',
-  'Customer Service',
-  'Editing',
-  'Bookkeeping',
-  'Executive Assistant',
-  'Appointment Setting',
-  'Digital Marketing',
-  'Data Analysis',
-  'Other'
+  'Data Analysis'
 ]
 
 const yearsOptions = [0,1,2,3,5,7,10,15]
@@ -575,7 +488,7 @@ const toolsOptions = [
 
 const timezoneOptions = useTimezones()
 
-const hoursOptions = [20, 40]
+const hoursOptions = [20, 40, 80, 160]
 
 type BooleanChoice = { value: boolean; title: string; description: string }
 
@@ -756,7 +669,6 @@ const loadSavedData = () => {
     if (savedData.agentId) form.agentId = savedData.agentId
     if (savedData.hoursPerWeek !== undefined) form.hoursPerWeek = savedData.hoursPerWeek
     if (savedData.timezone) form.timezone = savedData.timezone
-    if (savedData.preferredProjects) form.preferredProjects = savedData.preferredProjects
     if (savedData.openToCalls !== undefined) form.openToCalls = savedData.openToCalls
     if (savedData.hasComputer !== undefined) form.hasComputer = savedData.hasComputer
     if (savedData.hasInternet !== undefined) form.hasInternet = savedData.hasInternet
@@ -836,31 +748,7 @@ const handlePersonalityTestUpload = (event: Event) => {
   }
 }
 
-// Project selection methods
-const updateDropdownPosition = async () => {
-  await nextTick()
-  if (projectsRef.value) {
-    const rect = projectsRef.value.getBoundingClientRect()
-    document.documentElement.style.setProperty('--dropdown-top', `${rect.bottom + window.scrollY}px`)
-  }
-}
 
-const toggleProjectsDropdown = async () => {
-  if (!showProjectsDropdown.value) {
-    await updateDropdownPosition()
-  }
-  showProjectsDropdown.value = !showProjectsDropdown.value
-  console.log('toggleProjectsDropdown new value:', showProjectsDropdown.value)
-}
-
-const toggleProject = (project: string) => {
-  const index = form.preferredProjects.indexOf(project)
-  if (index > -1) {
-    form.preferredProjects.splice(index, 1)
-  } else {
-    form.preferredProjects.push(project)
-  }
-}
 
 const onSubmit = async () => {
   isSubmitting.value = true
@@ -878,10 +766,8 @@ const onSubmit = async () => {
       yearsOfExperience: form.yearsOfExperience,
       tools: form.tools,
       phoneNumber: form.phoneNumber,
-      agentId: form.agentId,
       hoursPerWeek: form.hoursPerWeek,
       timezone: form.timezone,
-      preferredProjects: form.preferredProjects,
       openToCalls: form.openToCalls,
       hasComputer: form.hasComputer,
       hasInternet: form.hasInternet,

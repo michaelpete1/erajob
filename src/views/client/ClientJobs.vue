@@ -542,7 +542,7 @@ const toProject = (jobPayload: unknown): Project => {
     return acc
   }, [])
 
-  const categoryCandidate = sanitizeTextValue(job.category) || sanitizeTextValue(job.project_category)
+  const categoryCandidate = sanitizeTextValue(job.primary_area_of_expertise) || sanitizeTextValue(job.category) || sanitizeTextValue(job.project_category)
   const category = categoryCandidate || 'General'
 
   const budget = typeof job.budget === 'number' ? job.budget : Number(job.budget ?? 0)
@@ -674,7 +674,7 @@ const goToProject = (project: Project) => {
 const goToJobPage = (project: Project) => {
   if (!project?.id) return
   cacheProjectContext(project)
-  router.push({ name: 'client-job-description', params: { id: String(project.id) } })
+  router.push({ name: 'client-job-overview', params: { id: String(project.id) } })
 }
 
 const goToProjectWorkLogs = (project: Project) => {

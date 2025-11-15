@@ -85,28 +85,7 @@
               </div>
             </div>
 
-            <!-- Admin Statistics -->
-            <div class="border-t border-gray-200 pt-4">
-              <h3 class="text-lg font-semibold text-gray-900 mb-3">Admin Statistics</h3>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div class="text-center p-3 bg-blue-50 rounded-lg">
-                  <div class="text-2xl font-bold text-blue-600">{{ stats.total }}</div>
-                  <div class="text-xs text-blue-600">Total Jobs</div>
-                </div>
-                <div class="text-center p-3 bg-green-50 rounded-lg">
-                  <div class="text-2xl font-bold text-green-600">{{ stats.approved }}</div>
-                  <div class="text-xs text-green-600">Approved</div>
-                </div>
-                <div class="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div class="text-2xl font-bold text-yellow-600">{{ stats.pending }}</div>
-                  <div class="text-xs text-yellow-600">Pending</div>
-                </div>
-                <div class="text-center p-3 bg-red-50 rounded-lg">
-                  <div class="text-2xl font-bold text-red-600">{{ stats.rejected }}</div>
-                  <div class="text-xs text-red-600">Rejected</div>
-                </div>
-              </div>
-            </div>
+
 
             <!-- Approved Users -->
             <div class="border-t border-gray-200 pt-4">
@@ -152,49 +131,12 @@
               </div>
             </div>
 
-            <!-- Approved Jobs -->
-            <div class="border-t border-gray-200 pt-4">
-              <h3 class="text-lg font-semibold text-gray-900 mb-3">Approved Jobs</h3>
-              <div v-if="jobsLoading" class="text-sm text-gray-600">Loading approved jobs...</div>
-              <div v-else-if="jobsError" class="text-sm text-red-600">{{ jobsError }}</div>
-              <div v-else>
-                <div v-if="approvedJobs.length === 0" class="text-sm text-gray-600">No approved jobs yet.</div>
-                <div v-else class="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100">
-                  <div class="hidden sm:grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    <span>Project</span>
-                    <span>Category</span>
-                    <span>Budget</span>
-                    <span>Approved On</span>
-                  </div>
-                  <ul class="divide-y divide-gray-200 max-h-80 overflow-y-auto">
-                    <li
-                      v-for="job in approvedJobs"
-                      :key="job.id"
-                      class="flex flex-col sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr] gap-2 px-4 py-3"
-                    >
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">{{ job.project_title || job.title || 'Untitled Project' }}</p>
-                        <p class="text-xs text-gray-500">{{ job.client_name || job.client || 'Client not specified' }}</p>
-                      </div>
-                      <div class="text-sm text-gray-700">{{ job.category || 'Other' }}</div>
-                      <div class="text-sm font-semibold text-teal-600">{{ formatCurrency(job.budget * 1.17) }}</div>
-                      <div class="text-sm text-gray-700">{{ formatDate(job.last_updated || job.date_created || job.created_at) }}</div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+
 
             <!-- Quick Actions -->
             <div class="border-t border-gray-200 pt-4">
               <h3 class="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button @click="$router.push('/admin/job-approval')" class="inline-flex items-center justify-center px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-md transition-colors min-h-[44px] touch-manipulation">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2h2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6"></path>
-                  </svg>
-                  View Job Offers
-                </button>
                 <button @click="$router.push('/admin/user-approvals')" class="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors min-h-[44px] touch-manipulation">
                   <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -207,7 +149,7 @@
                   </svg>
                   User Management
                 </button>
-                <button @click="$router.push('/admin/notifications')" class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors min-h-[44px] touch-manipulation">
+                <button @click="$router.push('/admin/alerts')" class="inline-flex items-center justify-center px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors min-h-[44px] touch-manipulation">
                   <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-2.81a6.002 6.002 0 00-1.238-3.037l-.95-.95a2.5 2.5 0 01-3.536 0L10 11.414l-1.414 1.414a2.5 2.5 0 01-3.536 0L3 11.414V17h12zm-4-9a1 1 0 100-2 1 1 0 000 2z"></path>
                   </svg>
@@ -235,18 +177,12 @@ const adminName = ref<string>('')
 const adminEmail = ref<string>('')
 const initials = ref<string>('A')
 const memberSince = ref<string>('')
-const stats = ref<{ total: number; approved: number; pending: number; rejected: number }>({ total: 0, approved: 0, pending: 0, rejected: 0 })
-
 const approvedUsers = ref<any[]>([])
 const approvedCounts = ref<{ total: number; clients: number; agents: number }>({ total: 0, clients: 0, agents: 0 })
 const approvedLoading = ref(false)
 
-const approvedJobs = ref<any[]>([])
-const jobsLoading = ref(false)
-const jobsError = ref<string | null>(null)
-
 const goBack = () => {
-  router.push('/admin/job-approval')
+  router.push('/admin/user-management')
 }
 
 const logout = () => {
@@ -276,33 +212,7 @@ const loadAdmin = async () => {
   } catch {}
 }
 
-const loadStats = async () => {
-  jobsLoading.value = true
-  jobsError.value = null
-  try {
-    const resp = await api.jobs.listAdminJobs(0, 200)
-    if (resp.success && Array.isArray(resp.data)) {
-      const jobs: any[] = resp.data
-      const approvedList = jobs.filter(job => job.admin_approved === true || job.status === 'approved')
-      const rejectedList = jobs.filter(job => job.admin_approved === false || job.status === 'rejected')
-      const total = jobs.length
-      const approved = approvedList.length
-      const rejected = rejectedList.length
-      const pending = Math.max(0, total - approved - rejected)
 
-      stats.value = { total, approved, pending, rejected }
-      approvedJobs.value = approvedList
-    } else {
-      jobsError.value = resp.error || 'Failed to fetch jobs'
-      approvedJobs.value = []
-    }
-  } catch (error: any) {
-    jobsError.value = error?.message || 'Failed to fetch jobs'
-    approvedJobs.value = []
-  } finally {
-    jobsLoading.value = false
-  }
-}
 
 const primaryRole = (u: any) => {
   const roles = u?.role ? Object.values(u.role) : []
@@ -320,38 +230,7 @@ const roleBadgeClass = (u: any) => {
   return 'bg-gray-100 text-gray-700'
 }
 
-const formatDate = (timestamp: any): string => {
-  if (!timestamp) return '—'
 
-  if (typeof timestamp === 'number') {
-    const ms = timestamp > 1e12 ? timestamp : timestamp * 1000
-    return new Date(ms).toLocaleDateString()
-  }
-
-  if (typeof timestamp === 'string') {
-    const parsed = Date.parse(timestamp)
-    if (!Number.isNaN(parsed)) {
-      return new Date(parsed).toLocaleDateString()
-    }
-  }
-
-  return '—'
-}
-
-const formatCurrency = (value: unknown): string => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
-  }
-
-  if (typeof value === 'string') {
-    const numeric = Number.parseFloat(value)
-    if (Number.isFinite(numeric)) {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric)
-    }
-  }
-
-  return '—'
-}
 
 const loadApprovedUsers = async () => {
   approvedLoading.value = true
@@ -388,7 +267,7 @@ const isAdminApprovedUser = (user: any): boolean => {
 }
 
 onMounted(async () => {
-  await Promise.all([loadAdmin(), loadStats(), loadApprovedUsers()])
+  await Promise.all([loadAdmin(), loadApprovedUsers()])
 })
 
 </script>

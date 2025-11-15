@@ -143,7 +143,7 @@ async function onSubmit() {
       })
 
       // Navigate to the admin dashboard (replace to avoid back to sign-in)
-      router.replace('/admin/job-approval')
+      router.replace('/admin/user-management')
     } else {
       errorMessage.value = response.error || 'Login failed. Please try again.'
     }

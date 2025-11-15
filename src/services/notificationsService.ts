@@ -1,6 +1,6 @@
 // src/services/alertsService.ts
 
-import apiClient from './apiClient'
+import { apiClient } from './apiService'
 import type {
   AlertOut,
   AlertState,
@@ -246,6 +246,103 @@ export class AlertsService {
         console.error('[AlertsService] handleAlertAction error:', message)
       }
       return { success: false, error: message }
+    }
+  }
+
+  /**
+   * Create a local alert (for immediate UI feedback)
+   */
+  createLocalAlert(alertData: {
+    alert_title: string
+    alert_description: string
+    alert_type?: string
+    alert_primary_action?: string
+    alert_secondary_action?: string
+    priority?: string
+    alert_target_user_id?: string
+    job_id?: string
+    agent_id?: string
+    client_id?: string
+    recipients?: string[]
+  }): void {
+    const newAlert: any = {
+      id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      alert_title: alertData.alert_title,
+      alert_description: alertData.alert_description,
+      alert_type: alertData.alert_type || 'general',
+      alert_primary_action: alertData.alert_primary_action,
+      alert_secondary_action: alertData.alert_secondary_action,
+      priority: alertData.priority || 'normal',
+      alert_target_user_id: alertData.alert_target_user_id,
+      job_id: alertData.job_id,
+      agent_id: alertData.agent_id,
+      client_id: alertData.client_id,
+      is_read: false,
+      date_created: Date.now(),
+      last_updated: Date.now()
+    }
+
+    this.notificationState.alerts.unshift(newAlert)
+    this.notificationState.unreadCount += 1
+    this.notificationState.totalUnread = (this.notificationState.totalUnread || 0) + 1
+
+    if (alertData.priority === 'high') {
+      this.sendEmailNotification(newAlert, Array.isArray(alertData.recipients) ? alertData.recipients : undefined)
+    }
+  }
+
+  /**
+   * Send email notification for high priority alerts
+   */
+  private async sendEmailNotification(alert: any, recipientsOverride?: string[]): Promise<void> {
+    try {
+      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null
+      const adminEmail = typeof window !== 'undefined' ? localStorage.getItem('adminEmail') : null
+      const recipients = (Array.isArray(recipientsOverride) && recipientsOverride.length > 0
+        ? recipientsOverride
+        : [userEmail, adminEmail]
+      ).filter((e): e is string => typeof e === 'string' && e.trim().length > 0)
+      if (recipients.length === 0) {
+        console.warn('[AlertsService] No recipients found for email notification')
+        return
+      }
+
+      const baseMessage = `
+Dear EraJob User,
+
+You have received a new high-priority notification:
+
+${alert.alert_title}
+
+${alert.alert_description}
+
+Priority: ${alert.priority}
+Type: ${alert.alert_type}
+
+Please log in to your EraJob dashboard to view and take action on this notification.
+
+Best regards,
+EraJob Team
+      `
+
+      for (const to of recipients) {
+        const emailData = {
+          to,
+          subject: `EraJob Alert: ${alert.alert_title}`,
+          message: baseMessage,
+          alert_id: alert.id,
+          alert_type: alert.alert_type
+        }
+        const response = await apiClient.post<ApiResponse<void>>('/v1/notifications/send-email', emailData)
+        if (response.data.status_code === 200 || response.data.status_code === 0) {
+          console.log('[AlertsService] Email notification sent successfully')
+        } else {
+          console.warn('[AlertsService] Failed to send email notification:', response.data.detail)
+        }
+      }
+    } catch (error: any) {
+      console.warn('[AlertsService] Error sending email notification:', error?.message)
+      // Don't throw error - email failure shouldn't break the alert creation
     }
   }
 

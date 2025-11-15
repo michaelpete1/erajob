@@ -83,6 +83,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { jobsService } from '../../services/jobsService'
+import { applicationsService } from '../../services/applicationsService'
 
 const router = useRouter()
 const route = useRoute()
@@ -91,67 +92,28 @@ const gigDetails = ref<any>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Simulate API call for updating proposal status
-const updateProposalStatus = async (proposalId: string, status: 'accepted' | 'rejected'): Promise<{ success: boolean; data?: any; error?: string }> => {
-  // In a real implementation, this would call:
-  // const result = await proposalsService.updateProposalStatus(proposalId, status)
-
-  // For now, simulate successful API response
-  const mockApiResponse = {
-    success: true,
-    data: {
-      id: proposalId,
-      status: status,
-      updatedAt: new Date().toISOString()
-    }
-  }
-
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  return mockApiResponse
-}
-
-// Load gig data and update proposal status
+// Load gig data from actual application and job
 onMounted(async () => {
   loading.value = true
   error.value = null
 
   try {
-    // Get proposal ID from route or localStorage
-    const proposalId = route.params.id as string || localStorage.getItem('currentProposalId')
-
-    if (proposalId) {
-      // Update proposal status to rejected
-      const statusResult = await updateProposalStatus(proposalId, 'rejected')
-
-      if (statusResult.success) {
-        console.log('Proposal status updated to rejected')
-      }
-    }
-
-    // Load gig details from API or localStorage
-    try {
-      const stored = localStorage.getItem('selectedGig')
-      if (stored) {
-        gigDetails.value = JSON.parse(stored)
-        console.log('Loaded gig details from localStorage')
-      }
-    } catch (e) {
-      console.error('Error loading gig details from localStorage:', e)
-    }
-
-    // If no gig details in localStorage, try to fetch from API using proposal ID
-    if (!gigDetails.value && proposalId) {
-      try {
-        const jobResult = await jobsService.getJobById(proposalId)
-        if (jobResult.success && jobResult.data) {
-          gigDetails.value = jobResult.data
-          console.log('Loaded gig details from API')
+    const applicationId = route.params.id as string || localStorage.getItem('currentProposalId') || ''
+    if (applicationId) {
+      const appResp = await applicationsService.getAgentApplicationById(applicationId)
+      if (appResp.success && appResp.data) {
+        const app = appResp.data
+        if (app?.job_id) {
+          const jobResp = await jobsService.getJobById(String(app.job_id))
+          if (jobResp.success && jobResp.data) {
+            gigDetails.value = jobResp.data
+          }
         }
-      } catch (apiError) {
-        console.error('Error loading gig details from API:', apiError)
+      } else {
+        error.value = appResp.error || 'Failed to load application details'
       }
+    } else {
+      error.value = 'No application ID provided'
     }
   } catch (caughtError) {
     console.error('Error in onMounted:', caughtError)

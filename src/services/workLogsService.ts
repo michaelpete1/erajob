@@ -1,7 +1,7 @@
 import apiClient from './apiClient'
 import type { ApiResponse, ServiceResponse, WorkLogListParams, WorkLogOut, WorkLogPostPayload } from '@/types/api'
 
-const BASE_URL = '/v1/logss'
+const BASE_URL = '/v1/logs'
 
 const buildListParams = (params?: Partial<WorkLogListParams>) => ({
   start: params?.start ?? 0,

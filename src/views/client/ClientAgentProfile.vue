@@ -185,7 +185,13 @@
         <!-- Quick Actions -->
         <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
           <p class="text-xs sm:text-sm font-medium text-gray-600 mb-3 sm:mb-4">Quick Actions</p>
-          <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+            <button @click="sendMessage" class="flex-1 inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm sm:text-base font-medium rounded-lg sm:rounded-xl transition-colors duration-200">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span>Send Message</span>
+            </button>
             <button @click="viewProposals" class="flex-1 inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-teal-100 hover:bg-teal-200 text-teal-700 text-sm sm:text-base font-medium rounded-lg sm:rounded-xl transition-colors duration-200">
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -322,148 +328,82 @@
         </div>
       </div>
 
-      <!-- Send a meet-and-greet -->
-      <div class="bg-white p-5 sm:p-6 md:p-7 lg:p-8 rounded-lg sm:rounded-xl shadow-sm mb-20 sm:mb-24 border border-gray-100">
+      <!-- Create Meeting Button -->
+      <div class="bg-white p-5 sm:p-6 md:p-7 lg:p-8 rounded-lg sm:rounded-xl shadow-sm mb-6 sm:mb-8 border border-gray-100">
         <div class="flex items-center gap-3 mb-4 sm:mb-5">
-          <div class="w-8 h-8 sm:w-10 sm:h-10 bg-pink-100 rounded-lg flex items-center justify-center">
-            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg sm:text-xl md:text-2xl text-gray-800">Schedule Meet & Greet</h3>
+          <h3 class="font-semibold text-lg sm:text-xl md:text-2xl text-gray-800">Schedule Meeting</h3>
         </div>
-        
-        <!-- Calendar Container -->
-        <div @click="goToSetAppointment" class="bg-gradient-to-br from-pink-50 to-purple-50 border border-pink-200 rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden">
-          <!-- Click hint overlay -->
-          <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-5 transition-all duration-300 rounded-lg sm:rounded-xl"></div>
-          
-          <!-- Click hint badge -->
-          <div class="absolute top-2 right-2 bg-teal-500 text-white text-xs px-2 py-1 rounded-full font-medium opacity-90">
-            Click to Schedule
+
+        <button
+          @click="openMeetingPrompt"
+          :disabled="meetingLoading"
+          class="w-full py-3.5 sm:py-4 md:py-4.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold text-sm sm:text-base md:text-lg rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <div class="relative flex items-center justify-center gap-2 sm:gap-3">
+            <svg v-if="!meetingLoading" class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg v-if="meetingLoading" class="animate-spin w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>{{ meetingLoading ? 'Creating Meeting...' : 'Create Meeting' }}</span>
           </div>
-          <!-- Calendar Header -->
-          <div class="flex items-center justify-between mb-4 sm:mb-5">
-            <button class="p-2 sm:p-2.5 rounded-lg hover:bg-white hover:bg-opacity-50 transition-colors active:scale-95">
-              <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-              </svg>
-            </button>
-            
-            <div class="text-center">
-              <h4 class="font-bold text-lg sm:text-xl md:text-2xl text-gray-800">{{ currentMonth }}</h4>
-              <p class="text-xs sm:text-sm text-gray-600 mt-1">Select available date</p>
-            </div>
-            
-            <button class="p-2 sm:p-2.5 rounded-lg hover:bg-white hover:bg-opacity-50 transition-colors active:scale-95">
-              <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-            </button>
-          </div>
-          
-          <!-- Calendar Grid -->
-          <div class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm">
-            <!-- Weekday Headers -->
-            <div class="grid grid-cols-7 gap-1 mb-2 sm:mb-3">
-              <div v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']" :key="day" 
-                   class="text-center py-2">
-                <span class="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">{{ day }}</span>
-              </div>
-            </div>
-            
-            <!-- Calendar Days -->
-            <div class="grid grid-cols-7 gap-1">
-              <button v-for="day in calendarDays" :key="day" 
-                      @click="selectDate(day)"
-                      class="group relative aspect-square flex items-center justify-center rounded-lg sm:rounded-xl transition-all duration-200 text-sm sm:text-base font-medium
-                             hover:shadow-md active:scale-95 touch-manipulation"
-                      :class="{
-                        'bg-teal-500 text-white hover:bg-teal-600': isToday(day),
-                        'bg-gray-100 text-gray-400 cursor-not-allowed': isPastDate(day),
-                        'bg-white text-gray-700 hover:bg-pink-50 hover:text-pink-600 border border-gray-200': !isToday(day) && !isPastDate(day),
-                        'ring-2 ring-pink-400 ring-offset-2': isSelected(day)
-                      }">
-                <span class="relative z-10">{{ day }}</span>
-                
-                <!-- Available indicator -->
-                <div v-if="!isPastDate(day) && hasAvailability(day)" 
-                     class="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full"></div>
-                
-                <!-- Today indicator -->
-                <div v-if="isToday(day)" 
-                     class="absolute inset-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 opacity-10"></div>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Selected Date Info -->
-          <div v-if="selectedDate" class="mt-4 sm:mt-5 p-3 sm:p-4 bg-white rounded-lg sm:rounded-xl border border-pink-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm sm:text-base font-semibold text-gray-800">Selected Date</p>
-                <p class="text-xs sm:text-sm text-gray-600">{{ formatDate(selectedDate) }}</p>
-              </div>
-              <div class="text-right">
-                <span class="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></div>
-                  Available
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Time Slots -->
-          <div class="mt-4 sm:mt-5">
-            <p class="text-sm sm:text-base font-semibold text-gray-800 mb-3 sm:mb-4">Available Time Slots</p>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-              <button v-for="time in availableTimes" :key="time" 
-                      class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600 transition-colors active:scale-95">
-                {{ time }}
-              </button>
-            </div>
-          </div>
-        </div>
+        </button>
+
+        <p class="text-xs sm:text-sm text-gray-600 mt-3 text-center">
+          This will send a meeting request to {{ agent.name }} and notify the admin
+        </p>
       </div>
       
-      <!-- Fixed Bottom Button -->
-      <div class="fixed bottom-0 left-0 right-0 z-40 bg-white shadow-xl border-t border-gray-200 backdrop-blur-lg bg-opacity-95">
-        <div class="p-3 sm:p-4 md:p-5 lg:p-6 max-w-7xl mx-auto">
-          <button @click="sendMeetAndGreetRequest" 
-                  class="group w-full py-3.5 sm:py-4 md:py-4.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold text-sm sm:text-base md:text-lg rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden">
-            
-            <!-- Button background animation -->
-            <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            
-            <!-- Button content -->
-            <div class="relative flex items-center justify-center gap-2 sm:gap-3">
-              <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 transform group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="tracking-tight">Send Meet & Greet Request</span>
-              <svg class="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </div>
-            
-            <!-- Status indicator -->
-            <div v-if="selectedDate" class="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
-              Ready
-            </div>
-          </button>
-          
-          <!-- Safety margin for mobile devices with home indicators -->
-          <div class="h-2 sm:h-0 bg-transparent"></div>
-        </div>
-      </div>
+
       
     </main>
   </div>
+  <teleport to="body">
+    <div v-if="showMeetingPrompt" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-5">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Select Meeting Time</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Date</label>
+            <input v-model="appointmentDate" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Time</label>
+            <input v-model="appointmentTime" type="time" class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+          </div>
+          <div class="pt-2">
+            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input v-model="rejectAdminProposal" type="checkbox" class="rounded" />
+              Meeting is to reject admin proposal
+            </label>
+          </div>
+          <div v-if="rejectAdminProposal" class="pt-2">
+            <label class="block text-sm text-gray-600 mb-1">Rejection reason (optional)</label>
+            <textarea v-model="rejectionReason" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2"></textarea>
+          </div>
+        </div>
+        <div class="mt-5 flex justify-end gap-2">
+          <button @click="showMeetingPrompt = false" class="px-4 py-2 rounded-lg border border-gray-300">Cancel</button>
+          <button @click="confirmMeeting" :disabled="meetingLoading" class="px-4 py-2 rounded-lg bg-blue-600 text-white">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
+import apiClient from '../../services/apiClient'
+import { useToast } from 'vue-toastification'
 
 interface AgentAvailability {
   type: 'Full-time' | 'Part-time' | 'Contract'
@@ -512,6 +452,7 @@ import { useAgents } from '../../composables/useAgents'
 const route = useRoute()
 const router = useRouter()
 const { getAgentById, loading, error } = useAgents()
+const toast = useToast()
 
 // Agent data with proper typing
 const agent = ref<Agent>({
@@ -572,6 +513,74 @@ const currentMonth = ref<string>('JANUARY 2023')
 const calendarDays = ref<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31])
 const selectedDate = ref<number | null>(null)
 const availableTimes = ref<string[]>(['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM'])
+
+// Meeting loading state
+const meetingLoading = ref(false)
+const showMeetingPrompt = ref(false)
+const appointmentDate = ref('')
+const appointmentTime = ref('')
+const rejectAdminProposal = ref(false)
+const rejectionReason = ref('')
+
+// Create meeting function
+const openMeetingPrompt = (): void => {
+  showMeetingPrompt.value = true
+}
+
+const confirmMeeting = async (): Promise<void> => {
+  if (meetingLoading.value) return
+
+  meetingLoading.value = true
+  try {
+    const { meetingService } = await import('../../services/meetingService')
+
+    const storedProject = localStorage.getItem('selectedClientProject') || localStorage.getItem('selectedProject')
+    let jobId = ''
+    if (storedProject) {
+      try {
+        const parsed = JSON.parse(storedProject)
+        jobId = String(parsed?.job_id || parsed?.id || '')
+      } catch {}
+    }
+
+    if (!jobId) {
+      alert('No active job context found. Open a project, then try again.')
+      return
+    }
+
+    if (!appointmentDate.value || !appointmentTime.value) {
+      alert('Select a date and time for the meeting')
+      meetingLoading.value = false
+      return
+    }
+    const dateTimeString = `${appointmentDate.value}T${appointmentTime.value}:00`
+    const meetingTime = new Date(dateTimeString).getTime()
+
+    const response = await meetingService.setMeeting({
+      job_id: jobId,
+      agent_id: agent.value.id,
+      meeting_time: meetingTime,
+      client_approved: !rejectAdminProposal.value,
+      rejection_reason: rejectAdminProposal.value ? (rejectionReason.value || '') : undefined
+    })
+
+    if (response.success) {
+      alert('Meeting set successfully! Admin and agent were notified.')
+    } else {
+      alert(response.error || 'Failed to set meeting')
+    }
+  } catch (error) {
+    console.error('Error setting meeting:', error)
+    alert('An error occurred while setting the meeting.')
+  } finally {
+    meetingLoading.value = false
+    showMeetingPrompt.value = false
+    appointmentDate.value = ''
+    appointmentTime.value = ''
+    rejectAdminProposal.value = false
+    rejectionReason.value = ''
+  }
+}
 
 // Calendar helper functions
 const isToday = (day: number): boolean => {
@@ -734,37 +743,45 @@ const loadAgentData = async (agentId: string): Promise<void> => {
     }
     
     // Fallback to localStorage if API fails
-    await loadAgentFromLocalStorage()
+    const okFallback = await loadAgentFromLocalStorage()
+    if (!okFallback) {
+      profileError.value = 'Agent info unavailable; showing basic profile'
+    }
     
   } catch (error) {
     console.error('Error loading agent profile:', error)
     profileError.value = 'Failed to load agent profile'
     
     // Try loading from localStorage as last resort
-    await loadAgentFromLocalStorage()
+    const okLastResort = await loadAgentFromLocalStorage()
+    if (!okLastResort) {
+      profileError.value = 'Agent info unavailable'
+    }
   } finally {
     profileLoading.value = false
   }
 }
 
-const loadAgentFromLocalStorage = async (): Promise<void> => {
+const loadAgentFromLocalStorage = async (): Promise<boolean> => {
   try {
     const savedAgentData = localStorage.getItem('selectedAgent')
     if (savedAgentData) {
       const parsedAgentData = JSON.parse(savedAgentData)
       agent.value = {
-        ...agent.value, // Keep default values as fallback
-        ...parsedAgentData, // Override with saved data
+        ...agent.value,
+        ...parsedAgentData,
         availability: {
           ...agent.value.availability,
           ...(parsedAgentData.availability || {})
         }
       }
       console.log('Loaded agent data from localStorage:', parsedAgentData)
+      return true
     }
+    return false
   } catch (error) {
     console.error('Error loading agent data from localStorage:', error)
-    throw error // Re-throw to be handled by the caller
+    return false
   }
 }
 

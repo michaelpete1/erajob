@@ -72,12 +72,12 @@ const prepareSignupData = (data: SignupData): any => {
       primary_area_of_expertise: data.primary_area_of_expertise,
       time_zone: data.time_zone,
       portfolio_link: data.portfolio_link,
-      is_agent_open_to_calls_and_video_meetings: data.is_agent_open_to_calls_and_video_meetings === 'yes',
-      does_agent_have_working_computer: data.does_agent_have_working_computer === 'yes',
-      does_agent_have_stable_internet: data.does_agent_have_stable_internet === 'yes',
-      is_agent_comfortable_with_time_tracking_tools: data.is_agent_comfortable_with_time_tracking_tools === 'yes',
+      is_agent_open_to_calls_and_video_meetings: (data as any).is_agent_open_to_calls_and_video_meetings === 'yes',
+      does_agent_have_working_computer: (data as any).does_agent_have_working_computer === 'yes',
+      does_agent_have_stable_internet: (data as any).does_agent_have_stable_internet === 'yes',
+      is_agent_comfortable_with_time_tracking_tools: (data as any).is_agent_comfortable_with_time_tracking_tools === 'yes',
       three_most_commonly_used_tools_or_platforms: data.three_most_commonly_used_tools_or_platforms,
-      available_hours_agent_can_commit: data.available_hours_agent_can_commit ? parseInt(data.available_hours_agent_can_commit) : undefined,
+      available_hours_agent_can_commit: data.available_hours_agent_can_commit,
       services: data.services,
     }
   } else {
@@ -96,23 +96,23 @@ const prepareSignupData = (data: SignupData): any => {
       primary_area_of_expertise: primaryArea,
       years_of_experience: typeof (data as any).years_of_experience === 'number'
         ? (data as any).years_of_experience
-        : parseInt((data as any).years_of_experience || '0'),
+        : parseInt(String((data as any).years_of_experience || '0')),
       three_most_commonly_used_tools_or_platforms: toolsArray,
       available_hours_agent_can_commit: typeof hours === 'number' ? hours : parseInt(String(hours || '0')),
       time_zone: (data as any).time_zone || (data as any).timezone,
       portfolio_link: (data as any).portfolio_link || (data as any).video_url || '',
       is_agent_open_to_calls_and_video_meetings: typeof (data as any).is_agent_open_to_calls_and_video_meetings === 'boolean'
         ? (data as any).is_agent_open_to_calls_and_video_meetings
-        : (data as any).open_to_calls === 'yes',
+        : String((data as any).open_to_calls) === 'yes',
       does_agent_have_working_computer: typeof (data as any).does_agent_have_working_computer === 'boolean'
         ? (data as any).does_agent_have_working_computer
-        : (data as any).has_computer === 'yes',
+        : String((data as any).has_computer) === 'yes',
       does_agent_have_stable_internet: typeof (data as any).does_agent_have_stable_internet === 'boolean'
         ? (data as any).does_agent_have_stable_internet
-        : (data as any).has_internet === 'yes',
+        : String((data as any).has_internet) === 'yes',
       is_agent_comfortable_with_time_tracking_tools: typeof (data as any).is_agent_comfortable_with_time_tracking_tools === 'boolean'
         ? (data as any).is_agent_comfortable_with_time_tracking_tools
-        : (data as any).comfortable_with_tracking === 'yes',
+        : String((data as any).comfortable_with_tracking) === 'yes',
     }
   }
 }

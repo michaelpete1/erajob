@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
-import authService from '../../services/authService'
+import axios from 'axios'
 import type { SignupData } from '../../types/api/auth'
+
+const API_BASE_URL = import.meta.env.DEV
+  ? '/api'
+  : import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
 
 const router = useRouter()
 const isSubmitting = ref(false)
@@ -37,19 +41,12 @@ const finishSignup = async () => {
       company_email: welcome?.companyEmail || '',
       company_address: welcome?.companyAddress || '',
       company_website: welcome?.companyWebsite || '',
-      // Required enums with defaults if missing
-      client_reason_for_signing_up: welcome?.clientReason || 'Just hire me someone',
+      // Required enums with defaults
+      client_reason_for_signing_up: 'Just hire me someone',
       client_need_agent_work_hours_to_be: 'both',
       primary_area_of_expertise: welcome?.primaryAreaOfExpertise || 'Other',
       time_zone: welcome?.timezone || 'UTC+00:00',
       portfolio_link: welcome?.urlLink || '',
-      // Booleans in prepareSignupData are derived from 'yes' string; default to 'no' if empty
-      is_agent_open_to_calls_and_video_meetings: welcome?.openToCalls || 'no',
-      does_agent_have_working_computer: welcome?.hasWorkingComputer || 'no',
-      does_agent_have_stable_internet: welcome?.hasStableInternet || 'no',
-      is_agent_comfortable_with_time_tracking_tools: welcome?.comfortableWithTimeTracking || 'no',
-      three_most_commonly_used_tools_or_platforms: [],
-      available_hours_agent_can_commit: '',
       services: Array.isArray(services) ? services : []
     }
 
@@ -67,36 +64,10 @@ const finishSignup = async () => {
     payload.primary_area_of_expertise = payload.primary_area_of_expertise || 'Other'
     payload.time_zone = payload.time_zone || 'UTC+00:00'
     payload.phone_number = payload.phone_number || basic.phone || 'Not provided'
-    payload.is_agent_open_to_calls_and_video_meetings = payload.is_agent_open_to_calls_and_video_meetings || 'no'
-    payload.does_agent_have_working_computer = payload.does_agent_have_working_computer || 'no'
-    payload.does_agent_have_stable_internet = payload.does_agent_have_stable_internet || 'no'
-    payload.is_agent_comfortable_with_time_tracking_tools = payload.is_agent_comfortable_with_time_tracking_tools || 'no'
-    payload.three_most_commonly_used_tools_or_platforms = Array.isArray(payload.three_most_commonly_used_tools_or_platforms)
-      ? payload.three_most_commonly_used_tools_or_platforms
-      : []
-    const normalisedHours = payload.available_hours_agent_can_commit?.toString()
-    if (normalisedHours !== '80' && normalisedHours !== '160') {
-      payload.available_hours_agent_can_commit = '80'
-    } else {
-      payload.available_hours_agent_can_commit = normalisedHours
-    }
 
-    const resp = await authService.signup(payload)
-    if (!resp.success) {
-      const fieldErrors = resp.fieldErrors
-      if (fieldErrors && typeof fieldErrors === 'object') {
-        const entries = Object.entries(fieldErrors)
-        if (entries.length) {
-          errorMessage.value = entries
-            .map(([field, message]) => `${field}: ${Array.isArray(message) ? message.join(', ') : message}`)
-            .join(' | ')
-        }
-      }
-
-      if (!errorMessage.value) {
-        const detail = Array.isArray(resp.error) ? resp.error.map((item: any) => item?.msg || item).join(' | ') : resp.error
-        errorMessage.value = detail || 'Signup failed. Please try again.'
-      }
+    const resp = await axios.post(`${API_BASE_URL}/v1/users/signup`, payload)
+    if (resp.status < 200 || resp.status >= 300) {
+      errorMessage.value = resp.data?.detail || 'Signup failed. Please try again.'
       return
     }
 

@@ -34,11 +34,11 @@
 
         <!-- Notifications -->
         <router-link
-          to="/agent/notifications"
-          :class="['relative', navItemClass('/agent/notifications')]"
+          to="/alerts"
+          :class="['relative', navItemClass('/alerts')]"
           class="flex flex-col items-center justify-center flex-1 py-1.5"
         >
-          <BellIcon :class="iconClass('/agent/notifications')" />
+          <BellIcon :class="iconClass('/alerts')" />
           <span class="text-[11px] mt-0.5">Alerts</span>
           <span
             v-if="unreadCount > 0"

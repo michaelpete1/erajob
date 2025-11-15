@@ -119,7 +119,7 @@ function updateUserRole() {
     window.location.href = '/agent/explore-gigs';
   } else if (userRole.value === 'admin' && !currentPath.startsWith('/admin')) {
     // Redirect to admin dashboard if trying to access non-admin routes as admin
-    window.location.href = '/admin/job-approval';
+    window.location.href = '/admin/user-management';
   }
 }
 // Cleanup event listener

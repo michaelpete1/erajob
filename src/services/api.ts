@@ -65,7 +65,14 @@ async function performTokenRefresh(): Promise<string> {
     throw new Error('No tokens available for refresh')
   }
 
-  const refreshPath = role === 'admin' ? `${API_VERSION}/admins/refresh` : `${API_VERSION}/users/refresh`
+  const refreshPath =
+    role === 'admin'
+      ? `${API_VERSION}/admins/refresh`
+      : role === 'agent'
+        ? `${API_VERSION}/agents/refresh`
+        : role === 'client'
+          ? `${API_VERSION}/clients/refresh`
+          : `${API_VERSION}/users/refresh`
 
   const resp = await api.post(
     refreshPath,
