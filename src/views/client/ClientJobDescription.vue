@@ -55,17 +55,20 @@
           </div>
         </div>
 
-        <div class="mt-5 flex flex-wrap gap-2">
-          <button
-            type="button"
-            @click="goToRecommendedAgents"
-            class="px-3 py-1.5 bg-teal-50 text-teal-700 border border-teal-100 text-xs font-semibold rounded-full hover:bg-teal-100 transition-colors"
-          >
-            {{ job.category }}
-          </button>
-          <span v-if="job.skills_needed" class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-semibold rounded-full">
-            {{ job.skills_needed }}
-          </span>
+        <div class="mt-5 flex flex-col gap-2">
+          <div class="text-xs text-teal-700">Click to view recommended agents</div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              @click="goToRecommendedAgents"
+              class="px-3 py-1.5 bg-teal-50 text-teal-700 border border-teal-100 text-xs font-semibold rounded-full hover:bg-teal-100 transition-colors"
+            >
+              {{ job.category }}
+            </button>
+            <span v-if="job.skills_needed" class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 text-xs font-semibold rounded-full">
+              {{ job.skills_needed }}
+            </span>
+          </div>
         </div>
 
         <div class="mt-6 pt-4 border-t border-gray-100">

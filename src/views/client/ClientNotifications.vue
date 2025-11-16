@@ -10,20 +10,7 @@
         </button>
         <h1 class="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight ml-1 sm:ml-2">Alerts</h1>
       </div>
-      <div class="flex items-center gap-2 sm:gap-3">
-        <button @click="handleMarkAllAsRead" class="p-2 -mr-2 sm:p-2 sm:-mr-2 md:p-2.5 md:-mr-2.5 rounded-full hover:bg-white hover:bg-opacity-10 active:bg-opacity-20 transition-all duration-200 touch-manipulation" aria-label="Mark all as read">
-          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </button>
-        <button class="p-2 -mr-2 sm:p-2 sm:-mr-2 md:p-2.5 md:-mr-2.5 rounded-full hover:bg-white hover:bg-opacity-10 active:bg-opacity-20 transition-all duration-200 touch-manipulation" aria-label="Settings">
-          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-          </svg>
-        </button>
-        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90"></div>
-      </div>
+      <div class="flex items-center gap-2 sm:gap-3"></div>
     </header>
 
     <!-- Filter and Sort Bar -->
@@ -48,12 +35,15 @@
       :on-action="handleAction"
       :on-retry="handleRetry"
       :on-load-more="handleLoadMore"
+      :show-actions="false"
+      :show-meta="false"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useAlerts } from '../../composables/useAlerts'
 import NotificationFilters from '../../components/NotificationFilters.vue'
 import NotificationList from '../../components/NotificationList.vue'
@@ -82,10 +72,8 @@ const searchQuery = ref('')
 // Filters configuration
 const filters = ref([
   { id: 'all', name: 'All', count: 0 },
-  { id: 'priority', name: 'Priority', count: 0 },
   { id: 'unread', name: 'Unread', count: 0 },
-  { id: 'project', name: 'Projects', count: 0 },
-  { id: 'agent', name: 'Agents', count: 0 }
+  { id: 'read', name: 'Read', count: 0 }
 ])
 
 // Computed filtered alerts
@@ -103,16 +91,11 @@ const filteredAlerts = computed(() => {
     )
   }
 
-  // Apply type filter
   if (activeFilter.value !== 'all') {
     if (activeFilter.value === 'unread') {
       filtered = filtered.filter(alert => !(alert as any).is_read)
-    } else if (activeFilter.value === 'priority') {
-      filtered = filtered.filter(alert => alert.priority === 'high' || alert.alert_type === 'priority')
-    } else if (activeFilter.value === 'project') {
-      filtered = filtered.filter(alert => alert.alert_type === 'project' || alert.alert_type === 'job')
-    } else if (activeFilter.value === 'agent') {
-      filtered = filtered.filter(alert => alert.alert_type === 'agent' || alert.alert_type === 'proposal')
+    } else if (activeFilter.value === 'read') {
+      filtered = filtered.filter(alert => Boolean((alert as any).is_read))
     }
   }
 
@@ -136,23 +119,22 @@ const filteredAlerts = computed(() => {
 // Update filter counts
 const updateFilterCounts = () => {
   const allCount = alerts.value?.length || 0
-  const priorityCount = alerts.value?.filter(n => n.priority === 'high' || n.alert_type === 'priority').length || 0
-  const unreadCount = alerts.value?.filter(n => !(n as any).is_read).length || 0
-  const projectCount = alerts.value?.filter(n => n.alert_type === 'project' || n.alert_type === 'job').length || 0
-  const agentCount = alerts.value?.filter(n => n.alert_type === 'agent' || n.alert_type === 'proposal').length || 0
+  const unreadTotal = alerts.value?.filter(n => !(n as any).is_read).length || 0
+  const readTotal = alerts.value?.filter(n => Boolean((n as any).is_read)).length || 0
 
   filters.value = [
     { id: 'all', name: 'All', count: allCount },
-    { id: 'priority', name: 'Priority', count: priorityCount },
-    { id: 'unread', name: 'Unread', count: unreadCount },
-    { id: 'project', name: 'Projects', count: projectCount },
-    { id: 'agent', name: 'Agents', count: agentCount }
+    { id: 'unread', name: 'Unread', count: unreadTotal },
+    { id: 'read', name: 'Read', count: readTotal }
   ]
 }
 
 // Event handlers
-const handleFilterChange = (filterId: string) => {
+const handleFilterChange = async (filterId: string) => {
   activeFilter.value = filterId
+  if (filterId === 'all') {
+    await getAlerts()
+  }
 }
 
 const handleSortChange = (sort: string) => {
@@ -166,11 +148,15 @@ const handleSearch = (query: string) => {
 const handleMarkAsRead = async (alertId: string) => {
   await markAsRead(alertId)
   updateFilterCounts()
+  const toast = useToast()
+  toast.success('Marked as read')
 }
 
 const handleMarkAllAsRead = async () => {
   await markAllAsRead()
   updateFilterCounts()
+  const toast = useToast()
+  toast.success('All unread alerts marked as read')
 }
 
 const handleDelete = async (alertId: string) => {

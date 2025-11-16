@@ -15,17 +15,9 @@
       ]">
         {{ alert.alert_title || 'Notification' }}
       </h3>
-      <div class="flex items-center gap-2 ml-2">
-        <span class="text-xs text-gray-500 whitespace-nowrap">
-          {{ formatTime(alert.date_created) }}
-        </span>
-        <button
-          v-if="!isRead"
-          @click.stop="markAsRead"
-          class="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0"
-          title="Mark as read"
-        ></button>
-      </div>
+      <span class="text-xs text-gray-500 whitespace-nowrap">
+        {{ formatTime(alert.date_created) }}
+      </span>
     </div>
 
     <!-- Description -->
@@ -33,54 +25,8 @@
       {{ alert.alert_description || 'No description available' }}
     </p>
 
-    <!-- Priority indicator -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span
-          :class="[
-            'px-2 py-1 text-xs font-medium rounded-full',
-            getPriorityClasses(alert.priority)
-          ]"
-        >
-          {{ alert.priority || 'normal' }}
-        </span>
-        <span
-          :class="[
-            'px-2 py-1 text-xs font-medium rounded-full',
-            getTypeClasses(alert.alert_type)
-          ]"
-        >
-          {{ alert.alert_type || 'info' }}
-        </span>
-      </div>
-
-      <!-- Action buttons -->
-      <div class="flex items-center gap-2" v-if="hasActions">
-        <button
-          v-if="alert.alert_primary_action"
-          @click.stop="handleAction(alert.alert_primary_action)"
-          class="px-3 py-1 text-xs bg-teal-500 text-white rounded-md hover:bg-teal-600 transition-colors"
-        >
-          {{ alert.alert_primary_action }}
-        </button>
-        <button
-          v-if="alert.alert_secondary_action"
-          @click.stop="handleAction(alert.alert_secondary_action)"
-          class="px-3 py-1 text-xs border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-        >
-          {{ alert.alert_secondary_action }}
-        </button>
-        <button
-          @click.stop="deleteNotification"
-          class="p-1 text-gray-400 hover:text-red-500 transition-colors"
-          title="Delete notification"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      </div>
-    </div>
+    <!-- Footer intentionally empty: remove badges and action buttons -->
+    <div class="flex items-center justify-between"></div>
   </div>
 </template>
 

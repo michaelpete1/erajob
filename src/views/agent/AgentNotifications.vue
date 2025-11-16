@@ -10,13 +10,7 @@
         </button>
         <h1 class="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight ml-2">Agent Notifications</h1>
       </div>
-      <div class="flex items-center gap-2 sm:gap-3">
-        <button @click="handleMarkAllAsRead" class="p-2 -mr-2 sm:p-2 sm:-mr-2 rounded-full hover:bg-white hover:bg-opacity-10 active:bg-opacity-20 transition-all duration-200 touch-manipulation" aria-label="Mark all as read">
-          <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </button>
-      </div>
+      <div class="flex items-center gap-2 sm:gap-3"></div>
     </header>
 
     <!-- Main Content -->
@@ -38,11 +32,13 @@
         :error="error"
         :active-filter="activeFilter"
         :has-more="hasMore"
-        @mark-as-read="handleMarkAsRead"
-        @delete="handleDelete"
-        @action="handleAction"
-        @retry="handleRetry"
-        @load-more="handleLoadMore"
+        :on-mark-as-read="handleMarkAsRead"
+        :on-delete="handleDelete"
+        :on-action="handleAction"
+        :on-retry="handleRetry"
+        :on-load-more="handleLoadMore"
+        :show-actions="false"
+        :show-meta="false"
       />
     </div>
   </div>
@@ -50,6 +46,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useAlerts } from '../../composables/useAlerts'
 import NotificationFilters from '../../components/NotificationFilters.vue'
 import NotificationList from '../../components/NotificationList.vue'
@@ -78,9 +75,8 @@ const searchQuery = ref('')
 // Filters configuration
 const filters = ref([
   { id: 'all', name: 'All', count: 0 },
-  { id: 'priority', name: 'Priority', count: 0 },
   { id: 'unread', name: 'Unread', count: 0 },
-  { id: 'system', name: 'System', count: 0 }
+  { id: 'read', name: 'Read', count: 0 }
 ])
 
 // Computed filtered alerts
@@ -98,14 +94,11 @@ const filteredAlerts = computed(() => {
     )
   }
 
-  // Apply type filter
   if (activeFilter.value !== 'all') {
     if (activeFilter.value === 'unread') {
       filtered = filtered.filter(alert => !(alert as any).is_read)
-    } else if (activeFilter.value === 'priority') {
-      filtered = filtered.filter(alert => alert.priority === 'high' || alert.alert_type === 'priority')
-    } else if (activeFilter.value === 'system') {
-      filtered = filtered.filter(alert => ['info', 'success', 'warning'].includes(alert.alert_type || ''))
+    } else if (activeFilter.value === 'read') {
+      filtered = filtered.filter(alert => Boolean((alert as any).is_read))
     }
   }
 
@@ -129,21 +122,22 @@ const filteredAlerts = computed(() => {
 // Update filter counts
 const updateFilterCounts = () => {
   const allCount = alerts.value?.length || 0
-  const priorityCount = alerts.value?.filter(n => n.priority === 'high' || n.alert_type === 'priority').length || 0
-  const unreadCount = alerts.value?.filter(n => !(n as any).is_read).length || 0
-  const systemCount = alerts.value?.filter(n => ['info', 'success', 'warning'].includes(n.alert_type || '')).length || 0
+  const unreadTotal = alerts.value?.filter(n => !(n as any).is_read).length || 0
+  const readTotal = alerts.value?.filter(n => Boolean((n as any).is_read)).length || 0
 
   filters.value = [
     { id: 'all', name: 'All', count: allCount },
-    { id: 'priority', name: 'Priority', count: priorityCount },
-    { id: 'unread', name: 'Unread', count: unreadCount },
-    { id: 'system', name: 'System', count: systemCount }
+    { id: 'unread', name: 'Unread', count: unreadTotal },
+    { id: 'read', name: 'Read', count: readTotal }
   ]
 }
 
 // Event handlers
-const handleFilterChange = (filterId: string) => {
+const handleFilterChange = async (filterId: string) => {
   activeFilter.value = filterId
+  if (filterId === 'all') {
+    await getAlerts()
+  }
 }
 
 const handleSortChange = (sort: string) => {
@@ -154,14 +148,17 @@ const handleSearch = (query: string) => {
   searchQuery.value = query
 }
 
+const toast = useToast()
 const handleMarkAsRead = async (alertId: string) => {
   await markAsRead(alertId)
   updateFilterCounts()
+  toast.success('Marked as read')
 }
 
 const handleMarkAllAsRead = async () => {
   await markAllAsRead()
   updateFilterCounts()
+  toast.success('All unread alerts marked as read')
 }
 
 const handleDelete = async (alertId: string) => {

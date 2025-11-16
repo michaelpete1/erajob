@@ -26,6 +26,8 @@
         :on-action="handleAction"
         :on-retry="handleRetry"
         :on-load-more="handleLoadMore"
+        :show-actions="false"
+        :show-meta="false"
       />
     </div>
   </div>
@@ -58,11 +60,8 @@ const searchQuery = ref('')
 
 const filters = ref([
   { id: 'all', name: 'All', count: 0 },
-  { id: 'priority', name: 'Priority', count: 0 },
   { id: 'unread', name: 'Unread', count: 0 },
-  { id: 'meeting', name: 'Meetings', count: 0 },
-  { id: 'worklog', name: 'Worklogs', count: 0 },
-  { id: 'info', name: 'Info', count: 0 }
+  { id: 'read', name: 'Read', count: 0 }
 ])
 
 const filteredAlerts = computed(() => {
@@ -79,10 +78,8 @@ const filteredAlerts = computed(() => {
   if (activeFilter.value !== 'all') {
     if (activeFilter.value === 'unread') {
       filtered = filtered.filter(a => !(a as any).is_read)
-    } else if (activeFilter.value === 'priority') {
-      filtered = filtered.filter(a => (a.priority === 'high' || a.priority === 'very_high'))
-    } else {
-      filtered = filtered.filter(a => (a.alert_type || '').toLowerCase() === activeFilter.value)
+    } else if (activeFilter.value === 'read') {
+      filtered = filtered.filter(a => Boolean((a as any).is_read))
     }
   }
   if (sortBy.value === 'newest') {
@@ -95,18 +92,12 @@ const filteredAlerts = computed(() => {
 
 const updateFilterCounts = () => {
   const all = alerts.value?.length || 0
-  const priority = alerts.value?.filter(a => (a.priority === 'high' || a.priority === 'very_high')).length || 0
   const unread = alerts.value?.filter(a => !(a as any).is_read).length || 0
-  const meetings = alerts.value?.filter(a => (a.alert_type || '').toLowerCase() === 'meeting').length || 0
-  const worklogs = alerts.value?.filter(a => (a.alert_type || '').toLowerCase() === 'worklog').length || 0
-  const info = alerts.value?.filter(a => (a.alert_type || '').toLowerCase() === 'info' || (a.alert_type || '').toLowerCase() === 'success').length || 0
+  const read = alerts.value?.filter(a => Boolean((a as any).is_read)).length || 0
   filters.value = [
     { id: 'all', name: 'All', count: all },
-    { id: 'priority', name: 'Priority', count: priority },
     { id: 'unread', name: 'Unread', count: unread },
-    { id: 'meeting', name: 'Meetings', count: meetings },
-    { id: 'worklog', name: 'Worklogs', count: worklogs },
-    { id: 'info', name: 'Info', count: info }
+    { id: 'read', name: 'Read', count: read }
   ]
 }
 

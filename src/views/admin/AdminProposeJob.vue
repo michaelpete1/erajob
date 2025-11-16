@@ -22,6 +22,19 @@
 
     <main class="p-4 pb-24 max-w-3xl mx-auto">
       <div class="space-y-6">
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <h3 class="text-sm font-semibold text-gray-800 mb-3">Recommended Agents</h3>
+          <div v-if="recommendedAgents.length > 0" class="max-h-56 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-md">
+            <div v-for="agent in recommendedAgents" :key="String(agent?.id || agent?.email || Math.random())" class="flex items-center justify-between px-3 py-2">
+              <div class="min-w-0 flex-1">
+                <p class="text-sm text-gray-800 truncate">{{ String(agent?.full_name || agent?.id || '') }}</p>
+                <p class="text-xs text-gray-500 truncate">{{ String(agent?.email || '') }}</p>
+              </div>
+              <button @click="addRecommendedAgent(agent)" class="text-xs px-2 py-1 rounded-md bg-brand-teal text-white">Select</button>
+            </div>
+          </div>
+          <div v-else class="text-sm text-gray-600">No recommended agents found for this job.</div>
+        </div>
         
 
         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -47,6 +60,28 @@
         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <h3 class="text-sm font-semibold text-gray-800 mb-2">Proposal Text</h3>
           <textarea v-model="proposalText" rows="6" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Write the proposal you want to send to the client"></textarea>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <h3 class="text-sm font-semibold text-gray-800 mb-3">Timeline</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Start Date</label>
+              <input v-model="startDate" type="date" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Start Time</label>
+              <input v-model="startTime" type="time" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Deadline Date</label>
+              <input v-model="deadlineDate" type="date" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Deadline Time</label>
+              <input v-model="deadlineTime" type="time" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+            </div>
+          </div>
         </div>
 
         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -78,21 +113,46 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { proposeJob, getJobById } from '../../services/jobs'
+import apiClient from '../../services/apiClient'
 
 const route = useRoute()
 const router = useRouter()
-const jobId = computed(() => String(route.params.jobId || route.query.jobId || ''))
+const jobId = computed(() => {
+  const p = String(route.params.jobId || route.params.id || '')
+  if (p && p.trim()) return p.trim()
+  const q = String(route.query.jobId || route.query.id || '')
+  if (q && q.trim()) return q.trim()
+  try {
+    const sjc = localStorage.getItem('selectedJobContext')
+    if (sjc) {
+      const c = JSON.parse(sjc)
+      const jid = String(c?.project?.id || c?.admin_job_id || c?.agent_job_id || '')
+      if (jid && jid.trim()) return jid.trim()
+    }
+  } catch {}
+  return ''
+})
 
-const recommendedAgents = ref<string[]>([])
+const recommendedAgents = ref<any[]>([])
+const recommendedLoaded = ref(false)
 const proposalText = ref('')
 const charges = ref<number>(7)
 const tax = ref<number>(10)
 const serviceAmount = ref<number>(0)
+const startDate = ref('')
+const startTime = ref('')
+const deadlineDate = ref('')
+const deadlineTime = ref('')
 const submitting = ref(false)
 const error = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 
 const selectedAgents = ref<any[]>([])
+const addRecommendedAgent = (agent: any) => {
+  const id = String(agent?.id || '')
+  const exists = selectedAgents.value.some(a => (typeof a === 'string' ? a : a?.id) === id)
+  if (!exists) selectedAgents.value = [agent]
+}
 const agentName = (agent: any) => {
   if (typeof agent === 'string') return agent
   return String(agent?.name || agent?.full_name || agent?.email || agent?.id || '')
@@ -102,6 +162,60 @@ const agentEmail = (agent: any) => {
   return String(agent?.email || '')
 }
 const jobTimeline = ref<{ start_date: number; deadline: number } | null>(null)
+
+const toUnix = (d: string, t: string): number => {
+  if (!d || !t) return Math.floor(Date.now() / 1000)
+  const s = `${d}T${t}:00`
+  return Math.floor(new Date(s).getTime() / 1000)
+}
+
+const buildAgentPayload = (raw: any): any => {
+  const ts = Math.floor(Date.now() / 1000)
+  return {
+    id: String(raw?.id || raw?._id || raw?.uuid || ''),
+    email: String(raw?.email || raw?.user_email || ''),
+    password: String(raw?.password || '$2b$12$ZW5jcnlwdGVkLWhhc2gtcGFzc3dvcmQ'),
+    full_name: String(raw?.full_name || raw?.name || ''),
+    phone_number: String(raw?.phone_number || raw?.contact_phone || ''),
+    certificate_url: Array.isArray(raw?.certificate_url) ? raw.certificate_url : (raw?.certificates ? [].concat(raw.certificates) : []),
+    video_url: String(raw?.video_url || ''),
+    personality_url: String(raw?.personality_url || ''),
+    primary_area_of_expertise: String(raw?.primary_area_of_expertise || raw?.expertise || ''),
+    years_of_experience: Number(raw?.years_of_experience ?? raw?.experience_years ?? 0),
+    three_most_commonly_used_tools_or_platforms: Array.isArray(raw?.three_most_commonly_used_tools_or_platforms) ? raw.three_most_commonly_used_tools_or_platforms : (Array.isArray(raw?.tools) ? raw.tools.slice(0,3) : []),
+    available_hours_agent_can_commit: String(raw?.available_hours_agent_can_commit || raw?.availability_hours || ''),
+    time_zone: String(raw?.time_zone || ''),
+    portfolio_link: String(raw?.portfolio_link || raw?.portfolio || ''),
+    is_agent_open_to_calls_and_video_meetings: Boolean(raw?.is_agent_open_to_calls_and_video_meetings ?? true),
+    does_agent_have_working_computer: Boolean(raw?.does_agent_have_working_computer ?? true),
+    does_agent_have_stable_internet: Boolean(raw?.does_agent_have_stable_internet ?? true),
+    is_agent_comfortable_with_time_tracking_tools: Boolean(raw?.is_agent_comfortable_with_time_tracking_tools ?? true),
+    date_created: Number(raw?.date_created ?? ts),
+    last_updated: Number(raw?.last_updated ?? ts)
+  }
+}
+
+const fetchAgentById = async (id: string): Promise<any | null> => {
+  try {
+    const resp = await apiClient.get('/v1/users/', { params: { role: 'agent', id, start: 0, stop: 1 } })
+    const data = resp?.data?.data
+    const list = Array.isArray(data) ? data : data ? [data] : []
+    return list[0] || null
+  } catch {
+    return null
+  }
+}
+
+const fetchAgentByEmail = async (email: string): Promise<any | null> => {
+  try {
+    const resp = await apiClient.get('/v1/users/', { params: { role: 'agent', email, start: 0, stop: 1 } })
+    const data = resp?.data?.data
+    const list = Array.isArray(data) ? data : data ? [data] : []
+    return list[0] || null
+  } catch {
+    return null
+  }
+}
 
 const canSubmit = computed(() => {
   return !!jobId.value && proposalText.value.trim().length > 0 && selectedAgents.value.length > 0
@@ -125,9 +239,20 @@ const submitProposal = async () => {
   try {
     const primary = selectedAgents.value[0]
     const primaryAgentId = typeof primary === 'string' ? primary : (primary?.id || '')
+    let agentObj: any = typeof primary === 'object' && primary ? primary : null
+    if (!agentObj && primaryAgentId) {
+      agentObj = await fetchAgentById(primaryAgentId)
+    }
+    if ((!agentObj || !agentObj?.id) && agentObj?.email) {
+      const byEmail = await fetchAgentByEmail(String(agentObj.email))
+      agentObj = byEmail || agentObj
+    }
+    const agentPayload = buildAgentPayload(agentObj || { id: primaryAgentId })
+    const start = jobTimeline.value?.start_date ?? toUnix(startDate.value, startTime.value)
+    const end = jobTimeline.value?.deadline ?? (deadlineDate.value && deadlineTime.value ? toUnix(deadlineDate.value, deadlineTime.value) : start)
     const payload = {
-      agent: typeof primary === 'object' && primary ? primary : primaryAgentId,
-      timeline: jobTimeline.value || { start_date: Math.floor(Date.now() / 1000), deadline: Math.floor(Date.now() / 1000) },
+      agent: agentPayload,
+      timeline: { start_date: start, deadline: end },
       proposal: proposalText.value.trim(),
       break_down: {
         service: Number(serviceAmount.value) || 0,
@@ -167,17 +292,55 @@ onMounted(async () => {
             return ''
           })
           .filter((v: string) => v.length > 0)
-        if (selectedIds.length > 0) {
-          recommendedAgents.value = selectedIds
-        }
         selectedAgents.value = selected
         if (job?.timeline && typeof job.timeline === 'object') {
           jobTimeline.value = job.timeline
+        }
+        if (!recommendedLoaded.value) {
+          try {
+            const { listAdminApplicationsForJob } = await import('../../services/applicationsService')
+            const apps = await listAdminApplicationsForJob(id)
+            const data = apps?.data || []
+            const mapped = data.map((app: any) => ({
+              id: String(app?.agent_id || app?.agent?.id || ''),
+              email: String(app?.agent_email || ''),
+              full_name: String(app?.agent_name || ''),
+            }))
+            recommendedAgents.value = mapped.filter((a: any) => a.id || a.email)
+            recommendedLoaded.value = true
+          } catch {}
+          if (recommendedAgents.value.length === 0) {
+            await fetchRecommendedAgentsForJob(job)
+          }
         }
       }
     } catch {}
   } catch {}
 })
+const deriveExpertiseFromJob = (job: any): string => {
+  const cat = String(job?.primary_area_of_expertise || job?.category || job?.expertise || '')
+  return cat.trim()
+}
+
+const fetchRecommendedAgentsForJob = async (job: any) => {
+  try {
+    const expertise = deriveExpertiseFromJob(job)
+    const params: Record<string, any> = { role: 'agent', start: 0, stop: 10 }
+    if (expertise) params.expertise = expertise
+    const resp = await apiClient.get('/v1/users/', { params })
+    const data = resp?.data?.data
+    const list = Array.isArray(data) ? data : data ? [data] : []
+    const mapped = list.map((u: any) => ({
+      id: String(u?.id || u?._id || u?.uuid || ''),
+      email: String(u?.email || u?.user_email || ''),
+      full_name: String(u?.full_name || u?.name || '')
+    }))
+    recommendedAgents.value = mapped.filter((a: any) => a.id || a.email)
+    recommendedLoaded.value = true
+  } catch {
+    recommendedAgents.value = []
+  }
+}
 </script>
 
 <style scoped>
