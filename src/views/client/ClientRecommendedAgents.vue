@@ -211,14 +211,6 @@
     <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-5">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Create Meeting</h3>
       <div class="space-y-3">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">job_id</label>
-          <input v-model="meetingModalJobId" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" readonly>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">agent_id</label>
-          <input v-model="meetingModalAgentId" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" readonly>
-        </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
@@ -420,8 +412,6 @@ const goToAgent = async (agent: NormalizedAgent) => {
 
 const meetingSubmittingId = ref('')
 const meetingModalOpen = ref(false)
-const meetingModalJobId = ref('')
-const meetingModalAgentId = ref('')
 const meetingModalDate = ref('')
 const meetingModalTime = ref('')
 
@@ -474,8 +464,7 @@ const openCreateMeeting = async (agent: NormalizedAgent) => {
     toast.error('Missing job ID. Please select a project or ensure the URL is correct.')
     return
   }
-  meetingModalAgentId.value = agentId
-  meetingModalJobId.value = currentJobId
+  meetingSubmittingId.value = agentId
   meetingModalDate.value = ''
   meetingModalTime.value = ''
   meetingModalOpen.value = true
@@ -483,8 +472,8 @@ const openCreateMeeting = async (agent: NormalizedAgent) => {
 
 const confirmCreateMeeting = async () => {
   if (!meetingModalOpen.value) return
-  const jobId = (meetingModalJobId.value || getCurrentJobId()).trim()
-  const agentId = meetingModalAgentId.value.trim()
+  const jobId = getCurrentJobId().trim()
+  const agentId = meetingSubmittingId.value.trim()
   if (!jobId || !agentId) {
     toast.error('Missing agent or job information')
     return

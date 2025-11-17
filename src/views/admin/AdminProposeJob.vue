@@ -22,19 +22,7 @@
 
     <main class="p-4 pb-24 max-w-3xl mx-auto">
       <div class="space-y-6">
-        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <h3 class="text-sm font-semibold text-gray-800 mb-3">Recommended Agents</h3>
-          <div v-if="recommendedAgents.length > 0" class="max-h-56 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-md">
-            <div v-for="agent in recommendedAgents" :key="String(agent?.id || agent?.email || Math.random())" class="flex items-center justify-between px-3 py-2">
-              <div class="min-w-0 flex-1">
-                <p class="text-sm text-gray-800 truncate">{{ String(agent?.full_name || agent?.id || '') }}</p>
-                <p class="text-xs text-gray-500 truncate">{{ String(agent?.email || '') }}</p>
-              </div>
-              <button @click="addRecommendedAgent(agent)" class="text-xs px-2 py-1 rounded-md bg-brand-teal text-white">Select</button>
-            </div>
-          </div>
-          <div v-else class="text-sm text-gray-600">No recommended agents found for this job.</div>
-        </div>
+
         
 
         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -173,17 +161,24 @@ const buildAgentPayload = (raw: any): any => {
   const ts = Math.floor(Date.now() / 1000)
   return {
     id: String(raw?.id || raw?._id || raw?.uuid || ''),
-    email: String(raw?.email || raw?.user_email || ''),
-    password: String(raw?.password || '$2b$12$ZW5jcnlwdGVkLWhhc2gtcGFzc3dvcmQ'),
+    admin_approved: Boolean(raw?.admin_approved ?? true),
     full_name: String(raw?.full_name || raw?.name || ''),
+    email: String(raw?.email || raw?.user_email || ''),
+    role: raw?.role || 'agent',
     phone_number: String(raw?.phone_number || raw?.contact_phone || ''),
     certificate_url: Array.isArray(raw?.certificate_url) ? raw.certificate_url : (raw?.certificates ? [].concat(raw.certificates) : []),
     video_url: String(raw?.video_url || ''),
     personality_url: String(raw?.personality_url || ''),
+    company_name: String(raw?.company_name || ''),
+    company_email: String(raw?.company_email || ''),
+    company_address: String(raw?.company_address || ''),
+    services: Array.isArray(raw?.services) ? raw.services : [],
+    client_reason_for_signing_up: String(raw?.client_reason_for_signing_up || ''),
+    client_need_agent_work_hours_to_be: String(raw?.client_need_agent_work_hours_to_be || ''),
     primary_area_of_expertise: String(raw?.primary_area_of_expertise || raw?.expertise || ''),
     years_of_experience: Number(raw?.years_of_experience ?? raw?.experience_years ?? 0),
     three_most_commonly_used_tools_or_platforms: Array.isArray(raw?.three_most_commonly_used_tools_or_platforms) ? raw.three_most_commonly_used_tools_or_platforms : (Array.isArray(raw?.tools) ? raw.tools.slice(0,3) : []),
-    available_hours_agent_can_commit: String(raw?.available_hours_agent_can_commit || raw?.availability_hours || ''),
+    available_hours_agent_can_commit: String(raw?.available_hours_agent_can_commit || raw?.availability_hours || '40_hours_per_week'),
     time_zone: String(raw?.time_zone || ''),
     portfolio_link: String(raw?.portfolio_link || raw?.portfolio || ''),
     is_agent_open_to_calls_and_video_meetings: Boolean(raw?.is_agent_open_to_calls_and_video_meetings ?? true),
@@ -191,7 +186,10 @@ const buildAgentPayload = (raw: any): any => {
     does_agent_have_stable_internet: Boolean(raw?.does_agent_have_stable_internet ?? true),
     is_agent_comfortable_with_time_tracking_tools: Boolean(raw?.is_agent_comfortable_with_time_tracking_tools ?? true),
     date_created: Number(raw?.date_created ?? ts),
-    last_updated: Number(raw?.last_updated ?? ts)
+    last_updated: Number(raw?.last_updated ?? ts),
+    refresh_token: String(raw?.refresh_token || ''),
+    access_token: String(raw?.access_token || ''),
+    password: String(raw?.password || '$2b$12$ZW5jcnlwdGVkLWhhc2gtcGFzc3dvcmQ')
   }
 }
 
@@ -247,7 +245,11 @@ const submitProposal = async () => {
       const byEmail = await fetchAgentByEmail(String(agentObj.email))
       agentObj = byEmail || agentObj
     }
-    const agentPayload = buildAgentPayload(agentObj || { id: primaryAgentId })
+    if (!agentObj || !agentObj?.id) {
+      error.value = 'Selected agent not found. Please select a valid agent.'
+      return
+    }
+    const agentPayload = buildAgentPayload(agentObj)
     const start = jobTimeline.value?.start_date ?? toUnix(startDate.value, startTime.value)
     const end = jobTimeline.value?.deadline ?? (deadlineDate.value && deadlineTime.value ? toUnix(deadlineDate.value, deadlineTime.value) : start)
     const payload = {
@@ -293,6 +295,42 @@ onMounted(async () => {
           })
           .filter((v: string) => v.length > 0)
         selectedAgents.value = selected
+        // Add client-recommended agents if they exist and are not already selected
+        if (job?.recommended_agents && Array.isArray(job.recommended_agents)) {
+          for (const recAgent of job.recommended_agents) {
+            const recId = String(recAgent?.id || recAgent?._id || recAgent?.uuid || '').trim()
+            const recEmail = String(recAgent?.email || recAgent?.user_email || '').trim().toLowerCase()
+            const alreadySelected = selectedAgents.value.some((sel: any) => {
+              const selId = String(typeof sel === 'string' ? sel : (sel?.id || '')).trim()
+              const selEmail = String(typeof sel === 'string' ? '' : (sel?.email || '')).trim().toLowerCase()
+              return selId && recId && selId === recId || selEmail && recEmail && selEmail === recEmail
+            })
+            if (!alreadySelected && (recId || recEmail)) {
+              selectedAgents.value.push(recAgent)
+            }
+          }
+        } else if (job?.recommended_agent && typeof job.recommended_agent === 'object') {
+          const recAgent = job.recommended_agent
+          const recId = String(recAgent?.id || recAgent?._id || recAgent?.uuid || '').trim()
+          const recEmail = String(recAgent?.email || recAgent?.user_email || '').trim().toLowerCase()
+          const alreadySelected = selectedAgents.value.some((sel: any) => {
+            const selId = String(typeof sel === 'string' ? sel : (sel?.id || '')).trim()
+            const selEmail = String(typeof sel === 'string' ? '' : (sel?.email || '')).trim().toLowerCase()
+            return selId && recId && selId === recId || selEmail && recEmail && selEmail === recEmail
+          })
+          if (!alreadySelected && (recId || recEmail)) {
+            selectedAgents.value.push(recAgent)
+          }
+        } else if (job?.recommended_agent_id) {
+          const recId = String(job.recommended_agent_id).trim()
+          const alreadySelected = selectedAgents.value.some((sel: any) => {
+            const selId = String(typeof sel === 'string' ? sel : (sel?.id || '')).trim()
+            return selId === recId
+          })
+          if (!alreadySelected) {
+            selectedAgents.value.push(recId)
+          }
+        }
         if (job?.timeline && typeof job.timeline === 'object') {
           jobTimeline.value = job.timeline
         }
@@ -306,12 +344,22 @@ onMounted(async () => {
               email: String(app?.agent_email || ''),
               full_name: String(app?.agent_name || ''),
             }))
-            recommendedAgents.value = mapped.filter((a: any) => a.id || a.email)
+            recommendedAgents.value = mapped.filter((a: any) => (a.id || a.email) && a.email !== 'test@gmail.com')
             recommendedLoaded.value = true
           } catch {}
           if (recommendedAgents.value.length === 0) {
             await fetchRecommendedAgentsForJob(job)
           }
+          // Filter out already selected agents from recommended list
+          recommendedAgents.value = recommendedAgents.value.filter((rec: any) => {
+            const recId = String(rec?.id || '').trim()
+            const recEmail = String(rec?.email || '').trim().toLowerCase()
+            return !selectedAgents.value.some((sel: any) => {
+              const selId = String(typeof sel === 'string' ? sel : (sel?.id || '')).trim()
+              const selEmail = String(typeof sel === 'string' ? '' : (sel?.email || '')).trim().toLowerCase()
+              return selId && recId && selId === recId || selEmail && recEmail && selEmail === recEmail
+            })
+          })
         }
       }
     } catch {}
