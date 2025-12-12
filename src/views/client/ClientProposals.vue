@@ -54,14 +54,14 @@
               <span class="meta-item">
                 <strong>Agent:</strong>
                 <span>
-                  {{ proposal.agent_name || proposal.agent_id || 'Not specified' }}
-                  <template v-if="proposal.agent_email">
-                    <span class="agent-email">({{ proposal.agent_email }})</span>
+                  {{ agentDisplayName(proposal) }}
+                  <template v-if="agentDisplayEmail(proposal)">
+                    <span class="agent-email">({{ agentDisplayEmail(proposal) }})</span>
                   </template>
                 </span>
               </span>
               <span class="meta-item">
-                <strong>Email:</strong> {{ proposal.agent_email || 'Not provided' }}
+                <strong>Email:</strong> {{ agentDisplayEmail(proposal) || 'Not provided' }}
               </span>
               <span class="meta-item">
                 <strong>Proposal:</strong> {{ previewProposal(proposal.proposal) }}
@@ -140,16 +140,19 @@ const loadAgentDirectory = () => {
     const agents = Array.isArray(parsed?.agents) ? parsed.agents : []
     const directory: Record<string, { name: string; email?: string }> = {}
     agents.forEach(agent => {
-      const id = String(agent?.id || agent?.agent_id || agent?.user_id || '')
-      if (!id) return
-      const name =
-        agent?.name ||
-        agent?.full_name ||
-        agent?.display_name ||
-        agent?.username ||
-        id
-      const email = agent?.email || agent?.contact_email || agent?.user_email
-      directory[id] = { name, email }
+      const roleLower = String(agent?.role || agent?.user_role || '').trim().toLowerCase()
+      if (roleLower === 'agent') {
+        const id = String(agent?.id || agent?.agent_id || agent?.user_id || '')
+        if (!id) return
+        const name =
+          agent?.name ||
+          agent?.full_name ||
+          agent?.display_name ||
+          agent?.username ||
+          id
+        const email = agent?.email || agent?.contact_email || agent?.user_email
+        directory[id] = { name, email }
+      }
     })
     agentDirectory.value = directory
   } catch (err) {
@@ -198,6 +201,24 @@ const enrichProposals = (items: ClientProposal[]): ClientProposal[] => {
       agent_email: agentEmail
     }
   })
+}
+
+const agentDisplayName = (proposal: ClientProposal): string => {
+  const nested = extractNestedAgentInfo(proposal)
+  return (
+    proposal.agent_name ||
+    nested.name ||
+    'Not specified'
+  ) as string
+}
+
+const agentDisplayEmail = (proposal: ClientProposal): string => {
+  const nested = extractNestedAgentInfo(proposal)
+  return (
+    proposal.agent_email ||
+    nested.email ||
+    ''
+  ) as string
 }
 
 watch(

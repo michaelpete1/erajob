@@ -5,7 +5,9 @@ import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'a
 import type { ApiResponse, ServiceResponse, Job, AdminCredentials, AdminAuthResponse } from '../types/api' // Import ApiResponse, Job, AdminCredentials, AdminAuthResponse
 
 // API Configuration
-const API_BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = ((import.meta as any).env?.DEV && String((import.meta as any).env?.VITE_USE_PROXY) === 'true')
+  ? '/api'
+  : (((import.meta as any)?.env?.VITE_API_BASE_URL) ?? 'https://eba.3nis.net')
 const API_VERSION = '/v1'
 
 // Create axios instance with interceptors

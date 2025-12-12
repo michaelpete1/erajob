@@ -1,5 +1,9 @@
 // src/services/authService.ts
 import apiClient from './apiClient'
+import { api } from './apiService'
+import type { ServiceResponse } from './apiService'
+import type { EJUserOut } from '../types/api'
+import type { UserOut } from '../types/api/openapi'
 // Import the centralized types from the single source of truth
 import type { LoginCredentials, SignupData, AuthResponse } from '../types/api/auth'
 
@@ -127,14 +131,13 @@ const signup = async (credentials: SignupData): Promise<AuthResponse> => {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const preparedData = prepareSignupData(credentials)
-      const response = await apiClient.post('/v1/users/signup', preparedData)
+      const response = await api.user.signup(preparedData)
 
-      const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
-      if (ok) {
+      if (response.success) {
         return { success: true }
       }
 
-      return { success: false, error: response.data?.detail || 'Signup failed.' }
+      return { success: false, error: response.error || 'Signup failed.' }
     } catch (err: any) {
       const axiosError = err
       const message = axiosError?.message ?? ''
@@ -158,45 +161,31 @@ const signup = async (credentials: SignupData): Promise<AuthResponse> => {
 }
 const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
-    let endpoint = '/v1/users/login'
+    let response: ServiceResponse<UserOut>
     if (credentials.role === 'admin') {
-      endpoint = '/v1/admins/login'
+      response = await api.admin.login(credentials)
     } else if (credentials.role === 'agent') {
-      endpoint = '/v1/agents/login'
+      response = await api.agent.login(credentials)
     } else if (credentials.role === 'client') {
-      endpoint = '/v1/clients/login'
+      response = await api.client.login(credentials)
+    } else {
+      response = await api.user.login(credentials)
     }
 
-    const response = await apiClient.post(endpoint, {
-      email: credentials.email,
-      password: credentials.password
-    })
-
-    const ok = response.data && (response.data.status_code === 0 || response.data.status_code === 200)
-    if (ok && response.data.data) {
-      const userData = response.data.data
-
-      if (userData.access_token) {
-        localStorage.setItem('access_token', userData.access_token)
-      }
-      if (userData.refresh_token) {
-        localStorage.setItem('refresh_token', userData.refresh_token)
-      }
-      localStorage.setItem('userRole', credentials.role)
-      localStorage.setItem('userInfo', JSON.stringify(userData))
-
+    if (response.success && response.data) {
+      const userData = response.data
       return {
         success: true,
         user: {
-          id: userData.id,
-          email: userData.email,
+          id: userData.id || '',
+          email: userData.email || '',
           role: credentials.role,
-          full_name: userData.full_name
+          full_name: userData.full_name || ''
         },
-        token: userData.access_token
+        token: userData.access_token || ''
       }
     }
-    return { success: false, error: 'Login failed.' }
+    return { success: false, error: response.error || 'Login failed.' }
   } catch (err: any) {
     const error = err.response?.data?.detail || 'Login failed.'
     return {
@@ -231,15 +220,15 @@ const updateAgentProfile = async (userId: string, data: AgentWelcomeData): Promi
       services,
     }
 
-    const response = await apiClient.put(`/v1/users/${userId}`, updateData)
+    const response = await api.agent.updateProfile(updateData)
 
-    if (response.data) {
+    if (response.success) {
       return {
         success: true,
-        user: response.data.user
+        user: response.data as any // Cast to match AuthResponse user type
       }
     }
-    return { success: false, error: 'Profile update failed: Invalid response from server.' }
+    return { success: false, error: response.error || 'Profile update failed: Invalid response from server.' }
   } catch (err: any) {
     const error = err.response?.data?.detail || err.message || 'An unexpected error occurred.'
     return {
@@ -288,14 +277,7 @@ const updateClientProfile = async (userId: string, data: ClientWelcomeData): Pro
 }
 
 const logout = () => {
-  try {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('userInfo')
-  } catch (err) {
-    console.warn('Logout cleanup failed:', err)
-  }
+  api.auth.logout()
 }
 
 export default {

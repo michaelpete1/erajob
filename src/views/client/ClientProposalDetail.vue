@@ -107,6 +107,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { applicationsService } from '@/services/applicationsService'
+import { jobsService } from '@/services/jobsService'
 import type { ApplicationOut, AgentOut } from '@/types/api'
 
 const route = useRoute()
@@ -133,7 +134,8 @@ const proposalTitle = computed(() => {
 
 const syncRouteParams = () => {
   const jobValue = route.query.jobId
-  jobId.value = typeof jobValue === 'string' ? jobValue : Array.isArray(jobValue) ? jobValue[0] ?? '' : ''
+  const rawJobId = typeof jobValue === 'string' ? jobValue : Array.isArray(jobValue) ? jobValue[0] ?? '' : ''
+  jobId.value = rawJobId.includes(':') ? rawJobId.split(':')[0] : rawJobId
   proposalId.value = typeof route.params.id === 'string' ? route.params.id : ''
 
   try {
@@ -169,10 +171,14 @@ const loadProposal = async () => {
     if (response.success && response.data) {
       const base = response.data
       const meta = storedProposalMeta.value
+      const raw = base as unknown as Record<string, any>
+      const agentObj = raw.agent || raw.agent_profile || raw.agent_details || raw.agentInfo || raw.agentData
+      const nestedName = agentObj?.full_name || agentObj?.name || agentObj?.display_name || agentObj?.username
+      const nestedEmail = agentObj?.email || agentObj?.contact_email || agentObj?.user_email
       proposal.value = {
         ...base,
-        agent_name: base.agent_name || meta?.agent_name,
-        agent_email: base.agent_email || meta?.agent_email
+        agent_name: base.agent_name || meta?.agent_name || nestedName,
+        agent_email: base.agent_email || meta?.agent_email || nestedEmail
       }
     } else {
       error.value = response.error || 'Failed to load proposal details.'
@@ -208,19 +214,56 @@ const agentEmail = computed(() => {
 
 const approveProposal = async () => {
   if (!jobId.value || !proposalId.value) return
+  const agentIdFromComposite = proposalId.value.includes(':') ? proposalId.value.split(':').slice(1).join(':') : ''
+  const agentId = proposal.value?.agent_id || agentIdFromComposite || ''
+  const selectedAgents = agentId ? [agentId] : []
   actionLoading.value = true
   actionError.value = null
   actionSuccess.value = null
   try {
-    const response = await applicationsService.approveAgentApplication(jobId.value, { id: proposalId.value })
-    if (response.success && response.data) {
-      proposal.value = response.data
+    const selResp = await applicationsService.approveAgentApplication(jobId.value, { id: proposalId.value })
+    if (selResp.success && selResp.data) {
+      proposal.value = selResp.data
+      try { const { api } = await import('@/services/apiService'); await api.jobs.updateJob(jobId.value, { status: 'active' }) } catch {}
       actionSuccess.value = 'Proposal approved successfully.'
-    } else {
-      actionError.value = response.error || 'Failed to approve proposal.'
+      router.push({ name: 'client-job-overview', params: { id: jobId.value } })
+      return
     }
+    if (selectedAgents.length === 0) {
+      actionError.value = selResp.error || 'Missing agent identifier for approval.'
+      return
+    }
+    const resp = await jobsService.clientAcceptJobProposal(jobId.value, { client_approved: true as true, selected_agents: selectedAgents })
+    if (resp && resp.success) {
+      try { const { api } = await import('@/services/apiService'); await api.jobs.updateJob(jobId.value, { status: 'active' }) } catch {}
+      if (proposal.value) { proposal.value.proposal_status = 'accepted' }
+      actionSuccess.value = 'Proposal approved successfully.'
+      router.push({ name: 'client-job-overview', params: { id: jobId.value } })
+      return
+    }
+    try {
+      const { api } = await import('@/services/apiService')
+      const upd = await api.jobs.updateJob(jobId.value, { status: 'active', selected_agents: selectedAgents, client_approved: true })
+      if (upd.success) {
+        if (proposal.value) { proposal.value.proposal_status = 'accepted' }
+        actionSuccess.value = 'Proposal approved successfully.'
+        router.push({ name: 'client-job-overview', params: { id: jobId.value } })
+        return
+      }
+    } catch {}
+    actionError.value = resp?.error || selResp.error || 'Failed to approve proposal.'
   } catch (err: any) {
-    actionError.value = err?.message || 'Failed to approve proposal.'
+    try {
+      const { api } = await import('@/services/apiService')
+      const upd = await api.jobs.updateJob(jobId.value, { status: 'active', selected_agents: selectedAgents, client_approved: true })
+      if (upd.success) {
+        if (proposal.value) { proposal.value.proposal_status = 'accepted' }
+        actionSuccess.value = 'Proposal approved successfully.'
+        router.push({ name: 'client-job-overview', params: { id: jobId.value } })
+        return
+      }
+    } catch {}
+    actionError.value = err?.response?.data?.detail || err?.message || (selectedAgents.length === 0 ? 'Missing agent identifier for approval.' : 'Failed to approve proposal.')
   } finally {
     actionLoading.value = false
   }
@@ -238,6 +281,14 @@ const rejectProposal = async () => {
   actionError.value = null
   actionSuccess.value = null
   try {
+    const resp = await jobsService.clientRejectJobProposal(jobId.value, {
+      client_approved: false as false,
+      client_rejection_reason: rejectionReason.value.trim()
+    })
+    if (resp.success) {
+      actionSuccess.value = 'Proposal rejected successfully.'
+      return
+    }
     const response = await applicationsService.rejectAgentApplication(jobId.value, {
       application_id: proposalId.value,
       rejection_reason: rejectionReason.value.trim()

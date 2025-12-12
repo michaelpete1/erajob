@@ -350,13 +350,16 @@ onMounted(() => {
     const savedAgentData = localStorage.getItem('selectedAgent')
     if (savedAgentData) {
       const parsed = JSON.parse(savedAgentData)
-      const resolvedId = String(parsed?.id || parsed?.user_id || parsed?.agent_id || agentParam || parsed?.email || '')
-      agent.value = {
-        id: resolvedId,
-        name: parsed?.name || parsed?.full_name || 'Unknown Agent',
-        title: parsed?.title || parsed?.primary_area_of_expertise || 'Unknown Title'
+      const roleLower = String(parsed?.role || parsed?.user_role || '').trim().toLowerCase()
+      if (roleLower === 'agent') {
+        const resolvedId = String(parsed?.id || parsed?.user_id || parsed?.agent_id || agentParam || parsed?.email || '')
+        agent.value = {
+          id: resolvedId,
+          name: parsed?.name || parsed?.full_name || 'Unknown Agent',
+          title: parsed?.title || parsed?.primary_area_of_expertise || 'Unknown Title'
+        }
+        return
       }
-      return
     }
   } catch (error) {
     console.error('Error loading agent data:', error)

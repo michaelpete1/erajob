@@ -237,7 +237,7 @@ import type { AgentOut } from '@/types/api'
 import { agentsService } from '@/services/agentsService'
 import { useToast } from 'vue-toastification'
 import jobs from '@/services/jobs'
-import { apiClient } from '@/services/apiService'
+import { apiClient, api } from '@/services/apiService'
 
 const router = useRouter()
 const route = useRoute()
@@ -488,6 +488,18 @@ const confirmCreateMeeting = async () => {
     const resp = await agentsService.setAgentMeeting(jobId, agentId, meetingTime)
     if (resp.success) {
       toast.success('Meeting created successfully')
+      try {
+        await api.jobs.updateJob(jobId, { recommended_agents: [agentId], agent_id: agentId })
+        try {
+          const raw = localStorage.getItem('clientJobRecommendedMap')
+          const map = raw ? JSON.parse(raw) : {}
+          map[jobId] = [agentId]
+          localStorage.setItem('clientJobRecommendedMap', JSON.stringify(map))
+        } catch {}
+        toast.success('Recommended agent saved to job')
+      } catch (e: any) {
+        toast.error(e?.response?.data?.detail || e?.message || 'Failed to save recommended agent to job')
+      }
       meetingModalOpen.value = false
     } else {
       toast.error(resp.error || 'Failed to create meeting')
@@ -536,6 +548,15 @@ const chooseAgentForProposal = async (agent: NormalizedAgent) => {
       const ok = (resp as any)?.data?.status_code === 200 || (resp as any)?.data?.status_code === 0 || typeof (resp as any)?.data === 'string'
       if (ok) {
         toast.success('Agent selected successfully')
+        try {
+          await api.jobs.updateJob(currentJobId, { recommended_agents: [id], agent_id: id })
+          try {
+            const raw = localStorage.getItem('clientJobRecommendedMap')
+            const map = raw ? JSON.parse(raw) : {}
+            map[currentJobId] = [id]
+            localStorage.setItem('clientJobRecommendedMap', JSON.stringify(map))
+          } catch {}
+        } catch {}
       } else {
         toast.error((resp as any)?.data?.detail || 'Failed to select agent')
       }

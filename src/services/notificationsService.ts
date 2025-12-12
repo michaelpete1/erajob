@@ -57,9 +57,15 @@ export class AlertsService {
 
     try {
       // According to OpenAPI, alerts list does not paginate; we ignore start/stop
-      const response = await apiClient.get<ApiResponse<{ alerts: AlertOut[]; total_number_of_unread?: number }>>(`/v1/alertss/${role}`, {
-        timeout: 15000 // Increase timeout to 15 seconds
+      let response = await apiClient.get<ApiResponse<{ alerts: AlertOut[]; total_number_of_unread?: number }>>(`/v1/alerts/${role}`, {
+        timeout: 15000
       })
+      if (!(response.data && (response.data.status_code === 200 || response.data.status_code === 0))) {
+        const alt = await apiClient.get<ApiResponse<{ alerts: AlertOut[]; total_number_of_unread?: number }>>(`/v1/alertss/${role}`, {
+          timeout: 15000
+        })
+        response = alt
+      }
 
       if (response.data.status_code === 200) {
         const payload = (response.data.data as any) || {}
@@ -140,9 +146,15 @@ export class AlertsService {
         ? storedRole
         : (pathRole === 'client' || pathRole === 'agent' || pathRole === 'admin' ? pathRole : 'client')
 
-      const response = await apiClient.get<ApiResponse<AlertOut>>(`/v1/alertss/${role}/me`, {
+      let response = await apiClient.get<ApiResponse<AlertOut>>(`/v1/alerts/${role}/me`, {
         params: { id }
       })
+      if (!(response.data && (response.data.status_code === 200 || response.data.status_code === 0))) {
+        const alt = await apiClient.get<ApiResponse<AlertOut>>(`/v1/alertss/${role}/me`, {
+          params: { id }
+        })
+        response = alt
+      }
 
       if (response.data.status_code === 200) {
         return { success: true, data: response.data.data as any }

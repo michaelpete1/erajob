@@ -102,6 +102,7 @@ const jobId = ref<string>('')
 const logs = ref<WorkLogOut[]>([])
 const loading = ref<boolean>(true)
 const error = ref<string>('')
+const selectedLogId = ref<string>('')
 
 const formatDate = (timestamp: number | null | undefined): string => {
   if (!timestamp) return ''
@@ -124,12 +125,22 @@ const fetchLogs = async (): Promise<void> => {
     loading.value = true
     error.value = ''
 
-    const response = await workLogsService.listClientLogsForJob(jobId.value)
-    if (response.success && Array.isArray(response.data)) {
-      logs.value = response.data.filter((log) => log.client_approved)
+    if (selectedLogId.value) {
+      const resp = await workLogsService.getClientLogById({ id: selectedLogId.value, job_id: jobId.value })
+      if (resp.success && resp.data) {
+        logs.value = [resp.data]
+      } else {
+        error.value = resp.error || 'Failed to load work log'
+        logs.value = []
+      }
     } else {
-      error.value = response.error || 'Failed to load work logs'
-      logs.value = []
+      const response = await workLogsService.listClientLogsForJob(jobId.value)
+      if (response.success && Array.isArray(response.data)) {
+        logs.value = response.data.filter((log) => log.client_approved)
+      } else {
+        error.value = response.error || 'Failed to load work logs'
+        logs.value = []
+      }
     }
   } catch (err) {
     console.error('Error fetching logs:', err)
@@ -146,6 +157,13 @@ onMounted(() => {
     jobId.value = routeJobId
   } else if (Array.isArray(routeJobId) && routeJobId.length > 0) {
     jobId.value = routeJobId[0]
+  }
+
+  const qLogId = route.query.logId
+  if (typeof qLogId === 'string') {
+    selectedLogId.value = qLogId
+  } else if (Array.isArray(qLogId) && qLogId.length > 0 && typeof qLogId[0] === 'string') {
+    selectedLogId.value = qLogId[0]
   }
 
   if (!jobId.value) {

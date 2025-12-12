@@ -74,7 +74,7 @@
         <div class="mt-6 pt-4 border-t border-gray-100">
           <div class="flex flex-col sm:flex-row gap-3">
             <button
-              v-if="job.id"
+              v-if="job.id && job.status !== 'active'"
               @click="viewProposals"
               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-teal-500 text-white text-sm font-semibold shadow-sm hover:bg-teal-600 transition-colors"
             >
@@ -88,11 +88,11 @@
       </div>
 
       <!-- Proposals Section -->
-      <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
+      <div v-if="job.status !== 'active'" class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
           <h3 class="text-base sm:text-lg md:text-xl font-semibold text-gray-800">Agent Proposals</h3>
           <button
-            v-if="job.id"
+            v-if="job.id && job.status !== 'active'"
             @click="viewProposals"
             class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-teal-50 text-teal-600 border border-teal-200 rounded-md text-xs sm:text-sm font-medium hover:bg-teal-100 transition-colors"
           >
@@ -427,7 +427,7 @@ onMounted(async () => {
             requirements: [result.data.description?.split('\n')[0] || 'Requirements not specified'],
             skills_needed: Array.isArray((result.data as any).skills_needed) ? (result.data as any).skills_needed.join(', ') : (result.data as any).skills_needed || '',
             deadline: result.data.timeline?.endDate ? new Date(result.data.timeline.endDate).getTime() : 0,
-            status: 'open'
+            status: (result.data as any)?.status || 'open'
           }
         } else {
           throw new Error(result.error || 'Job not found')

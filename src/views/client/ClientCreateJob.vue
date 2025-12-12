@@ -308,11 +308,14 @@ const saveSelectedAgentsToJob = async () => {
       return
     }
 
-    const resp = await api.jobs.updateJob(jobId, { selected_agents: job.value.selected_agents })
-    if (resp.success) {
-      alert('Selected agents saved to your job successfully')
-    } else {
-      alert(resp.error || 'Failed to save selected agents')
+    try {
+      const raw = localStorage.getItem('clientJobRecommendedMap')
+      const map = raw ? JSON.parse(raw) : {}
+      map[jobId] = job.value.selected_agents
+      localStorage.setItem('clientJobRecommendedMap', JSON.stringify(map))
+      alert('Selected agents saved locally for this job')
+    } catch (e) {
+      alert('Failed to cache selected agents locally')
     }
   } catch (e: any) {
     console.error('Error saving selected agents:', e)
@@ -340,7 +343,7 @@ const submitJob = async () => {
     normalizeBudget();
 
     // Transform to JobPostData format expected by the service
-    const jobPayload: any = {
+  const jobPayload: any = {
       project_title: job.value.project_title?.trim() || '',
       description: job.value.description.trim(),
       primary_area_of_expertise: job.value.primary_area_of_expertise,
@@ -349,7 +352,8 @@ const submitJob = async () => {
         start_date: job.value.timeline.start_date,
         deadline: job.value.timeline.deadline
       },
-      selected_agents: job.value.selected_agents || []
+      selected_agents: job.value.selected_agents || [],
+      recommended_agents: job.value.selected_agents || []
     };
 
     const response = await api.jobs.createJob(jobPayload);
@@ -370,16 +374,19 @@ const submitJob = async () => {
           localStorage.setItem('selectedProject', JSON.stringify(cache));
           localStorage.setItem('selectedClientProject', JSON.stringify(cache));
 
-          // Update job with selected agents if any
-          if ((job.value.selected_agents?.length || 0) > 0) {
-            try { 
-              await api.jobs.updateJob(jobId, { 
-                selected_agents: job.value.selected_agents 
-              }); 
-            } catch (e) {
-              console.warn('Failed to update job with selected agents:', e);
-            }
-          }
+          // Update job with selected and recommended agents if any
+      if ((job.value.selected_agents?.length || 0) > 0) {
+        try { 
+          try {
+            const raw = localStorage.getItem('clientJobRecommendedMap')
+            const map = raw ? JSON.parse(raw) : {}
+            map[jobId] = job.value.selected_agents
+            localStorage.setItem('clientJobRecommendedMap', JSON.stringify(map))
+          } catch {}
+        } catch (e) {
+          console.warn('Failed to cache agents locally:', e);
+        }
+      }
           
           // Show success message before redirect
           alert('Job created successfully!');

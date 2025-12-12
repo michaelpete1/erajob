@@ -65,53 +65,7 @@
         </div>
       </div>
 
-      <div class="mt-2 mb-4 sm:mb-6 flex items-center justify-center">
-        <div class="bg-white/95 rounded-full p-1 flex items-center gap-1 shadow-sm max-w-xs sm:max-w-none w-full sm:w-auto">
-          <button 
-            @click="activeTab = 'active'" 
-            :class="activeTab === 'active' ? 'bg-brand-teal text-white' : 'text-gray-600'"
-            class="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 min-h-[40px] touch-manipulation"
-          >
-            Active
-          </button>
-          <button 
-            @click="activeTab = 'browse'" 
-            :class="activeTab === 'browse' ? 'bg-brand-teal text-white' : 'text-gray-600'"
-            class="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 min-h-[40px] touch-manipulation"
-          >
-            Browse
-          </button>
-        </div>
-      </div>
-
-      <div v-if="activeTab === 'browse'" class="mb-4 sm:mb-6 animate-fade-in">
-        <div class="max-w-2xl mx-auto">
-          <div class="relative">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search for gigs..."
-              class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 pl-12 text-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all"
-            />
-            <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <button 
-              v-if="searchQuery"
-              @click="searchQuery = ''"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <p v-if="searchQuery" class="text-center text-white/80 text-sm mt-2">
-            Showing results for "{{ searchQuery }}"
-          </p>
-
-        </div>
-      </div>
+      
 
       <div class="mt-6 sm:mt-8">
         <!-- Loading State -->
@@ -143,7 +97,7 @@
             v-for="job in filteredGigs"
             :key="job.key"
             class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 block cursor-pointer"
-            @click="goToGig(job.raw)"
+            @click="goToLogWorkHours(job.raw)"
           >
             <div class="block">
               <div class="flex items-start justify-between mb-3 sm:mb-4 gap-3">
@@ -157,9 +111,9 @@
                 </div>
                 <span
                   class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide"
-                  :class="statusBadgeClass(job.status, activeTab === 'active')"
+                  :class="statusBadgeClass(job.status, true)"
                 >
-                  {{ statusLabel(job.status, activeTab === 'active') }}
+                  {{ statusLabel(job.status, true) }}
                 </span>
               </div>
               <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 break-words leading-relaxed">
@@ -178,10 +132,10 @@
 
               <div>
                 <button
-                  @click.stop="goToGig(job.raw)"
+                  @click.stop="goToLogWorkHours(job.raw)"
                   class="w-full bg-brand-teal text-white py-2.5 sm:py-3 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base font-medium min-h-[44px] touch-manipulation"
                 >
-                  View Details
+                  Log Work
                 </button>
               </div>
             </div>
@@ -214,7 +168,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BrandLogo from '../../components/BrandLogo.vue'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
@@ -225,7 +179,6 @@ import { applicationsService } from '@/services/applicationsService'
 import type { ApplicationOut } from '@/types/api'
 
 const openMobileNav = ref(false)
-const activeTab = ref<'active' | 'browse'>('browse')
 const searchQuery = ref('')
 const agentApplications = ref<ApplicationOut[]>([])
 const applicationsLoading = ref(false)
@@ -349,32 +302,13 @@ const getCategoryIcon = (category: string | { name: string }) => {
   return iconMap[categoryName.toLowerCase()] || iconMap.default
 }
 
-const goToGig = (job: any) => {
-  // Persist selected job so destination pages can read it
-  try {
-    localStorage.setItem('selectedGig', JSON.stringify(job))
-  } catch (e) {
-    // ignore storage errors
-  }
-
-  if (activeTab.value === 'active') {
-    // Open the log work hours page for active jobs
-    router.push({ path: '/agent/logging-details' })
-  } else {
-    // browse -> go to detail page
-    const slug = createGigSlug(job.project_title, job.id || '')
-    router.push({ path: `/agent/gig/${slug}` })
-  }
-}
+// No browse tab: navigate to logging directly
 
 const {
   jobs,
   loading: jobsLoading,
   error: jobsError,
-  getAvailableJobs,
-  getBrowseJobs,
-  hasMore,
-  loadMoreJobs
+  getAvailableJobs
 } = useJobs()
 
 // Default pagination parameters
@@ -388,14 +322,7 @@ onMounted(async () => {
   await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
 })
 
-// Watch tab changes to load appropriate jobs
-watch(activeTab, async () => {
-  if (activeTab.value === 'browse') {
-    await Promise.all([getBrowseJobs(paginationParams), loadAgentApplications()])
-  } else {
-    await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
-  }
-})
+// No tab switching required
 
 const selectedServices = ref<any[]>([])
 
@@ -466,12 +393,7 @@ const filteredGigs = computed<MappedGigCard[]>(() => {
 
   let result = normalized
 
-  result = result.filter(job => {
-    if (activeTab.value === 'active') {
-      return job.status === 'active'
-    }
-    return job.status !== 'active'
-  })
+  result = result.filter(job => job.status === 'active')
 
 
 

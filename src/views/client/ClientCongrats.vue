@@ -6,7 +6,7 @@ import type { SignupData } from '../../types/api/auth'
 
 const API_BASE_URL = import.meta.env.DEV
   ? '/api'
-  : import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
+  : import.meta.env.VITE_API_BASE_URL ?? 'https://eba.3nis.net'
 
 const router = useRouter()
 const isSubmitting = ref(false)

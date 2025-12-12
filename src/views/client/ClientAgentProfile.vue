@@ -768,16 +768,19 @@ const loadAgentFromLocalStorage = async (): Promise<boolean> => {
     const savedAgentData = localStorage.getItem('selectedAgent')
     if (savedAgentData) {
       const parsedAgentData = JSON.parse(savedAgentData)
-      agent.value = {
-        ...agent.value,
-        ...parsedAgentData,
-        availability: {
-          ...agent.value.availability,
-          ...(parsedAgentData.availability || {})
+      const roleLower = String(parsedAgentData?.role || parsedAgentData?.user_role || '').trim().toLowerCase()
+      if (roleLower === 'agent') {
+        agent.value = {
+          ...agent.value,
+          ...parsedAgentData,
+          availability: {
+            ...agent.value.availability,
+            ...(parsedAgentData.availability || {})
+          }
         }
+        console.log('Loaded agent data from localStorage:', parsedAgentData)
+        return true
       }
-      console.log('Loaded agent data from localStorage:', parsedAgentData)
-      return true
     }
     return false
   } catch (error) {

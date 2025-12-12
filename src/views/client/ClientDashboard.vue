@@ -74,6 +74,7 @@
                   </svg>
                 </button>
                 <button
+                  v-if="project.status !== 'active'"
                   @click="openProject(project)"
                   class="inline-flex items-center gap-2 text-brand-teal hover:text-teal-700 font-medium"
                 >

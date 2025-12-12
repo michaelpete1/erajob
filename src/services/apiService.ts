@@ -24,18 +24,17 @@ interface LoginResponse {
   };
 }
 
-// Base URL for the API
-const API_BASE_URL = import.meta.env.DEV
-  ? '/api'  // Uses the proxy in development
-  : import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
+const API_BASE_URL = (import.meta as any).env?.DEV && String((import.meta as any).env?.VITE_USE_PROXY) === 'true'
+  ? '/api'
+  : ((import.meta as any).env?.VITE_API_BASE_URL ?? 'https://eba.3nis.net')
 
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 20000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_BASE_URL,
+  timeout: 60000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
 // Request interceptor to add auth token and log requests
@@ -66,7 +65,7 @@ apiClient.interceptors.request.use(
 
 // Response interceptor with logging and token refresh logic
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
+  (response: AxiosResponse) => {
     // Log successful responses
     console.group('API Response')
     console.log('URL:', response.config.url)
@@ -74,11 +73,11 @@ apiClient.interceptors.response.use(
     console.log('Data:', response.data)
     console.log('Headers:', response.headers)
     console.groupEnd()
-    return response
-  },
-  async (error) => {
-    const originalRequest = error.config as any
-    const status = error.response?.status
+    return response
+  },
+  async (error) => {
+    const originalRequest = error.config as any
+    const status = error.response?.status
 
     if (status === 401) {
       const refreshToken = localStorage.getItem('refresh_token')
@@ -137,9 +136,79 @@ apiClient.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    // For non-401 errors (e.g., 403 Forbidden, 422 Validation), bubble error up
-    return Promise.reject(error)
-  }
+    const isTimeout = () => {
+      const msg = String(error?.message || '').toLowerCase()
+      const code = String((error as any)?.code || '')
+      return msg.includes('timeout') || msg.includes('etimedout') || code === 'ECONNABORTED' || code === 'ETIMEDOUT'
+    }
+
+    const canDirectRetry = import.meta.env.DEV && String(apiClient.defaults.baseURL).startsWith('/api') && !originalRequest.__directRetry
+    if (canDirectRetry && isTimeout()) {
+      try {
+        originalRequest.__directRetry = true
+        const directBase = import.meta.env.VITE_API_BASE_URL ?? 'https://eba.3nis.net'
+        const directUrl = `${directBase}${originalRequest.url}`
+        const retryConfig = { ...originalRequest, baseURL: undefined, url: directUrl }
+        return axios(retryConfig)
+      } catch (e) {
+        return Promise.reject(error)
+      }
+    }
+
+    const isConnRefused = () => {
+      const msg = String(error?.message || '').toLowerCase()
+      const code = String((error as any)?.code || '')
+      return msg.includes('econnrefused') || msg.includes('proxy error') || code === 'ECONNREFUSED'
+    }
+    if (canDirectRetry && isConnRefused()) {
+      try {
+        originalRequest.__directRetry = true
+        const directBase = import.meta.env.VITE_API_BASE_URL ?? 'https://eba.3nis.net'
+        const directUrl = `${directBase}${originalRequest.url}`
+        const retryConfig = { ...originalRequest, baseURL: undefined, url: directUrl }
+        return axios(retryConfig)
+      } catch (e) {
+        return Promise.reject(error)
+      }
+    }
+
+    const isDnsError = () => {
+      const msg = String(error?.message || '').toLowerCase()
+      const code = String((error as any)?.code || '')
+      return msg.includes('enotfound') || code === 'ENOTFOUND'
+    }
+
+    const canMock = import.meta.env.DEV && String(apiClient.defaults.baseURL).startsWith('/api') && !originalRequest.__offlineMock
+    if (canMock && isDnsError()) {
+      const url = String(originalRequest?.url || '')
+      const method = String(originalRequest?.method || 'get').toLowerCase()
+      let data: any = { status_code: 200, data: null, detail: '' }
+      if (method === 'get') {
+        if (url.includes('/v1/admins/me')) {
+          data = { status_code: 200, data: { id: 'offline-admin', role: 'admin', email: 'admin@offline.local' }, detail: '' }
+        } else if (url.includes('/v1/users')) {
+          data = { status_code: 200, data: [], detail: '' }
+        } else if (url.includes('/v1/jobss')) {
+          data = { status_code: 200, data: [], detail: '' }
+        } else {
+          data = { status_code: 200, data: null, detail: '' }
+        }
+      } else {
+        data = { status_code: 200, data: { success: true }, detail: '' }
+      }
+      originalRequest.__offlineMock = true
+      const mockResponse: AxiosResponse = {
+        data,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: originalRequest
+      }
+      return Promise.resolve(mockResponse)
+    }
+
+    return Promise.reject(error)
+  }
 )
 
 // API Service class
@@ -599,7 +668,16 @@ class ApiService {
       const response = await apiClient.patch<EJApiResponse<JobsOut>>(`/v1/jobss/${jobId}`, updates)
       return { success: true, data: response.data.data }
     } catch (error: any) {
-      return { success: false, error: error.response?.data?.detail || 'Failed to update job' }
+      const status = error?.response?.status
+      if (status === 404) {
+        try {
+          const alt = await apiClient.patch<EJApiResponse<JobsOut>>(`/v1/jobss/update/${jobId}`, updates)
+          return { success: true, data: alt.data.data }
+        } catch (altErr: any) {
+          return { success: false, error: altErr?.response?.data?.detail || 'Failed to update job' }
+        }
+      }
+      return { success: false, error: error?.response?.data?.detail || 'Failed to update job' }
     }
   }
 
@@ -909,4 +987,5 @@ export const api: ApiInterface = {
 
 // Export the instantiated service as both default and named export
 export { apiService };
+export type { ServiceResponse };
 export default apiService;

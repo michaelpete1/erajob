@@ -36,22 +36,42 @@ export const listAvailableAgentJobs = async (
     const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/`, { params })
     if (isSuccessfulStatus(response.data.status_code)) {
       const jobs = ensureArray(response.data.data)
-      return {
-        success: true,
-        data: jobs,
-        message: `Retrieved ${jobs.length} available jobs`
-      }
-    } else {
-      return {
-        success: false,
-        error: response.data.detail || 'Failed to fetch available jobs'
-      }
+      return { success: true, data: jobs, message: `Retrieved ${jobs.length} available jobs` }
     }
+
+    try {
+      const altPath = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/${start}/${stop}`)
+      if (isSuccessfulStatus(altPath.data.status_code)) {
+        const jobs = ensureArray(altPath.data.data)
+        return { success: true, data: jobs, message: `Retrieved ${jobs.length} available jobs` }
+      }
+    } catch (_) {}
+
+    try {
+      const singleS = await apiClient.get<ApiResponse<Job[]>>(`/v1/jobs/agent/available/${start}/${stop}`)
+      if (isSuccessfulStatus(singleS.data.status_code)) {
+        const jobs = ensureArray(singleS.data.data)
+        return { success: true, data: jobs, message: `Retrieved ${jobs.length} available jobs` }
+      }
+    } catch (_) {}
+
+    return { success: false, error: response.data.detail || 'Failed to fetch available jobs' }
   } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to fetch available jobs'
-    }
+    try {
+      const altPath = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/${start}/${stop}`)
+      if (isSuccessfulStatus(altPath.data.status_code)) {
+        const jobs = ensureArray(altPath.data.data)
+        return { success: true, data: jobs, message: `Retrieved ${jobs.length} available jobs` }
+      }
+    } catch (_) {}
+    try {
+      const singleS = await apiClient.get<ApiResponse<Job[]>>(`/v1/jobs/agent/available/${start}/${stop}`)
+      if (isSuccessfulStatus(singleS.data.status_code)) {
+        const jobs = ensureArray(singleS.data.data)
+        return { success: true, data: jobs, message: `Retrieved ${jobs.length} available jobs` }
+      }
+    } catch (_) {}
+    return { success: false, error: error.response?.data?.detail || error.message || 'Failed to fetch available jobs' }
   }
 }
 
@@ -102,12 +122,26 @@ export const listClientCreatedJobs = async (start: number, stop: number): Promis
         message: `Retrieved ${jobs.length} client jobs`
       }
     } else {
+      try {
+        const alt = await apiClient.get<ApiResponse<Job[]>>(`/v1/jobss/client/created/`, { params: { start, stop } })
+        if (isSuccessfulStatus(alt.data.status_code)) {
+          const jobs = ensureArray(alt.data.data)
+          return { success: true, data: jobs, message: `Retrieved ${jobs.length} client jobs` }
+        }
+      } catch {}
       return {
         success: false,
         error: response.data.detail || 'Failed to fetch client jobs'
       }
     }
   } catch (error: any) {
+    try {
+      const alt = await apiClient.get<ApiResponse<Job[]>>(`/v1/jobss/client/created/`, { params: { start, stop } })
+      if (isSuccessfulStatus(alt.data.status_code)) {
+        const jobs = ensureArray(alt.data.data)
+        return { success: true, data: jobs, message: `Retrieved ${jobs.length} client jobs` }
+      }
+    } catch {}
     return {
       success: false,
       error: error.response?.data?.detail || error.message || 'Failed to fetch client jobs'
@@ -152,24 +186,40 @@ export const listAdminJobs = async (start: number, stop: number): Promise<Servic
  */
 export const getJobById = async (id: string): Promise<ServiceResponse<Job>> => {
   try {
-    const response = await apiClient.get<ApiResponse<Job>>(`${BASE_URL}/me`, { params: { id } })
-    if (response.data.status_code === 200) {
-      return {
-        success: true,
-        data: response.data.data,
-        message: 'Job retrieved successfully'
-      }
-    } else {
-      return {
-        success: false,
-        error: response.data.detail || 'Failed to fetch job'
-      }
+    const normalizeIds = (j: Record<string, any>): string[] => {
+      const ids: string[] = []
+      const push = (v: any) => { if (typeof v === 'string' && v.trim()) ids.push(v.trim()) }
+      push(j?.id)
+      push(j?.job_id)
+      push(j?.agent_job_id)
+      return ids
     }
+
+    try {
+      const listResp = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/client/created/`, { params: { start: 0, stop: 100 } })
+      if (isSuccessfulStatus(listResp.data.status_code)) {
+        const jobs = ensureArray(listResp.data.data)
+        const found = jobs.find(j => normalizeIds(j as any).includes(id))
+        if (found) {
+          return { success: true, data: found, message: 'Job retrieved successfully' }
+        }
+      }
+    } catch {}
+
+    try {
+      const adminResp = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/admin/`, { params: { start: 0, stop: 100 } })
+      if (isSuccessfulStatus(adminResp.data.status_code)) {
+        const jobs = ensureArray(adminResp.data.data)
+        const found = jobs.find(j => normalizeIds(j as any).includes(id))
+        if (found) {
+          return { success: true, data: found, message: 'Job retrieved successfully' }
+        }
+      }
+    } catch {}
+
+    return { success: false, error: 'Failed to fetch job' }
   } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.detail || error.message || 'Failed to fetch job'
-    }
+    return { success: false, error: error.response?.data?.detail || error.message || 'Failed to fetch job' }
   }
 }
 
@@ -266,7 +316,10 @@ export const rejectJob = async (
  */
 export const updateJob = async (id: string, data: Partial<JobPostData>): Promise<ServiceResponse<Job>> => {
   try {
-    const response = await apiClient.put<ApiResponse<Job>>(`${BASE_URL}/${id}`, data)
+    let response = await apiClient.patch<ApiResponse<Job>>(`${BASE_URL}/${id}`, data)
+    if (!response?.data || response.data.status_code === 404) {
+      response = await apiClient.patch<ApiResponse<Job>>(`${BASE_URL}/update/${id}`, data)
+    }
     if (response.data.status_code === 200) {
       return {
         success: true,
@@ -314,6 +367,125 @@ export const markJobAsCompleted = async (jobId: string): Promise<ServiceResponse
   }
 }
 
+export const clientAcceptJobProposal = async (
+  jobId: string,
+  data: { client_approved: true; selected_agents: string[] }
+): Promise<ServiceResponse<string>> => {
+  try {
+    const normalize = (agent: any) => {
+      const a = agent || {}
+      const skills = Array.isArray(a.skills)
+        ? a.skills
+        : Array.isArray(a.three_most_commonly_used_tools_or_platforms)
+          ? a.three_most_commonly_used_tools_or_platforms
+          : []
+      return {
+        id: String(a.id || a._id || a.user_id || a.agent_id || ''),
+        email: String(a.email || a.user_email || ''),
+        password: String(a.password || ''),
+        full_name: String(a.full_name || a.name || ''),
+        phone_number: String(a.phone_number || ''),
+        certificate_url: String(a.certificate_url || ''),
+        video_url: String(a.video_url || ''),
+        personality_url: String(a.personality_url || ''),
+        primary_area_of_expertise: String(a.primary_area_of_expertise || ''),
+        years_of_experience: Number(a.years_of_experience ?? 0),
+        three_most_commonly_used_tools_or_platforms: skills,
+        available_hours_agent_can_commit: Number(a.available_hours_agent_can_commit ?? 0),
+        time_zone: String(a.time_zone || ''),
+        portfolio_link: String(a.portfolio_link || ''),
+        is_agent_open_to_calls_and_video_meetings: Boolean(
+          typeof a.is_agent_open_to_calls_and_video_meetings === 'boolean'
+            ? a.is_agent_open_to_calls_and_video_meetings
+            : true
+        ),
+        does_agent_have_working_computer: Boolean(
+          typeof a.does_agent_have_working_computer === 'boolean'
+            ? a.does_agent_have_working_computer
+            : true
+        ),
+        does_agent_have_stable_internet: Boolean(
+          typeof a.does_agent_have_stable_internet === 'boolean'
+            ? a.does_agent_have_stable_internet
+            : true
+        ),
+        is_agent_comfortable_with_time_tracking_tools: Boolean(
+          typeof a.is_agent_comfortable_with_time_tracking_tools === 'boolean'
+            ? a.is_agent_comfortable_with_time_tracking_tools
+            : true
+        )
+      }
+    }
+    const selected = Array.isArray(data.selected_agents) ? data.selected_agents : []
+    const enriched = await Promise.all(
+      selected.map(async (agent: any) => {
+        if (agent && typeof agent === 'object') return normalize(agent)
+        const id = String(agent || '')
+        if (!id) return normalize({})
+        try {
+          const mod = await import('./agentsService')
+          const svc = mod.AgentsService.getInstance()
+          const resp = await svc.getAgentById(id)
+          const raw = resp.success && resp.data ? resp.data : { id }
+          return normalize(raw)
+        } catch (_) {
+          return normalize({ id })
+        }
+      })
+    )
+    const formattedData = { ...data, selected_agents: enriched }
+    const response = await apiClient.patch<ApiResponse<string>>(`${BASE_URL}/client/accept-proposal/${jobId}`, formattedData)
+    if (isSuccessfulStatus(response.data.status_code)) {
+      return {
+        success: true,
+        data: response.data.data || 'Proposal accepted',
+        message: 'Proposal accepted'
+      }
+    }
+    try {
+      let upd = await apiClient.patch<ApiResponse<any>>(`${BASE_URL}/${jobId}`, { status: 'active', ...formattedData })
+      if (!upd?.data || upd.data.status_code === 404) {
+        upd = await apiClient.patch<ApiResponse<any>>(`${BASE_URL}/update/${jobId}`, { status: 'active', ...formattedData })
+      }
+      if (isSuccessfulStatus(upd.data.status_code)) {
+        return { success: true, data: 'Proposal accepted', message: 'Proposal accepted' }
+      }
+      return { success: false, error: upd.data.detail || response.data.detail || 'Failed to accept proposal' }
+    } catch (fallbackErr: any) {
+      return { success: false, error: fallbackErr?.response?.data?.detail || response.data.detail || 'Failed to accept proposal' }
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to accept proposal'
+    }
+  }
+}
+
+export const clientRejectJobProposal = async (
+  jobId: string,
+  data: { client_approved: false; client_rejection_reason: string }
+): Promise<ServiceResponse<string>> => {
+  try {
+    const response = await apiClient.patch<ApiResponse<string>>(`${BASE_URL}/client/reject-proposal/${jobId}`, data)
+    if (isSuccessfulStatus(response.data.status_code)) {
+      return {
+        success: true,
+        data: response.data.data || 'Proposal rejected'
+      }
+    }
+    return {
+      success: false,
+      error: response.data.detail || 'Failed to reject proposal'
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.response?.data?.detail || error.message || 'Failed to reject proposal'
+    }
+  }
+}
+
 /**
  * Deletes a job posting. (Client only)
  * @param id - The ID of the job to delete.
@@ -353,7 +525,9 @@ export const jobsService = {
   rejectJob,
   updateJob,
   markJobAsCompleted,
-  deleteJob
+  deleteJob,
+  clientAcceptJobProposal,
+  clientRejectJobProposal
 }
 
 export default jobsService

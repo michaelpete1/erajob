@@ -68,6 +68,10 @@
           <span class="text-blue-500 text-lg sm:text-xl">📋</span>
           <p class="text-sm sm:text-base text-gray-600">{{ project.category }}</p>
         </div>
+        <div class="flex items-center gap-2 mb-2" v-if="(project.agents || []).length > 0">
+          <span class="text-purple-500 text-lg sm:text-xl">👤</span>
+          <p class="text-sm sm:text-base text-gray-700">Recommended Agent: <span class="font-medium">{{ (project.agents || [])[0]?.name || '—' }}</span></p>
+        </div>
         
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div class="flex items-center text-teal-600 font-semibold">
@@ -168,8 +172,12 @@
                   <span class="text-lg">⏰</span>
                   <span>{{ formatDate(project.date_created) }}</span>
                 </span>
-                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full" v-if="!project.admin_approved">Pending Approval</span>
-                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full" v-else>Approved</span>
+                <span
+                  class="px-2 py-1 text-xs font-semibold rounded-full"
+                  :class="project.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
+                >
+                  {{ project.status === 'active' ? 'Active' : 'Pending' }}
+                </span>
               </div>
               <h2 class="font-semibold text-gray-800 text-base sm:text-lg mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors">
                 {{ project.project_title }}
@@ -177,8 +185,9 @@
               <p class="text-sm text-gray-600 mb-4 line-clamp-3">
                 {{ project.description }}
               </p>
-              <p class="text-xs font-medium text-yellow-700 mb-3" v-if="!project.admin_approved">Awaiting admin approval before work can begin.</p>
-              <p class="text-xs font-medium text-green-700 mb-3" v-else>Approved and ready for work.</p>
+              <p class="text-xs font-medium" :class="project.status === 'active' ? 'text-green-700' : 'text-yellow-700'">
+                {{ project.status === 'active' ? 'Work can begin.' : 'Pending actions.' }}
+              </p>
               <div class="flex items-center justify-between">
                 <span class="text-lg font-bold text-teal-600">${{ (project.budget * 1.17).toFixed(2) }}</span>
                 <button
@@ -190,6 +199,10 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
+              </div>
+              <div class="mt-3 flex items-center gap-2" v-if="(project.agents || []).length > 0">
+                <span class="text-purple-500">👤</span>
+                <span class="text-xs text-gray-700">Recommended Agent: <span class="font-medium">{{ (project.agents || [])[0]?.name || '—' }}</span></span>
               </div>
             </div>
           </div>
@@ -239,6 +252,8 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useJobs } from '@/composables/useJobs'
 import { useToast } from 'vue-toastification'
+import { api } from '@/services/apiService'
+import apiClient from '@/services/apiClient'
 
 const router = useRouter()
 const { deleteJob } = useJobs()
@@ -439,7 +454,9 @@ const toProject = (jobPayload: unknown): Project => {
       ? job.assigned_agents
       : Array.isArray(job.agent_details)
         ? job.agent_details
-        : []
+        : Array.isArray(job.recommended_agents)
+          ? job.recommended_agents
+          : []
 
   const gatherAgentCandidates = (): Record<string, any>[] => {
     const candidates: unknown[] = [
@@ -569,8 +586,7 @@ const toProject = (jobPayload: unknown): Project => {
       deadline: deadline
     },
     agents,
-    status: typeof job.status === 'string' ? job.status : undefined,
-    admin_approved: typeof job.admin_approved === 'boolean' ? job.admin_approved : undefined
+    status: typeof job.status === 'string' ? job.status : undefined
   }
 }
 
@@ -582,8 +598,8 @@ const fetchActiveProjects = async () => {
       return
     }
     const jobsData = Array.isArray(response.data) ? response.data : [response.data]
-    const approvedJobs = jobsData.filter((job: any) => job?.admin_approved === true)
-    activeProjects.value = approvedJobs.map(job => toProject(job))
+    const activeJobs = jobsData.filter((job: any) => String(job?.status || '').toLowerCase().includes('active'))
+    activeProjects.value = activeJobs.map(job => toProject(job))
   } catch (err) {
     console.error('Error fetching active projects:', err)
     error.value = 'Failed to load active projects'
@@ -599,8 +615,7 @@ const fetchPendingProjects = async () => {
       return
     }
     const jobsData = Array.isArray(response.data) ? response.data : [response.data]
-    // Filter out approved jobs - only show pending (unapproved) jobs
-    const pendingJobs = jobsData.filter((job: any) => job.admin_approved !== true)
+    const pendingJobs = jobsData.filter((job: any) => !String(job?.status || '').toLowerCase().includes('active'))
     pendingProjects.value = pendingJobs.map((job) => toProject(job))
   } catch (err) {
     console.error('Error fetching pending projects:', err)
@@ -624,7 +639,7 @@ onMounted(() => {
   fetchProjects()
 })
 
-const cacheProjectContext = (project: Project) => {
+const cacheProjectContext = async (project: Project) => {
   const jobId = project?.id ? String(project.id) : ''
   if (!jobId) return
 
@@ -660,26 +675,54 @@ const cacheProjectContext = (project: Project) => {
         agents: project.agents || []
       })
     )
+    try {
+      const resolveId = (a: any): string => {
+        const candidates: unknown[] = [
+          a?.id,
+          a?._id,
+          a?.user_id,
+          a?.agent_id,
+          a?.uuid,
+          a?.user?.id,
+          a?.user?.uuid
+        ]
+        for (const c of candidates) {
+          if (typeof c === 'string' && c.trim().length > 0) return c.trim()
+          if (typeof c === 'number') return String(c)
+        }
+        const email = typeof a?.email === 'string' ? a.email.trim() : ''
+        return email
+      }
+      const ids: string[] = []
+      for (const a of project.agents || []) {
+        const resolved = resolveId(a)
+        if (resolved) ids.push(resolved)
+      }
+      const unique = Array.from(new Set(ids)).filter(s => s.trim().length > 0)
+      if (unique.length > 0) {
+        await api.jobs.updateJob(jobId, { recommended_agents: unique, selected_agents: unique })
+      }
+    } catch {}
   } catch (err) {
     console.warn('Unable to cache job context', err)
   }
 }
 
-const goToProject = (project: Project) => {
+const goToProject = async (project: Project) => {
   if (!project?.id) return
-  cacheProjectContext(project)
+  await cacheProjectContext(project)
   router.push({ name: 'client-job-details', params: { id: String(project.id) } })
 }
 
-const goToJobPage = (project: Project) => {
+const goToJobPage = async (project: Project) => {
   if (!project?.id) return
-  cacheProjectContext(project)
+  await cacheProjectContext(project)
   router.push({ name: 'client-job-overview', params: { id: String(project.id) } })
 }
 
-const goToProjectWorkLogs = (project: Project) => {
+const goToProjectWorkLogs = async (project: Project) => {
   if (!project?.id) return
-  cacheProjectContext(project)
+  await cacheProjectContext(project)
   router.push({ name: 'client-work-log', params: { jobId: String(project.id) } })
 }
 

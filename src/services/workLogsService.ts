@@ -1,11 +1,11 @@
 import apiClient from './apiClient'
 import type { ApiResponse, ServiceResponse, WorkLogListParams, WorkLogOut, WorkLogPostPayload } from '@/types/api'
 
-const BASE_URL = '/v1/logs'
+const BASE_URL = '/v1/logss'
 
 const buildListParams = (params?: Partial<WorkLogListParams>) => ({
   start: params?.start ?? 0,
-  stop: params?.stop ?? 50
+  stop: params?.stop ?? 100
 })
 
 export const listAgentLogsForJob = async (

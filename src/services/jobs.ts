@@ -1,89 +1,64 @@
+import type { JobPostData, JobApprovalData } from '../types/api'
+import type { JobListApiResponse } from '../types/api/jobs'
+import { listAvailableAgentJobs as listAvailableAgentJobsV2, listClientCreatedJobs as listClientCreatedJobsV2, listAdminJobs as listAllJobsAdminV2, getJobById as getJobByIdV2, postNewJob as postNewJobV2 } from './jobsService'
+import { approveJob as approveJobV2, clientAcceptJobProposal as clientAcceptJobProposalV2, clientRejectJobProposal as clientRejectJobProposalV2 } from './jobsService'
 import apiClient from './apiClient'
-import type {
-  JobPostData,
-  JobApprovalData,
-  JobApiResponse,
-  JobListApiResponse
-} from '../types/api/jobs'
 
-const BASE_URL = '/v1/jobss'
+const BASE_URL = '/v1/jobs'
 
-/**
- * Retrieves a paginated list of jobs that the authenticated agent qualifies for.
- * @param start - The starting index for the list.
- * @param stop - The ending index for the list.
- */
 export const listAvailableAgentJobs = (start: number, stop: number) => {
-  return apiClient.get<JobListApiResponse>(`${BASE_URL}/agent/available/`, {
-    params: { start, stop }
-  })
+  return apiClient.get<JobListApiResponse>(`${BASE_URL}/agent/available/`, { params: { start, stop } })
 }
 
-/**
- * Retrieves a paginated list of jobs created by the authenticated client.
- * @param start - The starting index for the list.
- * @param stop - The ending index for the list.
- */
 export const listClientCreatedJobs = (start: number, stop: number) => {
-  return apiClient.get<JobListApiResponse>(`${BASE_URL}/client/created/`, {
-    params: { start, stop }
-  })
+  return listClientCreatedJobsV2(start, stop) as any
 }
 
-/**
- * Retrieves a paginated list of all jobs in the system. (Admin only)
- * @param start - The starting index for the list.
- * @param stop - The ending index for the list.
- */
 export const listAllJobsAdmin = (start: number, stop: number) => {
-  return apiClient.get<JobListApiResponse>(`${BASE_URL}/admin/`, {
-    params: { start, stop }
-  })
+  return listAllJobsAdminV2(start, stop) as any
 }
 
-/**
- * Fetches a specific job by its ID. (Admin only)
- * @param id - The ID of the job to fetch.
- */
 export const getJobById = (id: string) => {
-  return apiClient.get<JobApiResponse>(`${BASE_URL}/me`, { params: { id } })
+  return getJobByIdV2(id) as any
 }
 
-/**
- * Posts a new job on behalf of the authenticated client.
- * @param data - The data for the new job.
- */
 export const postNewJob = (data: JobPostData) => {
-  return apiClient.post<JobApiResponse>(`${BASE_URL}/`, data)
+  return postNewJobV2(data) as any
 }
 
-/**
- * Approves a new job posting. (Admin only)
- * @param jobId - The ID of the job to approve.
- * @param data - The approval data, including charges, tax, and optional budget adjustment.
- */
 export const approveJob = (jobId: string, data: JobApprovalData) => {
-  return apiClient.post<string>(`${BASE_URL}/approve/${jobId}`, data)
+  return approveJobV2(jobId, data) as any
 }
 
 export const proposeJob = (
   jobId: string,
   data: {
-    agent: any,
-    timeline?: { start_date: number; deadline: number },
-    proposal: string,
+    agent: any
+    timeline?: { start_date: number; deadline: number }
+    proposal: string
     break_down: { service?: number; Charges: number; Tax: number }
   }
 ) => {
-  return apiClient.post<string>(`${BASE_URL}/propose/${jobId}`, data)
+  return apiClient.post<string>(`${BASE_URL}/propose/${jobId}`, data, { timeout: 60000 })
+    .catch(async (error: any) => {
+      const status = error?.response?.status
+      if (status === 404) {
+        try {
+          return await apiClient.post<string>(`/v1/jobs/propose/${jobId}`, data, { timeout: 60000 })
+        } catch (e) {
+          return Promise.reject(e)
+        }
+      }
+      return Promise.reject(error)
+    })
 }
 
 export const clientAcceptJobProposal = (jobId: string, data: { client_approved: true; selected_agents: string[] }) => {
-  return apiClient.patch<string>(`${BASE_URL}/client/accept-proposal/${jobId}`, data)
+  return clientAcceptJobProposalV2(jobId, data) as any
 }
 
 export const clientRejectJobProposal = (jobId: string, data: { client_approved: false; client_rejection_reason: string }) => {
-  return apiClient.patch<string>(`${BASE_URL}/client/reject-proposal/${jobId}`, data)
+  return clientRejectJobProposalV2(jobId, data) as any
 }
 
 export default {

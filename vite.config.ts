@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+const proxyTarget = process.env.VITE_API_PROXY_TARGET || process.env.VITE_API_BASE_URL || 'https://eba.3nis.net'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,9 +17,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://eba-jobs.getxoxo.space',
+        target: proxyTarget,
         changeOrigin: true,
-        secure: true,
+        secure: false,
+        timeout: 60000,
+        proxyTimeout: 60000,
         rewrite: (path) => path.replace(/^\/api/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {

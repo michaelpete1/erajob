@@ -65,59 +65,11 @@
         </div>
       </div>
 
-      <div class="mt-2 mb-4 sm:mb-6 flex items-center justify-center">
-        <div class="bg-white/95 rounded-full p-1 flex items-center gap-1 shadow-sm">
-          <button 
-            @click="activeTab = 'active'" 
-            :class="activeTab === 'active' ? 'bg-brand-teal text-white' : 'text-gray-600'"
-            class="px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200"
-          >
-            Active
-          </button>
-          <button 
-            @click="activeTab = 'browse'" 
-            :class="activeTab === 'browse' ? 'bg-brand-teal text-white' : 'text-gray-600'"
-            class="px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200"
-          >
-            Browse
-          </button>
-        </div>
-      </div>
-
-      <div v-if="activeTab === 'browse'" class="mb-4 sm:mb-6 animate-fade-in">
-        <div class="max-w-2xl mx-auto">
-          <div class="relative">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Search for gigs..."
-              class="w-full rounded-full border border-white/20 bg-white/10 px-5 py-3 pl-12 text-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/30 backdrop-blur-sm transition-all"
-            />
-            <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <button 
-              v-if="searchQuery"
-              @click="searchQuery = ''"
-              class="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-      <p v-if="searchQuery" class="text-center text-white/80 text-sm mt-2">
-        Showing results for "{{ searchQuery }}"
-      </p>
-      <p v-if="activeTab === 'browse' && getAgentExpertise()" class="text-center text-white/80 text-sm mt-1">
-        Filtered by your expertise: {{ getAgentExpertise() }}
-      </p>
-        </div>
-      </div>
+      
 
       <div class="mt-6 sm:mt-8">
         <!-- Loading State -->
-        <div v-if="jobsLoading" class="flex justify-center py-8">
+        <div v-if="assignedLoading" class="flex justify-center py-8">
           <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -125,13 +77,13 @@
         </div>
 
         <!-- Error State -->
-        <div v-else-if="jobsError" class="text-center py-8">
+        <div v-else-if="assignedError" class="text-center py-8">
           <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 max-w-sm mx-auto">
             <span class="text-3xl sm:text-4xl mb-3 sm:mb-4 block">⚠️</span>
             <h3 class="text-lg sm:text-xl font-bold text-brand-teal mb-2">Error Loading Jobs</h3>
-            <p class="text-sm sm:text-base text-gray-600">{{ jobsError }}</p>
+            <p class="text-sm sm:text-base text-gray-600">{{ assignedError }}</p>
             <button 
-              @click="getAvailableJobs(paginationParams)" 
+              @click="fetchAssignedJobs()" 
               class="mt-4 bg-brand-teal text-white px-4 py-2 rounded-full text-sm"
             >
               Try Again
@@ -145,7 +97,7 @@
             v-for="gig in filteredGigs" 
             :key="gig.id"
             class="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-up-delay-1 block cursor-pointer"
-            @click="activeTab === 'active' ? goToLogWorkHours(gig) : null"
+            @click="goToLogWorkHours(gig)"
           >
             <div class="block">
               <div class="flex items-start justify-between mb-3 sm:mb-4 gap-3">
@@ -155,9 +107,9 @@
                 </div>
                 <span
                   class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide"
-                  :class="statusBadgeClass(gig.status, activeTab === 'active')"
+                  :class="statusBadgeClass(gig.status, true)"
                 >
-                  {{ statusLabel(gig.status, activeTab === 'active') }}
+                  {{ statusLabel(gig.status, true) }}
                 </span>
               </div>
               <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{{ gig.description }}</p>
@@ -167,8 +119,8 @@
               </div>
 
               <div>
-                <button @click.stop="goToGig(gig)" class="w-full bg-brand-teal text-white py-2 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base">
-                  {{ activeTab === 'browse' ? 'View Details' : 'Log Work' }}
+                <button @click.stop="goToLogWorkHours(gig)" class="w-full bg-brand-teal text-white py-2 px-4 rounded-full hover:bg-teal-600 transition-colors duration-300 text-center block text-sm sm:text-base">
+                  Log Work
                 </button>
               </div>
             </div>
@@ -200,17 +152,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { jobsService } from '@/services/jobsService'
 import { PencilSquareIcon, AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
-import { createGigSlug } from '@/utils/slugUtils'
-import { useJobs } from '@/composables/useJobs'
 
 const openMobileNav = ref(false)
-const activeTab = ref<'active' | 'browse'>('browse')
-const searchQuery = ref('')
 const selectedServices = ref<any[]>([])
 const assignedJobs = ref<JobCard[]>([])
 const assignedLoading = ref(false)
@@ -219,12 +167,7 @@ const agentData = ref<any>(null)
 
 const router = useRouter()
 
-const {
-  jobs,
-  loading: jobsLoading,
-  error: jobsError,
-  getAvailableJobs
-} = useJobs()
+// No browse tab: we only load assigned jobs
 
 
 const paginationParams = { start: 0, stop: 10 }
@@ -244,15 +187,7 @@ onMounted(async () => {
   await fetchData()
 })
 
-watch(activeTab, async () => {
-  // Refresh jobs when switching tabs to ensure we have the latest data
-  await fetchData()
-})
-
 const fetchData = async () => {
-  const agentExpertise = getAgentExpertise()
-  const agentParams = agentExpertise ? { ...paginationParams, agentData: { primaryExpertise: agentExpertise } } : paginationParams
-  await getAvailableJobs(agentParams)
   await fetchAssignedJobs()
 }
 
@@ -351,14 +286,29 @@ const buildJobCard = (job: any): JobCard => {
 }
 
 const normalizeJobStatus = (job: any): string => {
-  return isJobApprovedForAgent(job) ? 'approved' : 'pending_review'
+  const statusRaw = String(job?.status || '').toLowerCase()
+  const clientApproved = isClientApproved(job)
+  const adminApproved = isAdminApproved(job)
+  if (statusRaw.includes('active') || (adminApproved && clientApproved)) return 'active'
+  if (adminApproved) return 'awaiting_client'
+  return 'pending_review'
 }
 
 
-const isJobApprovedForAgent = (job: any): boolean => {
+const isAdminApproved = (job: any): boolean => {
   const adminFlags = [job?.admin_approved, job?.adminApproved, job?.is_admin_approved]
-  if (adminFlags.some(value => isTruthyApproval(value))) return true
-  return false
+  return adminFlags.some(value => isTruthyApproval(value))
+}
+
+const isJobApprovedForAgent = (job: any): boolean => {
+  return isAdminApproved(job) || isClientApproved(job)
+}
+
+const isClientApproved = (job: any): boolean => {
+  const flags = [job?.client_approved, job?.clientApproved, job?.is_client_approved]
+  if (flags.some(value => isTruthyApproval(value))) return true
+  const statusRaw = String(job?.status || '').toLowerCase()
+  return statusRaw.includes('active') || statusRaw.includes('accepted')
 }
 
 const isTruthyApproval = (value: unknown): boolean => {
@@ -373,16 +323,9 @@ const isTruthyApproval = (value: unknown): boolean => {
   return false
 }
 
-const normalizedJobs = computed(() => (jobs.value || []).map(buildJobCard))
-
-const activeJobs = computed(() => assignedJobs.value.map(job => ({ ...job, status: 'approved' })))
-
-const assignedJobIds = computed(() => new Set(activeJobs.value.map(job => job.id)))
-
-const browseJobs = computed(() =>
-  normalizedJobs.value
-    .filter(job => !assignedJobIds.value.has(job.id))
-    .map(job => ({ ...job, status: isJobApprovedForAgent(job.raw) ? 'approved' : 'pending_review' }))
+const activeJobs = computed(() => assignedJobs.value
+  .filter(job => isClientApproved(job.raw))
+  .map(job => ({ ...job, status: 'active' }))
 )
 
 const getAgentExpertise = (): string | null => {
@@ -417,21 +360,7 @@ const getAgentExpertise = (): string | null => {
 }
 
 const filteredGigs = computed(() => {
-  const source = activeTab.value === 'active' ? activeJobs.value : browseJobs.value
-
-  let result = [...source]
-
-  // Apply expertise-based filtering for browse tab
-  if (activeTab.value === 'browse') {
-    const agentExpertise = getAgentExpertise()
-    if (agentExpertise) {
-      result = result.filter(job => {
-        const jobCategory = (job.category || '').toLowerCase().trim()
-        const normalizedExpertise = agentExpertise.toLowerCase().trim()
-        return jobCategory === normalizedExpertise
-      })
-    }
-  }
+  let result = [...activeJobs.value]
 
   if (selectedServices.value.length > 0) {
     const serviceTitles = selectedServices.value.map(service => service.title.toLowerCase())
@@ -444,19 +373,10 @@ const filteredGigs = computed(() => {
     )
   }
 
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase().trim()
-    result = result.filter(job =>
-      job.title.toLowerCase().includes(query) ||
-      job.description.toLowerCase().includes(query) ||
-      job.keywords.some(keyword => keyword.toLowerCase().includes(query))
-    )
-  }
-
   return result
 })
 
-const persistJob = (job: typeof normalizedJobs.value[number]) => {
+const persistJob = (job: JobCard) => {
   try {
     localStorage.setItem('selectedGig', JSON.stringify(job.raw))
   } catch (e) {
@@ -464,24 +384,11 @@ const persistJob = (job: typeof normalizedJobs.value[number]) => {
   }
 }
 
-const goToLogWorkHours = (gig: typeof normalizedJobs.value[number]) => {
+const goToLogWorkHours = (gig: JobCard) => {
   persistJob(gig)
   router.push({ path: '/agent/logging-details' })
 }
 
-const goToGig = (gig: typeof normalizedJobs.value[number]) => {
-  persistJob(gig)
-
-  if (activeTab.value === 'active') {
-    router.push({ path: '/agent/logging-details' })
-  } else {
-    const slug = createGigSlug(gig.title, gig.id)
-    router.push({ path: `/agent/gig/${slug}` })
-  }
-}
-
-const isLoading = computed(() => jobsLoading.value || assignedLoading.value)
-const currentError = computed(() => (activeTab.value === 'active' ? assignedError.value : jobsError.value))
 
 const statusLabel = (status: string, isActive: boolean) => {
   if (isActive) return 'Approved'

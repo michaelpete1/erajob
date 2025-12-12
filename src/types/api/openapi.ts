@@ -92,6 +92,14 @@ export interface JobTimeline {
   deadline: number
 }
 
+export interface PriceBreakDown {
+  Service: number
+  Charges: number
+  Tax: number
+}
+
+export type JobStatus = 'pending' | 'active' | 'completed' | 'cancelled' | string
+
 export type JobCategories =
   | 'Web Development'
   | 'Mobile Development'
@@ -123,13 +131,24 @@ export interface JobsBase {
   budget: number
   description: string
   timeline: JobTimeline
-  selected_agents?: string[]
+  selected_agents?: (string | import('../api').AgentOut)[]
 }
 
 export interface JobsOut extends JobsBase {
   id?: string | null
+  client_id: string
   date_created?: number | null
   last_updated?: number | null
+  client_approved?: boolean
+  proposal?: string | null
+  recommended_agents?: any[] | null
+  selected_agents?: any[]
+  client_rejection_reason?: string | null
+  rejection_reason?: string | null
+  isCompleted?: boolean
+  admin_approved: boolean
+  break_down: PriceBreakDown
+  status: JobStatus
 }
 
 export interface AlertsOut {

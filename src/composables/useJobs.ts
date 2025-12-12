@@ -102,6 +102,29 @@ const isTruthy = (flag: unknown): boolean => {
   return false
 }
 
+const resolveAgentId = (a: any): string => {
+  const candidates: unknown[] = [
+    a?.id,
+    a?._id,
+    a?.user_id,
+    a?.agent_id,
+    a?.uuid,
+    a?.profile_id,
+    a?.account_id,
+    a?.user?.id,
+    a?.user?.uuid,
+    a?.agent?.id,
+    a?.agent?.uuid
+  ]
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) return c.trim()
+    if (typeof c === 'number') return String(c)
+  }
+  const email = typeof a?.email === 'string' ? a.email.trim() : ''
+  if (email) return email
+  return ''
+}
+
 const deriveRawStatus = (job: any): string => {
   const statusCandidates = [job?.status, job?.job_status, job?.jobStatus, job?.state]
   const status = statusCandidates.find(value => typeof value === 'string' && value.trim().length > 0)
@@ -114,27 +137,14 @@ const normalizeJobStatus = (job: any): string => {
   return 'pending_review'
 }
 
-const isAdminApproved = (job: any): boolean => {
-  const adminFlags = [job?.admin_approved, job?.adminApproved, job?.is_admin_approved]
-  if (adminFlags.some(isTruthy)) return true
-
-  const rawStatus = deriveRawStatus(job)
-  return rawStatus.includes('approved') || rawStatus.includes('available')
-}
-
 const deriveJobStatus = (job: any): string => {
-  const adminApproved = isAdminApproved(job)
   const rawStatus = deriveRawStatus(job)
-
   if (rawStatus.includes('active')) return 'active'
   if (rawStatus.includes('awaiting')) return 'awaiting_client'
   if (rawStatus.includes('available')) return 'available'
-  if (rawStatus.includes('accepted')) return adminApproved ? 'active' : 'awaiting_client'
-  if (rawStatus.includes('approved')) return adminApproved ? 'available' : 'pending_admin'
-  if (rawStatus.includes('pending')) return adminApproved ? 'available' : 'pending_review'
-
-  if (adminApproved) return 'available'
-
+  if (rawStatus.includes('accepted')) return 'active'
+  if (rawStatus.includes('approved')) return 'active'
+  if (rawStatus.includes('pending')) return 'pending_review'
   return rawStatus || 'pending_review'
 }
 
@@ -193,6 +203,37 @@ const getClientJobs = async (start: number = 0, stop: number = 10) => {
       } else {
         jobState.value.jobs = jobsArray as unknown as EJJobOut[];
       }
+      try {
+        const map: Record<string, string[]> = {};
+        const source = jobState.value.jobs as unknown as any[];
+        source.forEach((job: any) => {
+          const jid = String(job?.id || job?.job_id || '').trim();
+          if (!jid) return;
+          const raw = Array.isArray(job?.recommended_agents)
+            ? job.recommended_agents
+            : Array.isArray(job?.assigned_agents)
+              ? job.assigned_agents
+              : Array.isArray(job?.agent_details)
+                ? job.agent_details
+                : Array.isArray(job?.agents)
+                  ? job.agents
+                  : Array.isArray(job?.selected_agents)
+                    ? job.selected_agents
+                    : [];
+          const ids: string[] = raw
+            .map((a: any) => {
+              if (typeof a === 'string') return a.trim();
+              const roleLower = String(a?.role || a?.user_role || '').trim().toLowerCase();
+              if (roleLower && roleLower !== 'agent') return '';
+              return resolveAgentId(a);
+            })
+            .filter((s: string) => s.trim().length > 0);
+          if (ids.length > 0) {
+            map[jid] = ids;
+          }
+        });
+        localStorage.setItem('clientJobRecommendedMap', JSON.stringify(map));
+      } catch {}
     }
     return response;
   } catch (err) {
@@ -244,13 +285,8 @@ const getBrowseJobs = async (params: { start?: number; stop?: number } = {}) => 
         : response.data
           ? [response.data]
           : []
-      // Filter to only show admin-approved jobs
-      const approvedJobs = jobsArray.filter(job => {
-        const adminApproved = isTruthy((job as any)?.admin_approved ?? (job as any)?.adminApproved ?? (job as any)?.is_admin_approved)
-        return adminApproved
-      })
-      jobState.value.jobs = approvedJobs as unknown as EJJobOut[]
-      jobState.value.pagination.hasMore = approvedJobs.length > 0;
+      jobState.value.jobs = jobsArray as unknown as EJJobOut[]
+      jobState.value.pagination.hasMore = jobsArray.length > 0;
     } else {
       // If no jobs found, set empty array instead of keeping old data
       jobState.value.jobs = []
