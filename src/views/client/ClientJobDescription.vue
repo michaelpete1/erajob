@@ -31,6 +31,22 @@
           </span>
         </header>
 
+        <div v-if="assignedAgents.length > 0" class="mb-4 border border-teal-200 bg-teal-50 rounded-xl p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold">
+              {{ primaryAgentInitials }}
+            </div>
+            <div>
+              <p class="text-xs text-teal-700">Assigned agent</p>
+              <p class="text-sm font-semibold text-teal-800">{{ primaryAgentName }}</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button @click="goToAgentProfile" class="px-3 py-1.5 border border-teal-300 text-teal-700 rounded-md text-xs font-semibold hover:bg-teal-100 transition-colors">Agent profile</button>
+            <button @click="openWorkLogs" class="px-3 py-1.5 bg-teal-600 text-white rounded-md text-xs font-semibold hover:bg-teal-700 transition-colors">Work logs</button>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
             <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-lg">💰</div>
@@ -55,7 +71,7 @@
           </div>
         </div>
 
-        <div class="mt-5 flex flex-col gap-2">
+        <div v-if="!activePhase" class="mt-5 flex flex-col gap-2">
           <div class="text-xs text-teal-700">Click to view recommended agents</div>
           <div class="flex flex-wrap gap-2">
             <button
@@ -71,7 +87,7 @@
           </div>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-gray-100">
+        <div v-if="!activePhase" class="mt-6 pt-4 border-t border-gray-100">
           <div class="flex flex-col sm:flex-row gap-3">
             <button
               v-if="job.id"
@@ -88,7 +104,7 @@
       </div>
 
       <!-- Proposals Section -->
-      <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
+      <div v-if="!activePhase" class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
           <h3 class="text-base sm:text-lg md:text-xl font-semibold text-gray-800">Agent Proposals</h3>
           <button
@@ -383,6 +399,60 @@ const formatTimestamp = (timestamp?: number | null) => {
 
 const filteredProposals = computed(() => proposals.value)
 
+const assignedAgents = ref<Array<{ id: string; name?: string; email?: string }>>([])
+const loadAssignedAgentsFromContext = () => {
+  try {
+    const raw = localStorage.getItem('selectedJobContext')
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    const list = Array.isArray(parsed?.project?.agents) ? parsed.project.agents : []
+    assignedAgents.value = list.filter((a: any) => a && (a.id || a.name))
+  } catch (_) {}
+}
+const loadAssignedAgentsFromCaches = () => {
+  try {
+    const raw = localStorage.getItem('selectedProject') || localStorage.getItem('selectedClientProject')
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    const list = Array.isArray(parsed?.agents) ? parsed.agents : []
+    const mapped = list.map((a: any) => ({ id: String(a?.id || a), name: a?.name || a?.full_name || a?.email }))
+    assignedAgents.value = mapped.filter((a: any) => a.id)
+  } catch (_) {}
+}
+const seedAssignedAgentsFromJobResult = (raw: any) => {
+  try {
+    const list = Array.isArray(raw?.selected_agents) ? raw.selected_agents : (Array.isArray(raw?.agents) ? raw.agents : [])
+    const mapped = list.map((a: any) => ({ id: String(a?.id || a), name: a?.name || a?.full_name || a?.email }))
+    assignedAgents.value = mapped.filter((a: any) => a.id)
+  } catch (_) {}
+}
+const primaryAgent = computed(() => assignedAgents.value[0] || null)
+const primaryAgentName = computed(() => {
+  const a: any = primaryAgent.value
+  return a?.name || a?.full_name || a?.email || a?.id || 'Agent'
+})
+const primaryAgentInitials = computed(() => {
+  const n = String(primaryAgentName.value || '').trim()
+  if (!n) return 'A'
+  const parts = n.split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+})
+const activePhase = computed(() => {
+  const s = String(job.value.status || '').toLowerCase()
+  const byStatus = s.includes('in_progress') || s.includes('active') || s.includes('approved')
+  return byStatus || assignedAgents.value.length > 0
+})
+const goToAgentProfile = () => {
+  const id = (primaryAgent.value as any)?.id
+  if (id) router.push(`/client/agent/${id}`)
+}
+const openWorkLogs = () => {
+  if (job.value.id) {
+    router.push({ name: 'client-work-log-dashboard', params: { jobId: job.value.id } })
+  }
+}
+
 const jobStatusLabel = computed(() => {
   const status = (job.value.status || 'open').toLowerCase()
   if (status.includes('complete')) return 'Completed'
@@ -410,6 +480,9 @@ onMounted(async () => {
     try {
       const hydrated = hydrateJobFromContext(jobId)
 
+      loadAssignedAgentsFromContext()
+      loadAssignedAgentsFromCaches()
+
       if (!hydrated) {
         const result = await jobsService.getJobById(jobId)
 
@@ -427,8 +500,10 @@ onMounted(async () => {
             requirements: [result.data.description?.split('\n')[0] || 'Requirements not specified'],
             skills_needed: Array.isArray((result.data as any).skills_needed) ? (result.data as any).skills_needed.join(', ') : (result.data as any).skills_needed || '',
             deadline: result.data.timeline?.endDate ? new Date(result.data.timeline.endDate).getTime() : 0,
-            status: 'open'
+            status: (result.data as any)?.status || 'open'
           }
+
+          seedAssignedAgentsFromJobResult(result.data)
         } else {
           throw new Error(result.error || 'Job not found')
         }

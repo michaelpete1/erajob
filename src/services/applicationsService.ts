@@ -9,7 +9,8 @@ import type {
   ServiceResponse
 } from '../types/api'
 
-const BASE_URL = '/v1/applications'
+const APPLICATIONS_BASE = '/v1/applications'
+const JOBS_BASE = '/v1/jobss'
 
 const buildListParams = (params?: Partial<ApplicationListParams>) => ({
   start: params?.start ?? 0,
@@ -21,9 +22,31 @@ export const listAgentApplications = async (
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/agent/list/`, {
-      params: query
-    })
+    const endpoints = [
+      `${APPLICATIONS_BASE}/agent/list/`,
+      `${APPLICATIONS_BASE}/agent/`,
+      `${JOBS_BASE}/proposals/agent/`,
+      `${JOBS_BASE}/agent/proposals/`
+    ]
+
+    let response: { data: ApiResponse<ApplicationOut[]> } | null = null
+    for (const endpoint of endpoints) {
+      try {
+        response = await apiClient.get<ApiResponse<ApplicationOut[]>>(endpoint, { params: query })
+        break
+      } catch (err: any) {
+        const status = err?.response?.status
+        if (status === 404) {
+          continue
+        }
+        throw err
+      }
+    }
+
+    if (!response) {
+      return { success: true, data: [] }
+    }
+
     if (response.data.status_code === 200 || response.data.status_code === 0) {
       return {
         success: true,
@@ -48,9 +71,28 @@ export const listClientApplications = async (
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/client/list/`, {
-      params: { job_id: jobId, ...query }
-    })
+    const attempt = async (endpoint: string, paramKey: string) => {
+      return apiClient.get<ApiResponse<ApplicationOut[]>>(endpoint, {
+        params: { [paramKey]: jobId, ...query }
+      })
+    }
+
+    let response: { data: ApiResponse<ApplicationOut[]> }
+    try {
+      response = await attempt(`${JOBS_BASE}/client/proposals/`, 'job_id')
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 404) {
+        try {
+          response = await attempt(`${JOBS_BASE}/proposals/`, 'job_id')
+        } catch (_err2: any) {
+          return { success: true, data: [] }
+        }
+      } else {
+        throw err
+      }
+    }
+
     if (response.data.status_code === 200 || response.data.status_code === 0) {
       const payload = Array.isArray(response.data.data) ? response.data.data : []
       const mapped = payload.map(application => {
@@ -111,7 +153,7 @@ export const listClientApplications = async (
 
 export const getAdminApplicationById = async (id: string): Promise<ServiceResponse<ApplicationOut>> => {
   try {
-    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`${BASE_URL}/admin/me`, {
+    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`${APPLICATIONS_BASE}/admin/me`, {
       params: { id }
     })
     if (response.data.status_code === 200 || response.data.status_code === 0) {
@@ -138,7 +180,7 @@ export const listAdminApplicationsForJob = async (
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${BASE_URL}/admin/list/`, {
+    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(`${APPLICATIONS_BASE}/admin/list/`, {
       params: { job_id: jobId, ...query }
     })
     if (response.data.status_code === 200 || response.data.status_code === 0) {
@@ -163,9 +205,17 @@ export const getClientApplicationById = async (
   params: { id: string; job_id: string }
 ): Promise<ServiceResponse<ApplicationOut>> => {
   try {
-    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`${BASE_URL}/client/me`, {
-      params
-    })
+    let response: { data: ApiResponse<ApplicationOut> }
+    try {
+      response = await apiClient.get<ApiResponse<ApplicationOut>>(`${JOBS_BASE}/client/proposals/me`, { params })
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 404) {
+        return { success: false, error: 'Proposal not found' }
+      } else {
+        throw err
+      }
+    }
     if (response.data.status_code === 200 || response.data.status_code === 0) {
       return {
         success: true,
@@ -190,7 +240,7 @@ export const approveAgentApplication = async (
 ): Promise<ServiceResponse<ApplicationOut>> => {
   try {
     const response = await apiClient.patch<ApiResponse<ApplicationOut>>(
-      `${BASE_URL}/client/select-agent/${jobId}`,
+      `${APPLICATIONS_BASE}/client/select-agent/${jobId}`,
       payload
     )
     if (response.data.status_code === 200) {
@@ -217,7 +267,7 @@ export const rejectAgentApplication = async (
 ): Promise<ServiceResponse<ApplicationOut>> => {
   try {
     const response = await apiClient.patch<ApiResponse<ApplicationOut>>(
-      `${BASE_URL}/client/reject-agent/${jobId}`,
+      `${APPLICATIONS_BASE}/client/reject-agent/${jobId}`,
       payload
     )
     if (response.data.status_code === 200) {
@@ -240,7 +290,7 @@ export const rejectAgentApplication = async (
 
 export const getAgentApplicationById = async (id: string): Promise<ServiceResponse<ApplicationOut>> => {
   try {
-    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`${BASE_URL}/agent/me`, {
+    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`${APPLICATIONS_BASE}/agent/me`, {
       params: { id }
     })
     if (response.data.status_code === 200) {
@@ -265,7 +315,7 @@ export const applyForJob = async (
   payload: ApplicationApplyPayload
 ): Promise<ServiceResponse<string>> => {
   try {
-    const response = await apiClient.post<ApiResponse<string>>(`${BASE_URL}/apply`, payload)
+    const response = await apiClient.post<ApiResponse<string>>(`${APPLICATIONS_BASE}/apply`, payload)
     if (response.data.status_code === 200 || response.data.status_code === 0) {
       return {
         success: true,

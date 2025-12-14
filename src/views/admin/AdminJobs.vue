@@ -32,7 +32,6 @@
               </div>
               <div class="flex items-center gap-2 sm:flex-col sm:items-stretch">
                 <button @click="goToProposal(job)" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-sm">Propose to Client</button>
-                <button @click="memoSelected(job)" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm">Memo to Agent</button>
               </div>
             </div>
 
@@ -42,7 +41,6 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div v-for="agent in jobAgents(job)" :key="String(agent?.id || agent)" class="flex items-center justify-between border border-gray-200 rounded-lg p-2">
                     <div class="text-sm text-gray-700 truncate">{{ agentName(agent) }}</div>
-                    <button @click="goToMemo(agent)" class="px-2 py-1 bg-gray-900 text-white rounded-md text-xs">Memo</button>
                   </div>
                 </div>
               </div>
@@ -116,20 +114,7 @@ const openAgents = (job: any) => {
   expandedJobId.value = jobId(job)
 }
 
-const memoSelected = (job: any) => {
-  const agents = jobAgents(job)
-  if (agents.length > 0) {
-    goToMemo(agents[0])
-  } else {
-    showFindAgents(job)
-  }
-}
-
-const goToMemo = (agent: any) => {
-  const id = String(agent?.id || agent)
-  if (!id) return
-  router.push(`/admin/memo/${id}`)
-}
+// Memo functionality removed as requested
 
 const showFindAgents = (job: any) => {
   const id = jobId(job)
@@ -139,9 +124,6 @@ const showFindAgents = (job: any) => {
 
 const handleAgentAssigned = (agent: any) => {
   isFindAgentsOpen.value = false
-  if (agent?.id) {
-    router.push(`/admin/memo/${agent.id}`)
-  }
 }
 </script>
 

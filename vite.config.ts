@@ -16,7 +16,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://eba-jobs.getxoxo.space',
+        target: 'https://eba.3nis.net',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api/, ''),

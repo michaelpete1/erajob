@@ -25,17 +25,15 @@ interface LoginResponse {
 }
 
 // Base URL for the API
-const API_BASE_URL = import.meta.env.DEV
-  ? '/api'  // Uses the proxy in development
-  : import.meta.env.VITE_API_BASE_URL ?? 'https://eba-jobs.getxoxo.space'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://eba.3nis.net'
 
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 20000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_BASE_URL,
+  timeout: 60000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
 // Request interceptor to add auth token and log requests
@@ -66,7 +64,7 @@ apiClient.interceptors.request.use(
 
 // Response interceptor with logging and token refresh logic
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
+  (response: AxiosResponse) => {
     // Log successful responses
     console.group('API Response')
     console.log('URL:', response.config.url)
@@ -74,17 +72,27 @@ apiClient.interceptors.response.use(
     console.log('Data:', response.data)
     console.log('Headers:', response.headers)
     console.groupEnd()
-    return response
-  },
-  async (error) => {
-    const originalRequest = error.config as any
-    const status = error.response?.status
+    return response
+  },
+  async (error) => {
+    const originalRequest = error.config as any
+    const status = error.response?.status
 
-    if (status === 401) {
-      const refreshToken = localStorage.getItem('refresh_token')
-      if (!refreshToken) {
-        return Promise.reject(error)
-      }
+    const message = error?.message || ''
+    const isTimeout = error?.code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')
+    if (isTimeout) {
+      originalRequest.__timeoutRetryCount = (originalRequest.__timeoutRetryCount || 0) + 1
+      if (originalRequest.__timeoutRetryCount <= 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        return apiClient(originalRequest)
+      }
+    }
+
+    if (status === 401) {
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (!refreshToken) {
+        return Promise.reject(error)
+      }
 
       if (!originalRequest._retry) {
         originalRequest._retry = true
@@ -422,33 +430,51 @@ class ApiService {
         detail: string;
       };
 
-      const response = await apiClient.post<ClientLoginResponse>('/v1/clients/login', credentials)
+      try {
+        const response = await apiClient.post<ClientLoginResponse>('/v1/clients/login', credentials)
 
-      if (response.data.status_code >= 400) {
-        return { success: false, error: response.data.detail || 'Login failed' }
+        if (response.data.status_code >= 400) {
+          throw new Error(response.data.detail || 'Login failed')
+        }
+
+        const userData = response.data.data
+        if (!userData || !userData.access_token) {
+          throw new Error('Invalid response format from server')
+        }
+
+        const user: UserOut = {
+          ...userData,
+          role: { name: 'client', description: 'Client user' } as any
+        }
+
+        this.storeAuthData({
+          accessToken: userData.access_token,
+          refreshToken: userData.refresh_token || '',
+          user
+        })
+
+        return { success: true, data: user }
+      } catch (primaryErr: any) {
+        try {
+          const fallback = await apiClient.post<EJApiResponse<UserOut>>('/v1/users/login', credentials)
+          const u = fallback.data.data as UserOut
+          if (!u || !u.access_token) {
+            throw new Error(fallback.data.detail || 'Login failed')
+          }
+          const user: UserOut = { ...u, role: { name: 'client', description: 'Client user' } as any }
+          this.storeAuthData({
+            accessToken: u.access_token!,
+            refreshToken: u.refresh_token || '',
+            user
+          })
+          return { success: true, data: user }
+        } catch (fallbackErr: any) {
+          const detail = fallbackErr?.response?.data?.detail || primaryErr?.message || 'Login failed'
+          return { success: false, error: typeof detail === 'string' ? detail : 'Login failed' }
+        }
       }
-
-      const userData = response.data.data
-
-      if (!userData || !userData.access_token) {
-        console.error('Invalid login response format:', response.data)
-        return { success: false, error: 'Invalid response format from server' }
-      }
-
-      const user: UserOut = {
-        ...userData,
-        role: { name: 'client', description: 'Client user' } as any
-      }
-
-      this.storeAuthData({
-        accessToken: userData.access_token,
-        refreshToken: userData.refresh_token || '',
-        user
-      })
-
-      return { success: true, data: user }
     })
-  }
+  }
 
   async getCurrentClient(): Promise<ServiceResponse<UserOut>> {
     try {

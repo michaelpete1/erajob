@@ -159,6 +159,72 @@ const toUnix = (d: string, t: string): number => {
 
 const buildAgentPayload = (raw: any): any => {
   const ts = Math.floor(Date.now() / 1000)
+  const normalizeExpertise = (value: unknown): string => {
+    const allowed = [
+      'Web Development',
+      'Mobile Development',
+      'Sales',
+      'Customer Service',
+      'Editing',
+      'Book Keeping',
+      'Executive Assistant',
+      'Appointment Setting',
+      'Digital Marketing',
+      'Data Analysis'
+    ]
+    if (typeof value === 'string') {
+      const v = value.replace(/\xa0/g, ' ').trim().toLowerCase()
+      const map: Record<string, string> = {
+        'web development': 'Web Development',
+        'mobile development': 'Mobile Development',
+        'sales': 'Sales',
+        'customer service': 'Customer Service',
+        'editing': 'Editing',
+        'book keeping': 'Book Keeping',
+        'executive assistant': 'Executive Assistant',
+        'appointment setting': 'Appointment Setting',
+        'digital marketing': 'Digital Marketing',
+        'data analysis': 'Data Analysis'
+      }
+      if (map[v]) return map[v]
+      const matched = allowed.find(a => a.toLowerCase() === v)
+      if (matched) return matched
+    }
+    return 'Web Development'
+  }
+
+  const normalizeHours = (value: unknown): number => {
+    const allowed = new Set([160, 80, 40, 20])
+    if (typeof value === 'number') {
+      return allowed.has(value) ? value : 40
+    }
+    if (typeof value === 'string') {
+      const v = value.trim().toLowerCase()
+      const num = parseInt(v.replace(/[^0-9]/g, ''), 10)
+      if (allowed.has(num)) return num
+      if (v.includes('160')) return 160
+      if (v.includes('80')) return 80
+      if (v.includes('40')) return 40
+      if (v.includes('20')) return 20
+    }
+    return 40
+  }
+
+  const normalizeTimezone = (value: unknown): string => {
+    const allowed = [
+      'UTC-12:00','UTC-11:00','UTC-10:00','UTC-09:30','UTC-09:00','UTC-08:00','UTC-07:00','UTC-06:00','UTC-05:00',
+      'UTC-04:30','UTC-04:00','UTC-03:30','UTC-03:00','UTC-02:00','UTC-01:00','UTC+00:00','UTC+01:00','UTC+02:00',
+      'UTC+03:00','UTC+03:30','UTC+04:00','UTC+05:00','UTC+05:30','UTC+05:45','UTC+06:00','UTC+06:30','UTC+07:00',
+      'UTC+08:00','UTC+08:45','UTC+09:00','UTC+09:30','UTC+10:00','UTC+10:30','UTC+11:00','UTC+11:30','UTC+12:00',
+      'UTC+12:45','UTC+13:00','UTC+14:00'
+    ]
+    if (typeof value === 'string') {
+      const v = value.trim().toUpperCase()
+      if (allowed.includes(v)) return v
+    }
+    return 'UTC+00:00'
+  }
+
   return {
     id: String(raw?.id || raw?._id || raw?.uuid || ''),
     admin_approved: Boolean(raw?.admin_approved ?? true),
@@ -175,11 +241,11 @@ const buildAgentPayload = (raw: any): any => {
     services: Array.isArray(raw?.services) ? raw.services : [],
     client_reason_for_signing_up: String(raw?.client_reason_for_signing_up || ''),
     client_need_agent_work_hours_to_be: String(raw?.client_need_agent_work_hours_to_be || ''),
-    primary_area_of_expertise: String(raw?.primary_area_of_expertise || raw?.expertise || ''),
+    primary_area_of_expertise: normalizeExpertise(raw?.primary_area_of_expertise ?? raw?.expertise),
     years_of_experience: Number(raw?.years_of_experience ?? raw?.experience_years ?? 0),
     three_most_commonly_used_tools_or_platforms: Array.isArray(raw?.three_most_commonly_used_tools_or_platforms) ? raw.three_most_commonly_used_tools_or_platforms : (Array.isArray(raw?.tools) ? raw.tools.slice(0,3) : []),
-    available_hours_agent_can_commit: String(raw?.available_hours_agent_can_commit || raw?.availability_hours || '40_hours_per_week'),
-    time_zone: String(raw?.time_zone || ''),
+    available_hours_agent_can_commit: normalizeHours(raw?.available_hours_agent_can_commit ?? raw?.availability_hours),
+    time_zone: normalizeTimezone(raw?.time_zone),
     portfolio_link: String(raw?.portfolio_link || raw?.portfolio || ''),
     is_agent_open_to_calls_and_video_meetings: Boolean(raw?.is_agent_open_to_calls_and_video_meetings ?? true),
     does_agent_have_working_computer: Boolean(raw?.does_agent_have_working_computer ?? true),
@@ -262,14 +328,28 @@ const submitProposal = async () => {
         Tax: Number(tax.value) || 0
       }
     }
-    const res = await proposeJob(jobId.value, payload)
-    const ok = (res as any)?.data?.status_code === 200 || (res as any)?.data?.status_code === 0 || typeof (res as any)?.data === 'string'
-    if (ok) {
-      successMessage.value = 'Proposal sent successfully'
-      setTimeout(() => {
-        router.push('/admin/notifications')
-      }, 800)
-    } else {
+  const res = await proposeJob(jobId.value, payload)
+  const ok = (res as any)?.data?.status_code === 200 || (res as any)?.data?.status_code === 0 || typeof (res as any)?.data === 'string'
+  if (ok) {
+    try {
+      const { alertsService } = await import('@/services/notificationsService')
+      alertsService.createLocalAlert({
+        alert_title: 'New Proposal Sent',
+        alert_description: `A proposal was sent for job ${jobId.value} to the client`,
+        alert_type: 'proposal',
+        alert_primary_action: 'View',
+        alert_secondary_action: 'Acknowledge',
+        priority: 'normal',
+        alert_target_user_id: String(agentPayload.id),
+        job_id: jobId.value,
+        agent_id: String(agentPayload.id)
+      } as any)
+    } catch (_) {}
+    successMessage.value = 'Proposal sent successfully'
+    setTimeout(() => {
+      router.push('/admin/notifications')
+    }, 800)
+  } else {
       error.value = (res as any)?.data?.detail || 'Failed to send proposal'
     }
   } catch (e: any) {

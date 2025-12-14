@@ -37,7 +37,15 @@ export function useAgents(seed?: RecommendedSeed) {
 
   // Get recommended agents
   const getRecommendedAgents = async (params?: PaginationParams & AgentFilters) => {
-    const result = await agentsService.getRecommendedAgents(params)
+    const result = await agentsService.getRecommendedAgents({
+      start: params?.start ?? agentState.value.pagination.start,
+      stop: params?.stop ?? agentState.value.pagination.stop,
+      role: params?.role || 'agent',
+      skills: params?.skills,
+      location: params?.location,
+      status: params?.status,
+      query: params?.query
+    })
 
     if (result.success && result.data) {
       agentState.value.agents = result.data

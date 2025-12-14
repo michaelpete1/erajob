@@ -222,6 +222,7 @@ import { CheckCircleIcon, MusicalNoteIcon } from '@heroicons/vue/24/solid'
 import { createGigSlug } from '@/utils/slugUtils'
 import { useJobs } from '@/composables/useJobs'
 import { applicationsService } from '@/services/applicationsService'
+import { jobsService } from '@/services/jobsService'
 import type { ApplicationOut } from '@/types/api'
 
 const openMobileNav = ref(false)
@@ -230,6 +231,9 @@ const searchQuery = ref('')
 const agentApplications = ref<ApplicationOut[]>([])
 const applicationsLoading = ref(false)
 const applicationsError = ref<string | null>(null)
+const selectedJobs = ref<any[]>([])
+const selectedLoading = ref(false)
+const selectedError = ref<string | null>(null)
 
 const normalizeId = (value: unknown): string | null => {
   if (typeof value === 'string') {
@@ -290,6 +294,15 @@ const proposalJobIds = computed(() => {
   return ids
 })
 
+const selectedJobIds = computed(() => {
+  const ids = new Set<string>()
+  selectedJobs.value.forEach(job => {
+    const id = getJobId(job)
+    if (id) ids.add(id)
+  })
+  return ids
+})
+
 const loadAgentApplications = async () => {
   applicationsLoading.value = true
   applicationsError.value = null
@@ -314,6 +327,33 @@ const loadAgentApplications = async () => {
     applicationsError.value = error?.message || 'Failed to load applications.'
   } finally {
     applicationsLoading.value = false
+  }
+}
+
+const loadSelectedJobs = async () => {
+  selectedLoading.value = true
+  selectedError.value = null
+  try {
+    const response = await jobsService.listAgentSelectedJobs(0, 50)
+    if (response.success) {
+      const data = response.data as unknown
+      if (Array.isArray(data)) {
+        selectedJobs.value = data as any[]
+      } else if (data && typeof data === 'object') {
+        selectedJobs.value = [data as any]
+      } else {
+        selectedJobs.value = []
+        selectedError.value = 'Failed to load selected jobs.'
+      }
+    } else {
+      selectedJobs.value = []
+      selectedError.value = response.error || 'Failed to load selected jobs.'
+    }
+  } catch (error: any) {
+    selectedJobs.value = []
+    selectedError.value = error?.message || 'Failed to load selected jobs.'
+  } finally {
+    selectedLoading.value = false
   }
 }
 
@@ -385,15 +425,15 @@ const paginationParams = {
 
 // Load jobs when component mounts
 onMounted(async () => {
-  await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
+  await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications(), loadSelectedJobs()])
 })
 
 // Watch tab changes to load appropriate jobs
 watch(activeTab, async () => {
   if (activeTab.value === 'browse') {
-    await Promise.all([getBrowseJobs(paginationParams), loadAgentApplications()])
+    await Promise.all([getBrowseJobs(paginationParams), loadAgentApplications(), loadSelectedJobs()])
   } else {
-    await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications()])
+    await Promise.all([getAvailableJobs(paginationParams), loadAgentApplications(), loadSelectedJobs()])
   }
 })
 
@@ -443,8 +483,24 @@ const getAgentExpertise = (): string | null => {
   return null
 }
 
+const combinedJobs = computed(() => {
+  const available = Array.isArray(jobs.value) ? jobs.value : []
+  const selected = Array.isArray(selectedJobs.value) ? selectedJobs.value : []
+  const selectedIds = new Set(
+    selected.map(j => {
+      const id = getJobId(j)
+      return id || ''
+    }).filter(Boolean)
+  )
+  const merged = [...selected, ...available.filter(j => {
+    const id = getJobId(j)
+    return id ? !selectedIds.has(id) : true
+  })]
+  return merged
+})
+
 const filteredGigs = computed<MappedGigCard[]>(() => {
-  const source = Array.isArray(jobs.value) ? jobs.value : []
+  const source = Array.isArray(combinedJobs.value) ? combinedJobs.value : []
 
   const normalized = source.map((job, index) => {
     const key = job.id ? String(job.id) : `gig-${index}`
@@ -497,12 +553,14 @@ const normalizeJobStatus = (job: any): string => {
   const jobId = getJobId(job)
   const hasAcceptedProposal = jobId ? acceptedJobIds.value.has(jobId) : false
   const hasAgentProposal = jobId ? proposalJobIds.value.has(jobId) : false
+  const isSelected = jobId ? selectedJobIds.value.has(jobId) : false
 
-  if (adminApproved && hasAcceptedProposal) return 'active'
+  if (adminApproved && (hasAcceptedProposal || isSelected)) return 'active'
   if (adminApproved && hasAgentProposal) return 'awaiting_client'
   if (adminApproved) return 'available'
   if (hasAcceptedProposal) return 'pending_admin'
   if (hasAgentProposal) return 'proposal_submitted'
+  if (isSelected) return 'pending_admin'
   return 'pending_review'
 }
 

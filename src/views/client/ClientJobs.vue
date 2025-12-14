@@ -92,12 +92,6 @@
             View Details
           </button>
           <button
-            class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
-            @click.stop="goToJobPage(project)"
-          >
-            View Job Page
-          </button>
-          <button
             class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-teal-500 text-white hover:bg-teal-600 transition-colors"
             @click.stop="goToProjectWorkLogs(project)"
           >
@@ -671,11 +665,6 @@ const goToProject = (project: Project) => {
   router.push({ name: 'client-job-details', params: { id: String(project.id) } })
 }
 
-const goToJobPage = (project: Project) => {
-  if (!project?.id) return
-  cacheProjectContext(project)
-  router.push({ name: 'client-job-overview', params: { id: String(project.id) } })
-}
 
 const goToProjectWorkLogs = (project: Project) => {
   if (!project?.id) return

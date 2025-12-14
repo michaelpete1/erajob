@@ -5,13 +5,13 @@ import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'a
 import type { ApiResponse, ServiceResponse, Job, AdminCredentials, AdminAuthResponse } from '../types/api' // Import ApiResponse, Job, AdminCredentials, AdminAuthResponse
 
 // API Configuration
-const API_BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = ((import.meta as any)?.env?.VITE_API_BASE_URL || 'https://eba.3nis.net')
 const API_VERSION = '/v1'
 
 // Create axios instance with interceptors
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -97,7 +97,17 @@ api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error) => {
     const status = error?.response?.status
-    const originalRequest = error?.config || {}
+    const originalRequest = (error?.config as any) || {}
+
+    const message = error?.message || ''
+    const isTimeout = error?.code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')
+    if (isTimeout) {
+      originalRequest.__timeoutRetryCount = (originalRequest.__timeoutRetryCount || 0) + 1
+      if (originalRequest.__timeoutRetryCount <= 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        return api(originalRequest)
+      }
+    }
 
     // Only handle 401s
     if (status !== 401) {

@@ -121,6 +121,9 @@ export class AgentsService {
       'mobile development': 'Mobile Development',
       'sales': 'Sales',
       'customer service': 'Customer Service',
+      'customer support': 'Customer Service',
+      'support': 'Customer Service',
+      'customer success': 'Customer Service',
       'editing': 'Editing',
       'book keeping': 'Book Keeping',
       'bookkeeping': 'Book Keeping',
@@ -509,7 +512,7 @@ export class AgentsService {
         params: { start: 0, stop: 100 } // Get a reasonable number of jobs
       })
 
-      if (jobsResponse.data.status_code === 200 && jobsResponse.data.data) {
+      if ((jobsResponse.data.status_code === 200 || jobsResponse.data.status_code === 0) && jobsResponse.data.data) {
         const jobs = Array.isArray(jobsResponse.data.data) ? jobsResponse.data.data : []
 
         // Find jobs with matching category and collect their recommended agents

@@ -37,6 +37,15 @@ type ChartData = DailyData | WeeklyData
 const dailyData = ref<DailyData[]>([])
 const weeklyData = ref<WeeklyData[]>([])
 
+const quickTitle = ref('')
+const quickHours = ref(1)
+const quickNotes = ref('')
+const quickFiles = ref<string[]>([])
+const quickLoading = ref(false)
+const quickError = ref<string | null>(null)
+const quickSuccess = ref<string | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
+
 const normalizeLog = (log: WorkLogOut): DisplayLog => {
   const ms = log.date_created > 1_000_000_000_000 ? log.date_created : log.date_created * 1000
   const date = new Date(ms)
@@ -149,6 +158,92 @@ const goToLog = (log: DisplayLog) => {
   router.push(`/agent/log-receipt/${log.id}`)
 }
 
+const triggerFileUpload = () => {
+  fileInput.value?.click()
+}
+
+const handleFileUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
+  try {
+    const files = Array.from(input.files)
+    for (const file of files) {
+      const data = await fileToBase64(file)
+      quickFiles.value.push(data)
+    }
+  } catch (e) {
+    quickError.value = 'Failed to process files.'
+  } finally {
+    if (input) input.value = ''
+  }
+}
+
+const removeQuickFile = (index: number) => {
+  quickFiles.value.splice(index, 1)
+}
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Failed to convert file'))
+      }
+    }
+    reader.onerror = error => reject(error)
+    reader.readAsDataURL(file)
+  })
+}
+
+const submitQuickLog = async () => {
+  if (!jobId.value) {
+    quickError.value = 'Open a gig to select a job.'
+    return
+  }
+  const title = quickTitle.value.trim()
+  const comment = quickNotes.value.trim()
+  if (!title) {
+    quickError.value = 'Enter a log title.'
+    return
+  }
+  if (quickHours.value <= 0) {
+    quickError.value = 'Enter valid hours.'
+    return
+  }
+  if (comment.length < 5) {
+    quickError.value = 'Add more detail to notes.'
+    return
+  }
+  quickLoading.value = true
+  quickError.value = null
+  quickSuccess.value = null
+  try {
+    const resp = await workLogsService.postWorkLog({
+      job_id: jobId.value,
+      log_title: title,
+      log_comment: comment,
+      hours: Number(quickHours.value.toFixed(2)),
+      files: quickFiles.value.length > 0 ? quickFiles.value : undefined
+    })
+    if (resp.success && resp.data) {
+      quickSuccess.value = 'Work log submitted.'
+      quickTitle.value = ''
+      quickNotes.value = ''
+      quickHours.value = 1
+      quickFiles.value = []
+      await fetchWorkLogs()
+    } else {
+      quickError.value = resp.error || 'Failed to submit work log.'
+    }
+  } catch (e: any) {
+    quickError.value = e?.message || 'Failed to submit work log.'
+  } finally {
+    quickLoading.value = false
+  }
+}
+
 onMounted(async () => {
   try {
     const storedGig = localStorage.getItem('selectedGig')
@@ -243,6 +338,48 @@ const logs = displayLogs
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+        <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">Post New Log</h3>
+        <div v-if="quickError" class="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">{{ quickError }}</div>
+        <div v-if="quickSuccess" class="mb-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">{{ quickSuccess }}</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-gray-700 text-sm font-medium mb-2">Log Title</label>
+            <input v-model="quickTitle" type="text" maxlength="120" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. Initial Design Review" />
+          </div>
+          <div>
+            <label class="block text-gray-700 text-sm font-medium mb-2">Hours Worked</label>
+            <div class="flex items-center gap-3">
+              <input v-model.number="quickHours" type="number" min="0.5" max="24" step="0.5" class="w-24 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500 outline-none" />
+              <span class="text-gray-500">hours</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2">Notes</label>
+          <textarea v-model="quickNotes" rows="4" class="w-full rounded-lg border border-gray-200 p-3 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Add any additional notes about your work..."></textarea>
+        </div>
+        <div class="mt-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2">Attachments</label>
+          <div @click="triggerFileUpload" class="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 text-gray-500 cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition-all">
+            <p class="text-sm font-medium mb-1">Upload files</p>
+            <p class="text-xs text-gray-400">PDF, DOC, JPG, PNG (Max 10MB)</p>
+            <input ref="fileInput" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" @change="handleFileUpload" />
+          </div>
+          <div v-if="quickFiles.length > 0" class="mt-3 space-y-2">
+            <div v-for="(file, index) in quickFiles" :key="index" class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+              <span class="text-sm text-gray-700">Attachment {{ index + 1 }}</span>
+              <button @click="removeQuickFile(index)" class="text-red-500 hover:text-red-600">Remove</button>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4">
+          <button @click="submitQuickLog" :disabled="quickLoading" class="w-full bg-teal-500 text-white font-medium py-3 rounded-xl transition-colors duration-200 hover:bg-teal-600 disabled:opacity-60">
+            {{ quickLoading ? 'Submitting...' : 'Post Log' }}
+          </button>
         </div>
       </div>
 

@@ -9,7 +9,7 @@ export const APP_CONFIG = {
 
 // API Configuration
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://eba-jobs.getxoxo.space',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://eba.3nis.net',
   timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '10000'),
   endpoints: {
     // Authentication endpoints

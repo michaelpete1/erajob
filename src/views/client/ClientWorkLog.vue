@@ -464,7 +464,11 @@ const goToLogDetail = (log: DisplayLog) => {
   } catch (err) {
     console.warn('Unable to cache selected work log', err)
   }
-  router.push({ name: 'client-work-log-dashboard', query: { view: currentView.value.toLowerCase() } })
+  router.push({
+    name: 'client-work-log-dashboard',
+    params: { jobId: jobId.value },
+    query: { view: currentView.value.toLowerCase(), logId: log.id }
+  })
 }
 
 const loadProjectContext = () => {
@@ -486,11 +490,14 @@ const loadProjectContext = () => {
       if (Array.isArray(project?.agents)) {
         const directory: Record<string, { name: string; email?: string }> = {}
         project.agents.forEach((agent: any) => {
-          const id = String(agent?.id || agent?.agent_id || '')
-          if (id) {
-            directory[id] = {
-              name: agent?.name || agent?.full_name || agent?.display_name || agent?.username || id,
-              email: agent?.email || agent?.contact_email || agent?.user_email || agent?.agent_email || undefined
+          const roleLower = String(agent?.role || agent?.user_role || '').trim().toLowerCase()
+          if (roleLower === 'agent') {
+            const id = String(agent?.id || agent?.agent_id || '')
+            if (id) {
+              directory[id] = {
+                name: agent?.name || agent?.full_name || agent?.display_name || agent?.username || id,
+                email: agent?.email || agent?.contact_email || agent?.user_email || agent?.agent_email || undefined
+              }
             }
           }
         })
