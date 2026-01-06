@@ -105,7 +105,7 @@ const router = useRouter()
 const toast = useToast()
 const { jobs, loading, error, getClientJobs } = useJobs()
 
-const pagination = { start: 0, stop: 20 }
+const pagination = { start: 0, stop: 100 }
 const projects = computed(() => jobs.value)
 
 // Expose projects to template
