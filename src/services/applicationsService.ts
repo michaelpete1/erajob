@@ -22,31 +22,7 @@ export const listAgentApplications = async (
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const endpoints = [
-      `${APPLICATIONS_BASE}/agent/list/`,
-      `${APPLICATIONS_BASE}/agent/`,
-      `${JOBS_BASE}/proposals/agent/`,
-      `${JOBS_BASE}/agent/proposals/`
-    ]
-
-    let response: { data: ApiResponse<ApplicationOut[]> } | null = null
-    for (const endpoint of endpoints) {
-      try {
-        response = await apiClient.get<ApiResponse<ApplicationOut[]>>(endpoint, { params: query })
-        break
-      } catch (err: any) {
-        const status = err?.response?.status
-        if (status === 404) {
-          continue
-        }
-        throw err
-      }
-    }
-
-    if (!response) {
-      return { success: true, data: [] }
-    }
-
+    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>('/v1/proposals/agent/', { params: query })
     if (response.data.status_code === 200 || response.data.status_code === 0) {
       return {
         success: true,
@@ -66,32 +42,16 @@ export const listAgentApplications = async (
 }
 
 export const listClientApplications = async (
-  jobId: string,
+  jobId?: string,
   params?: Partial<ApplicationListParams>
 ): Promise<ServiceResponse<ApplicationOut[]>> => {
   try {
     const query = buildListParams(params)
-    const attempt = async (endpoint: string, paramKey: string) => {
-      return apiClient.get<ApiResponse<ApplicationOut[]>>(endpoint, {
-        params: { [paramKey]: jobId, ...query }
-      })
-    }
-
-    let response: { data: ApiResponse<ApplicationOut[]> }
-    try {
-      response = await attempt(`${JOBS_BASE}/client/proposals/`, 'job_id')
-    } catch (err: any) {
-      const status = err?.response?.status
-      if (status === 404) {
-        try {
-          response = await attempt(`${JOBS_BASE}/proposals/`, 'job_id')
-        } catch (_err2: any) {
-          return { success: true, data: [] }
-        }
-      } else {
-        throw err
-      }
-    }
+    const requestParams = jobId ? { job_id: jobId, ...query } : query
+    const response = await apiClient.get<ApiResponse<ApplicationOut[]>>(
+      '/v1/proposals/client/',
+      { params: requestParams }
+    )
 
     if (response.data.status_code === 200 || response.data.status_code === 0) {
       const payload = Array.isArray(response.data.data) ? response.data.data : []
@@ -144,6 +104,11 @@ export const listClientApplications = async (
       error: response.data.detail || 'Failed to fetch client applications'
     }
   } catch (error: any) {
+    const status = error?.response?.status
+    if (status === 404) {
+      // Endpoint not available; degrade gracefully with empty data
+      return { success: true, data: [] }
+    }
     return {
       success: false,
       error: error?.response?.data?.detail || error?.message || 'Failed to fetch client applications'
@@ -202,20 +167,10 @@ export const listAdminApplicationsForJob = async (
 }
 
 export const getClientApplicationById = async (
-  params: { id: string; job_id: string }
+  params: { id: string; job_id?: string }
 ): Promise<ServiceResponse<ApplicationOut>> => {
   try {
-    let response: { data: ApiResponse<ApplicationOut> }
-    try {
-      response = await apiClient.get<ApiResponse<ApplicationOut>>(`${JOBS_BASE}/client/proposals/me`, { params })
-    } catch (err: any) {
-      const status = err?.response?.status
-      if (status === 404) {
-        return { success: false, error: 'Proposal not found' }
-      } else {
-        throw err
-      }
-    }
+    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`/v1/proposals/client/${params.id}`)
     if (response.data.status_code === 200 || response.data.status_code === 0) {
       return {
         success: true,
@@ -290,9 +245,7 @@ export const rejectAgentApplication = async (
 
 export const getAgentApplicationById = async (id: string): Promise<ServiceResponse<ApplicationOut>> => {
   try {
-    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`${APPLICATIONS_BASE}/agent/me`, {
-      params: { id }
-    })
+    const response = await apiClient.get<ApiResponse<ApplicationOut>>(`/v1/proposals/agent/${id}`)
     if (response.data.status_code === 200) {
       return {
         success: true,
@@ -344,6 +297,68 @@ export const applicationsService = {
   rejectAgentApplication,
   getAgentApplicationById,
   applyForJob
+}
+
+// Client accept/reject admin proposal
+export const acceptAdminProposal = async (
+  jobId: string,
+  selectedAgents: Array<string | Record<string, any>> = []
+): Promise<ServiceResponse<string>> => {
+  try {
+    // Normalize selected_agents: backend expects objects (at least { id })
+    const normalized = (selectedAgents || []).map((item) => {
+      if (!item) return null
+      if (typeof item === 'object') {
+        const id = String(item.id || item._id || item.uuid || item.agent_id || '')
+        return id ? { ...item, id } : item
+      }
+      if (typeof item === 'string') {
+        const trimmed = item.trim()
+        return trimmed ? { id: trimmed } : null
+      }
+      const fallback = String(item).trim()
+      return fallback ? { id: fallback } : null
+    }).filter(Boolean)
+
+    const response = await apiClient.patch<ApiResponse<string>>(
+      `/v1/jobss/client/accept-proposal/${jobId}`,
+      {
+        client_approved: true,
+        selected_agents: normalized
+      }
+    )
+    if (response.data.status_code === 200 || response.data.status_code === 0) {
+      return { success: true, data: response.data.data ?? 'Proposal accepted' }
+    }
+    return { success: false, error: response.data.detail || 'Failed to accept proposal' }
+  } catch (error: any) {
+    const detail = error?.response?.data?.detail
+    const normalizedDetail = Array.isArray(detail)
+      ? detail.map((entry: any) => entry?.msg || String(entry)).join('; ')
+      : detail
+    return { success: false, error: normalizedDetail || error?.message || 'Failed to accept proposal' }
+  }
+}
+
+export const rejectAdminProposal = async (
+  jobId: string,
+  reason: string
+): Promise<ServiceResponse<string>> => {
+  try {
+    const response = await apiClient.patch<ApiResponse<string>>(
+      `/v1/jobss/client/reject-proposal/${jobId}`,
+      {
+        client_approved: false,
+        client_rejection_reason: reason || 'No reason provided'
+      }
+    )
+    if (response.data.status_code === 200 || response.data.status_code === 0) {
+      return { success: true, data: response.data.data ?? 'Proposal rejected' }
+    }
+    return { success: false, error: response.data.detail || 'Failed to reject proposal' }
+  } catch (error: any) {
+    return { success: false, error: error?.response?.data?.detail || error?.message || 'Failed to reject proposal' }
+  }
 }
 
 export default applicationsService

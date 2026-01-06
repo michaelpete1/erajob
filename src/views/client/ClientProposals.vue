@@ -23,27 +23,42 @@
         <p>{{ error }}</p>
       </div>
 
-      <div v-else-if="!jobId" class="state-card">
-        <h2>Select a Job</h2>
-        <p>Open a job from your dashboard and use the "View Proposals" button to see submissions.</p>
-      </div>
-
       <div v-else-if="proposals.length === 0" class="state-card">
         <h2>No proposals yet</h2>
         <p>You'll see agent submissions here as soon as they apply for this job.</p>
       </div>
 
-      <section v-else class="proposal-list">
+      <div class="filters mb-4 flex items-center gap-3" v-if="proposals.length > 0">
+        <label class="text-sm">Show:</label>
+        <select v-model="proposerFilter" class="rounded border px-2 py-1 text-sm">
+          <option value="all">All</option>
+          <option value="agent">Agent Submitted</option>
+          <option value="admin">Admin Proposed</option>
+        </select>
+      </div>
+
+      <section v-if="proposals.length > 0" class="proposal-list">
         <article
-          v-for="proposal in proposals"
+          v-for="proposal in filteredProposals"
           :key="proposal.id"
-          class="proposal-card"
+          :class="['proposal-card', (proposal as any).proposer_type === 'admin' ? 'border-l-4 border-indigo-500 bg-indigo-50' : (proposal as any).proposer_type === 'agent' ? 'border-l-4 border-green-500 bg-green-50' : '']"
           @click="openProposal(proposal)"
         >
-          <div class="proposal-header">
-            <span class="status-pill" :class="statusClass(proposal.proposal_status)">
-              {{ formatStatus(proposal.proposal_status) }}
-            </span>
+          <div class="proposal-header flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="status-pill" :class="statusClass(proposal.proposal_status)">
+                {{ formatStatus(proposal.proposal_status) }}
+              </span>
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                :class="(proposal as any).proposer_type === 'admin' ? 'bg-indigo-100 text-indigo-800' : (proposal as any).proposer_type === 'agent' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+                :title="(proposal as any).proposer_type === 'admin' ? 'Recommended by admin' : (proposal as any).proposer_type === 'agent' ? 'Submitted by agent' : 'Unknown proposer'"
+              >
+                <svg v-if="(proposal as any).proposer_type === 'admin'" class="w-3 h-3 mr-1" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M10 2l2.09 4.24L17 7.27l-3.5 2.86L14.18 16 10 13.77 5.82 16l.68-5.87L3 7.27l4.91-.98L10 2z"/></svg>
+                <svg v-else-if="(proposal as any).proposer_type === 'agent'" class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                {{ (proposal as any).proposer_type === 'admin' ? 'Proposed by Admin' : (proposal as any).proposer_type === 'agent' ? 'Submitted by Agent' : 'Unknown' }}
+              </span>
+            </div>
             <time>{{ formatTimestamp(proposal.date_created) }}</time>
           </div>
 
@@ -78,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { applicationsService } from '@/services/applicationsService'
 import type { ApplicationOut } from '@/types/api'
@@ -95,6 +110,12 @@ const jobId = ref('')
 const proposals = ref<ClientProposal[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const proposerFilter = ref<'all'|'agent'|'admin'>('all')
+
+const filteredProposals = computed(() => {
+  if (proposerFilter.value === 'all') return proposals.value
+  return proposals.value.filter(p => (p as any).proposer_type === proposerFilter.value)
+})
 
 const pagination = ref({ start: 0, stop: 50 })
 const agentDirectory = ref<Record<string, { name: string; email?: string }>>({})
@@ -106,16 +127,11 @@ const syncJobIdFromRoute = () => {
 }
 
 const loadProposals = async () => {
-  if (!jobId.value) {
-    proposals.value = []
-    return
-  }
-
   loading.value = true
   error.value = null
 
   try {
-    const response = await applicationsService.listClientApplications(jobId.value, pagination.value)
+    const response = await applicationsService.listClientApplications(jobId.value || undefined, pagination.value)
     if (response.success && response.data) {
       const fetched = response.data as ClientProposal[]
       proposals.value = enrichProposals(fetched)
@@ -176,26 +192,37 @@ const extractNestedAgentInfo = (proposal: ClientProposal): { name?: string; emai
 
 const enrichProposals = (items: ClientProposal[]): ClientProposal[] => {
   return items.map(proposal => {
-    if (!proposal.agent_id) return proposal
-
     let agentName = proposal.agent_name
     let agentEmail = proposal.agent_email
 
-    if ((!agentName || !agentEmail) && agentDirectory.value[proposal.agent_id]) {
+    if ((!agentName || !agentEmail) && proposal.agent_id && agentDirectory.value[proposal.agent_id]) {
       agentName = agentName || agentDirectory.value[proposal.agent_id].name
       agentEmail = agentEmail || agentDirectory.value[proposal.agent_id].email
     }
 
-    if (!agentName || !agentEmail) {
-      const nested = extractNestedAgentInfo(proposal)
-      agentName = agentName || nested.name
-      agentEmail = agentEmail || nested.email
+    const nested = extractNestedAgentInfo(proposal)
+    agentName = agentName || nested.name
+    agentEmail = agentEmail || nested.email
+
+    let proposer_type: 'agent'|'admin'|'unknown' = 'unknown'
+    const raw = proposal as Record<string, any>
+    const roleValue = String(raw.proposal_created_by_role || raw.created_by_role || raw.proposer_role || '').toLowerCase()
+    const viaValue = String(raw.proposal_created_via || raw.created_via || raw.proposer_via || '').toLowerCase()
+    if (roleValue.includes('admin') || viaValue.includes('admin')) {
+      proposer_type = 'admin'
+    } else if (roleValue.includes('agent') || viaValue.includes('agent')) {
+      proposer_type = 'agent'
+    } else if (proposal.agent_id) {
+      proposer_type = 'agent'
+    } else if (nested.name || nested.email) {
+      proposer_type = 'admin'
     }
 
     return {
       ...proposal,
       agent_name: agentName,
-      agent_email: agentEmail
+      agent_email: agentEmail,
+      proposer_type
     }
   })
 }
@@ -216,13 +243,17 @@ const goBack = () => {
 const openProposal = (proposal: ClientProposal) => {
   if (!proposal.id || !jobId.value) return
   try {
+    const raw = proposal as Record<string, any>
+    const breakdown = raw.break_down || raw.breakdown || raw.breakDown || raw.proposal_break_down || raw.proposal_breakdown
     localStorage.setItem(
       'selectedClientProposal',
       JSON.stringify({
         id: proposal.id,
         job_id: jobId.value,
         agent_name: proposal.agent_name,
-        agent_email: proposal.agent_email
+        agent_email: proposal.agent_email,
+        budget: raw.budget ?? raw.amount,
+        break_down: breakdown
       })
     )
   } catch (err) {

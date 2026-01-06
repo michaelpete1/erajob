@@ -26,10 +26,27 @@
             <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-1">{{ job.project_title }}</h2>
             <p class="text-sm text-gray-500">Posted {{ job.postedTime }}</p>
           </div>
-          <span :class="['inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full border', jobStatusClass]">
-            {{ jobStatusLabel }}
-          </span>
+          <div class="flex items-center gap-2">
+            <span :class="['inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full border', jobStatusClass]">
+              {{ jobStatusLabel }}
+            </span>
+            <button
+              v-if="activePhase && !isCompleted"
+              class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border border-teal-300 text-teal-700 hover:bg-teal-50"
+              :disabled="completeLoading"
+              @click="markCompleted"
+            >
+              {{ completeLoading ? 'Marking…' : 'Mark Completed' }}
+            </button>
+          </div>
         </header>
+
+        <div v-if="completionMessage" class="mb-3 bg-green-50 border border-green-200 text-green-800 rounded-lg px-3 py-2 text-xs">
+          {{ completionMessage }}
+        </div>
+        <div v-if="completionError" class="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs">
+          {{ completionError }}
+        </div>
 
         <div v-if="assignedAgents.length > 0" class="mb-4 border border-teal-200 bg-teal-50 rounded-xl p-4 flex items-center justify-between">
           <div class="flex items-center gap-3">
@@ -208,6 +225,21 @@ const router = useRouter()
 
 const gigBullets = ref<string[]>([])
 
+const resolveNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
+}
+
+const resolveBudgetValue = (payload: Record<string, any>): number => {
+  const budgetValue = resolveNumber(payload?.budget)
+  const breakdown = (payload?.break_down || payload?.breakdown || payload?.breakDown || {}) as Record<string, any>
+  const serviceValue = resolveNumber(breakdown.service ?? breakdown.Service ?? breakdown.service_amount ?? breakdown.ServiceAmount)
+  if (budgetValue !== null && budgetValue > 0) return budgetValue
+  if (serviceValue !== null) return serviceValue
+  return budgetValue ?? 0
+}
+
 const hydrateJobFromContext = (jobId: string): boolean => {
   const storedContextRaw = localStorage.getItem('selectedJobContext')
   if (!storedContextRaw) return false
@@ -217,12 +249,15 @@ const hydrateJobFromContext = (jobId: string): boolean => {
     if (!matches || !parsed.project) return false
 
     const project = parsed.project
+    const derivedBudget = resolveBudgetValue(project as Record<string, any>)
+    const hasBreakdown = Boolean((project as any)?.break_down && Object.keys((project as any).break_down).length > 0)
+    const hasBudget = resolveNumber((project as any)?.budget) !== null && Number((project as any)?.budget) > 0
     job.value = {
       id: parsed.agent_job_id,
       admin_id: project.admin_id || parsed.admin_job_id || '',
       project_title: project.project_title || 'Untitled Project',
       category: (project as any).primary_area_of_expertise || project.category || 'Other',
-      budget: project.budget?.toString() || '0',
+      budget: derivedBudget.toString(),
       type: 'Remote',
       postedTime: project.date_created
         ? new Date(project.date_created * 1000).toLocaleDateString()
@@ -235,6 +270,9 @@ const hydrateJobFromContext = (jobId: string): boolean => {
       status: project.status || 'open'
     }
     gigBullets.value = job.value.requirements
+    if (!hasBreakdown && !hasBudget) {
+      return false
+    }
     return true
   } catch (err) {
     console.warn('Failed to hydrate job from stored context', err)
@@ -289,6 +327,9 @@ const proposalsError = ref<string | null>(null)
 const proposals = ref<ApplicationOut[]>([])
 const proposalsStart = ref(0)
 const proposalsStop = ref(50)
+const completeLoading = ref(false)
+const completionMessage = ref<string | null>(null)
+const completionError = ref<string | null>(null)
 
 // Methods
 const goBack = () => {
@@ -443,6 +484,10 @@ const activePhase = computed(() => {
   const byStatus = s.includes('in_progress') || s.includes('active') || s.includes('approved')
   return byStatus || assignedAgents.value.length > 0
 })
+const isCompleted = computed(() => {
+  const s = String(job.value.status || '').toLowerCase()
+  return s.includes('complete')
+})
 const goToAgentProfile = () => {
   const id = (primaryAgent.value as any)?.id
   if (id) router.push(`/client/agent/${id}`)
@@ -450,6 +495,27 @@ const goToAgentProfile = () => {
 const openWorkLogs = () => {
   if (job.value.id) {
     router.push({ name: 'client-work-log-dashboard', params: { jobId: job.value.id } })
+  }
+}
+
+const markCompleted = async () => {
+  if (!job.value.id || completeLoading.value) return
+  completionError.value = null
+  completionMessage.value = null
+  completeLoading.value = true
+  try {
+    const resp = await jobsService.markJobAsCompleted(job.value.id)
+    if (resp.success && resp.data) {
+      const status = String((resp.data as any)?.status || 'complete')
+      job.value.status = status
+      completionMessage.value = 'Job marked as completed.'
+    } else {
+      completionError.value = resp.error || 'Failed to mark job as completed.'
+    }
+  } catch (err: any) {
+    completionError.value = err?.message || 'Failed to mark job as completed.'
+  } finally {
+    completeLoading.value = false
   }
 }
 
@@ -487,12 +553,13 @@ onMounted(async () => {
         const result = await jobsService.getJobById(jobId)
 
         if (result.success && result.data) {
+          const derivedBudget = resolveBudgetValue(result.data as Record<string, any>)
           job.value = {
             id: jobId,
             admin_id: result.data.id || '',
             project_title: result.data.title || 'Job Title',
             category: (result.data as any)?.primary_area_of_expertise || result.data.category || 'Other',
-            budget: result.data.budget?.toString() || '0',
+            budget: derivedBudget.toString(),
             type: 'Remote',
             postedTime: (result.data as any)?.date_created ? new Date((result.data as any).date_created * 1000).toLocaleDateString() : (result.data as any)?.createdAt ? new Date((result.data as any).createdAt).toLocaleDateString() : 'Recently posted',
             proposals: '0',

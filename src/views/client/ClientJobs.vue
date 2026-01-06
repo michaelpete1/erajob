@@ -238,6 +238,7 @@ const router = useRouter()
 const { deleteJob } = useJobs()
 const toast = useToast()
 const activeTab = ref<'active' | 'pending'>('pending')
+const clientJobsPageSize = 100
 const { getClientJobs, loading, clearError } = useJobs()
 const error = ref<string | null>(null)
 const deletingJobIds = ref<string[]>([])
@@ -271,6 +272,12 @@ interface Project {
   timeline: {
     start_date: number
     deadline: number
+  }
+  break_down?: {
+    service?: number
+    Service?: number
+    Charges?: number
+    Tax?: number
   }
   agents?: Array<{
     id: string
@@ -373,6 +380,12 @@ const parseRequirementText = (input: unknown): string => {
   }
   if (typeof input === 'string') return sanitizeTextValue(input)
   return ''
+}
+
+const resolveNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
 }
 
 const toProject = (jobPayload: unknown): Project => {
@@ -539,7 +552,12 @@ const toProject = (jobPayload: unknown): Project => {
   const categoryCandidate = sanitizeTextValue(job.primary_area_of_expertise) || sanitizeTextValue(job.category) || sanitizeTextValue(job.project_category)
   const category = categoryCandidate || 'General'
 
-  const budget = typeof job.budget === 'number' ? job.budget : Number(job.budget ?? 0)
+  const breakdown = (job.break_down || job.breakdown || job.breakDown || {}) as Record<string, any>
+  const budgetValue = resolveNumber(job.budget)
+  const serviceValue = resolveNumber(breakdown.service ?? breakdown.Service ?? breakdown.service_amount ?? breakdown.ServiceAmount)
+  const budget = (budgetValue !== null && budgetValue > 0)
+    ? budgetValue
+    : (serviceValue !== null ? serviceValue : (budgetValue ?? 0))
   const requirementText = parseRequirementText(requirementSource)
   const skills = parseSkillsList(skillsSource)
 
@@ -563,6 +581,7 @@ const toProject = (jobPayload: unknown): Project => {
       deadline: deadline
     },
     agents,
+    break_down: Object.keys(breakdown).length ? (breakdown as Project['break_down']) : undefined,
     status: typeof job.status === 'string' ? job.status : undefined,
     admin_approved: typeof job.admin_approved === 'boolean' ? job.admin_approved : undefined
   }
@@ -570,7 +589,7 @@ const toProject = (jobPayload: unknown): Project => {
 
 const fetchActiveProjects = async () => {
   try {
-    const response = await getClientJobs(0, 10)
+    const response = await getClientJobs(0, clientJobsPageSize)
     if (!response.success || !response.data) {
       activeProjects.value = []
       return
@@ -587,7 +606,7 @@ const fetchActiveProjects = async () => {
 const fetchPendingProjects = async () => {
   try {
     // Fetch all client's projects for pending tab
-    const response = await getClientJobs(0, 10)
+    const response = await getClientJobs(0, clientJobsPageSize)
     if (!response.success || !response.data) {
       pendingProjects.value = []
       return
@@ -636,7 +655,8 @@ const cacheProjectContext = (project: Project) => {
         ...project,
         requirement: project.requirement,
         skills_needed: project.skills_needed,
-        agents: project.agents
+        agents: project.agents,
+        break_down: project.break_down
       })
     )
     localStorage.setItem(
@@ -650,6 +670,7 @@ const cacheProjectContext = (project: Project) => {
         description: project.description,
         category: project.category,
         budget: project.budget,
+        break_down: project.break_down,
         timeline: project.timeline,
         agents: project.agents || []
       })
