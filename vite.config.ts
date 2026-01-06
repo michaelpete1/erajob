@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+import dns from 'node:dns'
+
+dns.setDefaultResultOrder('ipv4first')
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -24,17 +27,18 @@ export default defineConfig({
           proxy.on('error', (err, _req, _res) => {
             console.log('proxy error', err);
           });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
             // Ensure proper headers are forwarded
             proxyReq.setHeader('Accept', 'application/json');
             proxyReq.setHeader('Content-Type', 'application/json');
           });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-          });
         },
-        ws: true, // proxy websockets if needed
+        ws: true,
+      },
+      '/v1': {
+        target: 'https://eba.3nis.net',
+        changeOrigin: true,
+        secure: true,
       },
     },
     cors: true, // Enable CORS for better browser compatibility

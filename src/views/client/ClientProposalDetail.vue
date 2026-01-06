@@ -72,11 +72,6 @@
             <h4>Last Updated</h4>
             <p>{{ formatTimestamp(proposal.last_updated) }}</p>
           </div>
-          <div class="detail-box">
-            <h4>Proposed Budget</h4>
-            <p v-if="displayBudget !== null">${{ displayBudget }}</p>
-            <p v-else>Not provided</p>
-          </div>
           <div class="detail-box" v-if="serviceAmount !== null || chargesAmount !== null || taxAmount !== null">
             <h4>Service / Charges / Tax</h4>
             <p>Service: {{ serviceAmount !== null ? serviceAmount : 'Not provided' }}</p>

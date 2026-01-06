@@ -65,18 +65,11 @@
         </h2>
         
         <div class="flex items-center gap-2 mb-4">
-          <span class="text-blue-500 text-lg sm:text-xl">📋</span>
           <p class="text-sm sm:text-base text-gray-600">{{ project.category }}</p>
         </div>
         
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <div class="flex items-center text-teal-600 font-semibold">
-            <span class="text-lg sm:text-xl">💰</span>
-            <span class="ml-1 text-lg sm:text-xl font-bold">${{ (project.budget * 1.17).toFixed(2) }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-500">{{ formatDate(project.timeline?.deadline) }}</span>
-          </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">{{ formatDate(project.timeline?.deadline) }}</span>
         </div>
         
         <!-- Description Preview -->
@@ -159,7 +152,6 @@
             >
               <div class="flex items-center justify-between mb-3">
                 <span class="text-xs text-gray-500 flex items-center gap-1">
-                  <span class="text-lg">⏰</span>
                   <span>{{ formatDate(project.date_created) }}</span>
                 </span>
                 <span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full" v-if="!project.admin_approved">Pending Approval</span>
@@ -174,7 +166,6 @@
               <p class="text-xs font-medium text-yellow-700 mb-3" v-if="!project.admin_approved">Awaiting admin approval before work can begin.</p>
               <p class="text-xs font-medium text-green-700 mb-3" v-else>Approved and ready for work.</p>
               <div class="flex items-center justify-between">
-                <span class="text-lg font-bold text-teal-600">${{ (project.budget * 1.17).toFixed(2) }}</span>
                 <button
                   class="flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm sm:text-base transition-colors"
                   @click.stop="goToProject(project)"
@@ -729,3 +720,4 @@ const confirmDeleteProject = async (project: Project) => {
 
 <style scoped>
 </style>
+

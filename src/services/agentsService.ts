@@ -23,7 +23,7 @@ export class AgentsService {
       hasMore: true
     }
   }
-  private constructor() {}
+  private constructor() { }
   public static getInstance(): AgentsService {
     if (!AgentsService.instance) {
       AgentsService.instance = new AgentsService()
@@ -46,7 +46,7 @@ export class AgentsService {
   ): Promise<ServiceResponse<AgentOut[]>> {
     this.agentState.loading = true;
     this.agentState.error = null;
-    
+
     try {
       // Get current user's primary area of expertise
       const userExpertise = (currentUser as any)?.primary_area_of_expertise;
@@ -72,9 +72,9 @@ export class AgentsService {
         throw new Error(response.data.detail || 'Failed to fetch recommended agents');
       }
 
-      const rawAgents = Array.isArray(response.data.data) 
-        ? response.data.data 
-        : response.data.data 
+      const rawAgents = Array.isArray(response.data.data)
+        ? response.data.data
+        : response.data.data
           ? [response.data.data]
           : [];
 
@@ -400,6 +400,9 @@ export class AgentsService {
       }
       if (typeof filters.role === 'string' && filters.role.trim().length > 0) {
         queryParams.role = filters.role
+      }
+      if (typeof filters.email === 'string' && filters.email.trim().length > 0) {
+        queryParams.email = filters.email
       }
 
       const response = await api.get<ApiResponse<UserOut[] | UserOut>>('/v1/users/', {

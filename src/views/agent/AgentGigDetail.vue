@@ -27,13 +27,9 @@
             <h1 class="text-2xl font-extrabold text-brand-teal">{{ gig.title || 'Posted Project' }}</h1>
           </div>
           
-          <!-- Budget and Tag -->
-          <div class="mb-5 flex items-center justify-start gap-3">
-            <div class="px-3 py-1 rounded-full bg-gray-100 text-sm font-semibold text-gray-700 border border-gray-200 shadow-sm">{{ gig.category }}</div>
-            <div class="px-4 py-1 rounded-full bg-brand-teal text-white text-sm font-bold shadow-md">
-              Budget: {{ formattedBudget }}
+            <div class="mb-5 flex items-center justify-start gap-3">
+              <div class="px-3 py-1 rounded-full bg-gray-100 text-sm font-semibold text-gray-700 border border-gray-200 shadow-sm">{{ gig.category }}</div>
             </div>
-          </div>
 
           <!-- Description and Requirements -->
           <section class="text-gray-800 mb-6">
@@ -162,11 +158,6 @@ const extractIdFromSlug = (slug: string): string => {
   const parts = slug.split('-')
   return parts.pop() || ''
 }
-
-const formattedBudget = computed(() => {
-  if (!gig.value?.budget || gig.value.budget <= 0) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(gig.value.budget * 1.17)
-})
 
 const formattedRequirements = computed(() => {
   if (!gig.value?.requirements || gig.value.requirements.length === 0) {

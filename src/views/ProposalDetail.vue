@@ -63,12 +63,10 @@
               </span>
             </div>
             <p class="text-gray-600">Submitted on {{ formatDate(proposal.submittedDate) }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+            </div>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="text-2xl font-bold text-gray-900">${{ (proposal.budget * 1.17).toFixed(2) }}</span>
-            <span class="text-sm text-gray-500">Budget</span>
-          </div>
-        </div>
       </div>
 
       <!-- Client & Project Details -->
@@ -211,6 +209,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { applicationsService } from '@/services/applicationsService'
+import apiClient from '@/services/apiClient'
 import jobs from '@/services/jobs'
 import { jobsService } from '@/services/jobsService'
 
@@ -263,7 +262,19 @@ const updateProposalStatus = async (status: string) => {
       if (!agentId) {
         error.value = 'Missing agent ID for acceptance'
       } else {
-        const resp = await jobs.clientAcceptJobProposal(jobId, { client_approved: true, selected_agents: [agentId] })
+        // Fetch full agent object if possible — backend expects agent objects with multiple fields
+        let agentObj: any = null
+        try {
+          const userResp = await apiClient.get('/v1/users/', { params: { role: 'agent', id: agentId, start: 0, stop: 1 } })
+          const data = userResp?.data?.data
+          const list = Array.isArray(data) ? data : data ? [data] : []
+          agentObj = list[0] || null
+        } catch (e) {
+          // ignore; we'll fallback to sending minimal id
+        }
+
+        const selected = agentObj ? [agentObj] : [{ id: agentId }]
+        const resp = await jobs.clientAcceptJobProposal(jobId, { client_approved: true, selected_agents: selected })
         const ok = (resp as any)?.data?.status_code === 200 || (resp as any)?.data?.status_code === 0 || typeof (resp as any)?.data === 'string'
         if (!ok) error.value = (resp as any)?.data?.detail || 'Failed to accept proposal'
       }

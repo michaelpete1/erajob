@@ -250,6 +250,7 @@ export interface AgentFilters {
   location?: string;
   status?: string;
   query?: string;
+  email?: string;
 }
 
 // Alert types

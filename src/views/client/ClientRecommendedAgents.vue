@@ -521,6 +521,7 @@ const chooseAgentForProposal = async (agent: NormalizedAgent) => {
     if (role === 'admin') {
       const payload: any = {
         agent: { id },
+        agent_id: id,
         proposal: 'Admin proposes this agent for the job',
         break_down: { Charges: 7, Tax: 10 }
       }
@@ -532,7 +533,17 @@ const chooseAgentForProposal = async (agent: NormalizedAgent) => {
         toast.error((resp as any)?.data?.detail || 'Failed to send proposal')
       }
     } else {
-      const resp = await jobs.clientAcceptJobProposal(currentJobId, { client_approved: true as true, selected_agents: [id] })
+      // Fetch full agent object; server expects detailed agent objects in selected_agents
+      let agentObj: any = null
+      try {
+        const uresp = await apiClient.get('/v1/users/', { params: { role: 'agent', id, start: 0, stop: 1 } })
+        const data = uresp?.data?.data
+        const list = Array.isArray(data) ? data : data ? [data] : []
+        agentObj = list[0] || null
+      } catch (e) {}
+
+      const selected = agentObj ? [agentObj] : [{ id }]
+      const resp = await jobs.clientAcceptJobProposal(currentJobId, { client_approved: true as true, selected_agents: selected })
       const ok = (resp as any)?.data?.status_code === 200 || (resp as any)?.data?.status_code === 0 || typeof (resp as any)?.data === 'string'
       if (ok) {
         toast.success('Agent selected successfully')

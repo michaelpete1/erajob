@@ -29,10 +29,6 @@
         </div>
       </div>
 
-      <div class="p-4 bg-gradient-to-r from-brand-teal/10 to-teal-600/10 rounded-lg mb-4">
-        <p class="font-semibold text-brand-teal">Budget: <span class="text-gray-700">${{ (Number(job.budget) * 1.17).toFixed(2) }}</span></p>
-      </div>
-
       <h3 class="font-bold text-lg mb-2 text-brand-teal">{{ job.title }}</h3>
       <p class="text-gray-700 text-sm mb-3 whitespace-pre-line">
         {{ job.description }}
@@ -92,7 +88,6 @@
 
 <script setup lang="ts">
 const job = {
-  budget: "$68/hr",
   title: "Complete Freelancer Application UI/UX Revamp",
   description: `We're looking for a skilled designer to completely revamp the UI/UX of our Freelancer application.
 The goal is to modernize the user experience by making the interface more modern, intuitive, and visually appealing.`,

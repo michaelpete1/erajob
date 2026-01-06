@@ -78,9 +78,35 @@ export const refreshSession = async (): Promise<boolean> => {
     const authStore = useAuthStore()
 
     const result = await authStore.refreshToken()
+    console.debug('refreshSession -> authStore.refreshToken returned', result)
+    if (result.success) {
+      try {
+        localStorage.removeItem('auth_expired_pending')
+        localStorage.removeItem('auth_expired')
+        localStorage.removeItem('refresh_failed_at')
+      } catch {}
+    } else {
+      try {
+        localStorage.setItem('refresh_failed_at', String(Date.now()))
+      } catch {}
+    }
     return result.success
   } catch (error) {
     console.error('Session refresh error:', error)
+    try { localStorage.setItem('refresh_failed_at', String(Date.now())) } catch {}
+    return false
+  }
+}
+
+/**
+ * Returns true when a refresh failure occurred within the provided window (milliseconds)
+ */
+export const isRefreshRecentlyFailed = (windowMs = 60_000): boolean => {
+  try {
+    const ts = Number(localStorage.getItem('refresh_failed_at') || '0')
+    if (!ts) return false
+    return Date.now() - ts < windowMs
+  } catch (e) {
     return false
   }
 }

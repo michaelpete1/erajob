@@ -52,12 +52,11 @@
               <div>
                 <h3 class="text-lg font-semibold text-gray-800">{{ project.project_title || project.job_title }}</h3>
                 <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ project.description }}</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                  <p><span class="font-semibold text-gray-700">Status:</span> {{ formatStatus(project.status) }}</p>
+                </div>
               </div>
-              <div class="text-sm text-gray-500">
-                <p><span class="font-semibold text-gray-700">Budget:</span> {{ formatBudget(project.budget) }}</p>
-                <p><span class="font-semibold text-gray-700">Status:</span> {{ formatStatus(project.status) }}</p>
-              </div>
-            </div>
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 text-sm text-gray-500">
               <p>
                 <span class="font-medium text-gray-700">Created:</span>
@@ -187,11 +186,6 @@ onBeforeRouteUpdate(async (to, from, next) => {
   }
   next()
 })
-
-const formatBudget = (budget: number) => {
-  if (!budget || Number.isNaN(budget)) return '$0'
-  return `$${(budget / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
 
 const formatDate = (timestamp?: number | null) => {
   if (!timestamp) return '—'

@@ -33,7 +33,7 @@ export const listAvailableAgentJobs = async (
       params.preferred_projects = agentData.preferredProjects.join(',')
     }
 
-    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/available/`, { params })
+    const response = await apiClient.get<ApiResponse<Job[]>>(`${BASE_URL}/agent/`, { params })
     if (isSuccessfulStatus(response.data.status_code)) {
       const jobs = ensureArray(response.data.data)
       return {

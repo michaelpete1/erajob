@@ -14,7 +14,7 @@ const BASE_URL = '/v1/jobss'
  * @param stop - The ending index for the list.
  */
 export const listAvailableAgentJobs = (start: number, stop: number) => {
-  return apiClient.get<JobListApiResponse>(`${BASE_URL}/agent/available/`, {
+  return apiClient.get<JobListApiResponse>(`${BASE_URL}/agent/`, {
     params: { start, stop }
   })
 }
@@ -69,16 +69,22 @@ export const approveJob = (jobId: string, data: JobApprovalData) => {
 export const proposeJob = (
   jobId: string,
   data: {
-    agent: any,
+    agent?: any,
+    agent_id?: string,
     timeline?: { start_date: number; deadline: number },
     proposal: string,
     break_down: { service?: number; Charges: number; Tax: number }
   }
 ) => {
-  return apiClient.post<string>(`${BASE_URL}/propose/${jobId}`, data)
+  const payload: any = {
+    ...data,
+    // Prefer explicit agent_id; fall back to agent.id for safety
+    agent_id: data.agent_id || (data.agent && (data.agent.id || data.agent._id || data.agent.uuid))
+  }
+  return apiClient.post<string>(`${BASE_URL}/propose/${jobId}`, payload)
 }
 
-export const clientAcceptJobProposal = (jobId: string, data: { client_approved: true; selected_agents: string[] }) => {
+export const clientAcceptJobProposal = (jobId: string, data: { client_approved: true; selected_agents: Array<string | Record<string, any>> }) => {
   return apiClient.patch<string>(`${BASE_URL}/client/accept-proposal/${jobId}`, data)
 }
 

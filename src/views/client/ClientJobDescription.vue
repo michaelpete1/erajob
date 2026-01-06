@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-gray-50 pb-20 sm:pb-24">
     <!-- Header -->
     <div class="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 sticky top-0 z-30 shadow-sm">
@@ -36,7 +36,7 @@
               :disabled="completeLoading"
               @click="markCompleted"
             >
-              {{ completeLoading ? 'Marking…' : 'Mark Completed' }}
+              {{ completeLoading ? 'Markingâ€¦' : 'Mark Completed' }}
             </button>
           </div>
         </header>
@@ -64,23 +64,28 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
-            <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-lg">💰</div>
-            <div>
-              <p class="text-xs uppercase tracking-wide text-gray-400">Budget</p>
-              <p class="text-sm font-semibold text-gray-800">${{ (Number(job.budget) * 1.17).toFixed(2) }}</p>
+            <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+              <svg class="w-5 h-5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M3 12h18" />
+                <path d="M12 3a15 15 0 0 1 0 18" />
+                <path d="M12 3a15 15 0 0 0 0 18" />
+              </svg>
             </div>
-          </div>
-          <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
-            <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-lg">📍</div>
             <div>
               <p class="text-xs uppercase tracking-wide text-gray-400">Type</p>
               <p class="text-sm font-semibold text-gray-800">{{ job.type }}</p>
             </div>
           </div>
           <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
-            <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-lg">🗓️</div>
+            <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+              <svg class="w-5 h-5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </div>
             <div>
               <p class="text-xs uppercase tracking-wide text-gray-400">Deadline</p>
               <p class="text-sm font-semibold text-gray-800">{{ job.deadline ? new Date(job.deadline).toLocaleDateString() : 'Not set' }}</p>
@@ -432,9 +437,9 @@ const statusBadgeClass = (status: string) => {
 }
 
 const formatTimestamp = (timestamp?: number | null) => {
-  if (!timestamp) return '—'
+  if (!timestamp) return 'â€”'
   const date = new Date(timestamp)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return 'â€”'
   return date.toLocaleString()
 }
 
@@ -642,3 +647,5 @@ const getDefaultRequirements = (category: string) => {
 <style scoped>
 /* No custom styles needed - using Tailwind classes */
 </style>
+
+

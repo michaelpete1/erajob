@@ -133,7 +133,6 @@
               <div class="flex items-center text-sm text-gray-600 mb-2">
                 <span>For: {{ proposal.clientName }}</span>
                 <span class="mx-2">•</span>
-                <span>Budget: ${{ (proposal.budget * 1.17).toFixed(2) }}</span>
               </div>
               
               <p class="text-sm text-gray-600 line-clamp-2 mb-3">{{ proposal.description }}</p>
@@ -190,6 +189,7 @@ const activeTab = ref('all')
 const currentJobId = ref<string>('')
 const loading = ref(false)
 const error = ref<string | null>(null)
+const userRole = ref((localStorage.getItem('userRole') || '').toLowerCase())
 
 // Data
 const proposals = ref<any[]>([])
@@ -210,14 +210,24 @@ async function loadProposals() {
   error.value = null
 
   try {
-    const jobsResp = await jobsService.listAgentSelectedJobs(0, 50)
-    if (jobsResp.success && jobsResp.data) {
-      jobs.value = jobsResp.data
+    // Fetch jobs based on role (used for title/budget mapping)
+    if (userRole.value === 'agent') {
+      const jobsResp = await jobsService.listAgentSelectedJobs(0, 50)
+      jobs.value = jobsResp.success && jobsResp.data ? jobsResp.data : []
+    } else if (userRole.value === 'client') {
+      const jobsResp = await jobsService.listClientCreatedJobs(0, 50)
+      jobs.value = jobsResp.success && jobsResp.data ? jobsResp.data : []
     } else {
       jobs.value = []
     }
 
-    const appsResp = await applicationsService.listAgentApplications({ start: 0, stop: 100 })
+    // Fetch proposals based on role
+    const appsResp = userRole.value === 'agent'
+      ? await applicationsService.listAgentApplications({ start: 0, stop: 100 })
+      : userRole.value === 'client'
+        ? await applicationsService.listClientApplications(undefined, { start: 0, stop: 100 })
+        : { success: false, data: [], error: 'Unsupported role for proposals' }
+
     if (appsResp.success && appsResp.data) {
       const items = appsResp.data
       const jobMap: Record<string, any> = {}
@@ -228,15 +238,17 @@ async function loadProposals() {
       const mapped = items.map(app => {
         const jobId = String(app.job_id)
         const job = jobMap[jobId]
+        const status = String((app as any).status || app.proposal_status || 'pending_review')
+        const createdSeconds = typeof app.date_created === 'number' ? app.date_created : 0
         return {
           id: app.id,
           jobId: jobId,
-          projectName: job?.title || 'Untitled Job',
-          clientName: 'Client',
-          description: app.proposal,
+          projectName: job?.title || job?.project_title || 'Untitled Job',
+          clientName: job?.client_name || job?.clientId || 'Client',
+          description: app.proposal || '',
           budget: Number(job?.budget ?? 0),
-          submittedDate: new Date((app.date_created || 0) * 1000).toISOString(),
-          status: String(app.proposal_status || 'pending')
+          submittedDate: new Date((createdSeconds || 0) * 1000).toISOString(),
+          status
         }
       }).filter(p => {
         const matchesStatus = activeTab.value === 'all' || p.status === activeTab.value

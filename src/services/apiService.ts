@@ -88,66 +88,113 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // --- Robust single-refresh + queued-subscribers flow ---
     if (status === 401) {
+      // Don't try to refresh if the failing request is a refresh call itself
+      const url = (originalRequest?.url || '').toString()
+      if (url.includes('/refresh')) {
+        return Promise.reject(error)
+      }
+
       const refreshToken = localStorage.getItem('refresh_token')
       if (!refreshToken) {
         return Promise.reject(error)
       }
 
-      if (!originalRequest._retry) {
-        originalRequest._retry = true
-        let shouldLogout = false
-        try {
-          const role = (localStorage.getItem('userRole') || '').toLowerCase()
+      if (!originalRequest._retry) {
+        originalRequest._retry = true
 
-          const isAdminRequest = role === 'admin' || (originalRequest?.url?.toString()?.includes('/v1/admins/'))
-          const isAgentRequest = role === 'agent' || (originalRequest?.url?.toString()?.includes('/v1/agents/'))
-          const isClientRequest = role === 'client' || (originalRequest?.url?.toString()?.includes('/v1/clients/'))
-          const expiredAccess = localStorage.getItem('access_token') || ''
-          const authHeader = expiredAccess ? { Authorization: `Bearer ${expiredAccess}` } : {}
-
-          const refreshEndpoint = isAdminRequest
-            ? '/v1/admins/refresh'
-            : isAgentRequest
-              ? '/v1/agents/refresh'
-              : '/v1/users/refresh'
-          const refreshed = await apiClient.post(refreshEndpoint, { refresh_token: refreshToken }, { headers: { ...authHeader } })
-
-          const data = refreshed?.data?.data
-          const newAccess = data?.access_token
-          const newRefresh = data?.refresh_token
-
-          if (!newAccess) throw new Error('Refresh did not return access token')
-
-          localStorage.setItem('access_token', newAccess)
-          if (newRefresh) {
-            localStorage.setItem('refresh_token', newRefresh)
-          } else {
-            localStorage.removeItem('refresh_token')
-          }
-
-          // Update auth header and retry original request
-          originalRequest.headers = originalRequest.headers || {}
-          originalRequest.headers['Authorization'] = `Bearer ${newAccess}`
-          return apiClient(originalRequest)
-        } catch (refreshErr) {
-          const refreshStatus = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined
-          shouldLogout = refreshStatus === 401 || refreshStatus === 403 || refreshStatus === 422 
-        } finally {
-          if (shouldLogout) {
-            try {
-              localStorage.removeItem('access_token')
-              localStorage.setItem('auth_expired', 'true')
-            } catch {}
+        // Queueing mechanism
+        const queue: Array<(token: string | null) => void> = []
+        const addSubscriber = (cb: (token: string | null) => void) => queue.push(cb)
+        const notifySubscribers = (token: string | null) => {
+          while (queue.length) {
+            const cb = queue.shift()
+            try { cb && cb(token) } catch (e) { console.error('notify subscriber error', e) }
           }
         }
+
+        // Use a module-scoped flag to avoid concurrent refreshes
+        (apiClient as any).__isRefreshing = (apiClient as any).__isRefreshing || false
+        if ((apiClient as any).__isRefreshing) {
+          // Another refresh is in-flight; queue this request and retry once refreshed
+          return new Promise((resolve, reject) => {
+            addSubscriber((token) => {
+              if (!token) return reject(new Error('Refresh failed'))
+              originalRequest.headers = originalRequest.headers || {}
+              originalRequest.headers['Authorization'] = `Bearer ${token}`
+              resolve(apiClient(originalRequest))
+            })
+          })
+        }
+
+        try {
+          (apiClient as any).__isRefreshing = true
+
+          const role = (localStorage.getItem('userRole') || '').toLowerCase()
+          const isAdminRequest = role === 'admin' || (url.includes('/v1/admins/'))
+          const isAgentRequest = role === 'agent' || (url.includes('/v1/agents/'))
+          const refreshEndpoint = isAdminRequest ? '/v1/admins/refresh' : isAgentRequest ? '/v1/agents/refresh' : '/v1/users/refresh'
+          const expiredAccess = localStorage.getItem('access_token') || ''
+
+          console.debug('Token refresh attempt (queued)', { endpoint: refreshEndpoint, hasRefreshToken: Boolean(refreshToken), role, url })
+          const refreshed = await apiClient.post(refreshEndpoint, { refresh_token: refreshToken }, { headers: { Authorization: `Bearer ${expiredAccess}` } })
+          console.debug('Token refresh response (queued)', { status: refreshed?.status, data: refreshed?.data })
+
+          const data = refreshed?.data?.data
+          const newAccess = data?.access_token
+          const newRefresh = data?.refresh_token
+
+          if (!newAccess) throw new Error('Refresh did not return access token')
+
+          // Persist tokens
+          try { localStorage.removeItem('auth_expired_pending'); localStorage.removeItem('auth_expired') } catch {}
+          localStorage.setItem('access_token', newAccess)
+          if (newRefresh) localStorage.setItem('refresh_token', newRefresh)
+          else localStorage.removeItem('refresh_token')
+
+          // Notify queued requests
+          notifySubscribers(newAccess)
+
+          originalRequest.headers = originalRequest.headers || {}
+          originalRequest.headers['Authorization'] = `Bearer ${newAccess}`
+          return apiClient(originalRequest)
+        } catch (refreshErr: any) {
+          console.debug('Token refresh failed (queued)', { status: refreshErr?.response?.status, data: refreshErr?.response?.data })
+
+          // persist failure timestamp and notify queued requests with null
+          try { localStorage.setItem('refresh_failed_at', String(Date.now())); localStorage.setItem('auth_expired_pending', 'true') } catch {}
+          try { notifySubscribers(null) } catch (e) { console.error(e) }
+
+          // Broadcast an event so UI can show a toast/prompt
+          try { window.dispatchEvent(new CustomEvent('auth:refreshFailed', { detail: { status: refreshErr?.response?.status, data: refreshErr?.response?.data } })) } catch (e) {}
+
+          // Schedule a graceful logout if refresh definitely failed with auth-related status
+          const refreshStatus = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined
+          const shouldLogout = refreshStatus === 401 || refreshStatus === 403 || refreshStatus === 422
+          if (shouldLogout) {
+            setTimeout(() => {
+              try {
+                const pending = localStorage.getItem('auth_expired_pending') === 'true'
+                if (pending) {
+                  localStorage.removeItem('access_token')
+                  localStorage.setItem('auth_expired', 'true')
+                  localStorage.removeItem('auth_expired_pending')
+                }
+              } catch (e) {}
+            }, 1000)
+          }
+
+          return Promise.reject(refreshErr)
+        } finally {
+          (apiClient as any).__isRefreshing = false
+        }
       }
-      return Promise.reject(error)
     }
 
-    // For non-401 errors (e.g., 403 Forbidden, 422 Validation), bubble error up
-    return Promise.reject(error)
-  }
+    // For non-401 errors (e.g., 403 Forbidden, 422 Validation), bubble error up
+    return Promise.reject(error)
+  }
 )
 
 // API Service class
@@ -611,7 +658,7 @@ class ApiService {
 
   async listAgentAvailableJobs(start: number, stop: number): Promise<ServiceResponse<JobsOut[]>> {
     try {
-      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/agent/available/', {
+      const response = await apiClient.get<EJApiResponse<JobsOut[]>>('/v1/jobss/agent/', {
         params: { start, stop }
       })
       return { success: true, data: response.data.data }

@@ -82,24 +82,61 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = async () => {
     try {
       const refreshToken = localStorage.getItem('refresh_token');
+      const role = (localStorage.getItem('userRole') || '').toLowerCase()
+      console.debug('refreshToken: start', { role, hasRefreshToken: Boolean(refreshToken) })
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
 
-      // Call refresh endpoint - use the correct API structure
-      const response = await apiService.adminRefreshToken({ refresh_token: refreshToken });
-
-      if (response.success && response.data?.access_token) {
-        localStorage.setItem('access_token', response.data.access_token);
-        if (response.data.refresh_token) {
-          localStorage.setItem('refresh_token', response.data.refresh_token);
+      // Use role-aware refresh: admin uses admin refresh; others use generic users refresh
+      let response
+      if (role === 'admin') {
+        console.debug('refreshToken: calling adminRefreshToken')
+        response = await apiService.adminRefreshToken({ refresh_token: refreshToken })
+        console.debug('refreshToken: adminRefreshToken returned', response)
+      } else {
+        // Use the proxied apiClient to call /v1/users/refresh so the dev proxy handles CORS
+        try {
+          const { apiClient } = await import('@/services/apiService')
+          console.debug('refreshToken: calling proxied /v1/users/refresh')
+          const resp = await apiClient.post('/v1/users/refresh', { refresh_token: refreshToken })
+          // Normalize to the legacy response shape
+          response = { success: true, data: resp.data }
+          console.debug('refreshToken: proxied refresh returned', response)
+        } catch (proxyErr: any) {
+          console.error('refreshToken: proxied refresh failed', proxyErr)
+          // Hint for developers: possible CORS/proxy/server issue
+          const networkMsg = proxyErr?.message || ''
+          if (/cors|network|ERR_FAILED/i.test(networkMsg) || proxyErr?.response?.status === 500) {
+            console.warn('Possible CORS or server error on refresh endpoint. Ensure dev proxy (VITE_API_BASE_URL=/api) is active or that server CORS allows localhost.')
+          }
+          throw proxyErr
         }
-        return { success: true };
       }
-      throw new Error('Token refresh failed');
+
+      if (response && response.success) {
+        // On success, ensure tokens are persisted (some endpoints return tokens differently)
+        const data = response.data?.data || response.data || response
+        const newAccess = data?.access_token || data?.data?.access_token
+        const newRefresh = data?.refresh_token || data?.data?.refresh_token
+        console.debug('refreshToken: parsed tokens', { newAccess: Boolean(newAccess), newRefresh: Boolean(newRefresh) })
+        if (newAccess) {
+          localStorage.setItem('access_token', newAccess)
+        }
+        if (newRefresh) {
+          localStorage.setItem('refresh_token', newRefresh)
+        }
+        return { success: true }
+      }
+
+      // If response not successful, bail out without forcing a logout here.
+      console.error('Token refresh failure response:', response)
+      try { localStorage.setItem('refresh_failed_at', String(Date.now())) } catch {}
+      return { success: false, error: (response && (response.error || response.message)) || 'Token refresh failed' }
     } catch (err: any) {
       console.error('Token refresh error:', err);
-      logout();
+      try { localStorage.setItem('refresh_failed_at', String(Date.now())) } catch {}
+      // Do NOT call logout here; let higher-level flows or the API interceptor decide when to perform logout.
       return { success: false, error: err.message };
     }
   };

@@ -36,10 +36,6 @@
 
       <!-- Job Content (only show when loaded) -->
       <div v-if="job && !loading && !error">
-        <div class="p-4 bg-gradient-to-r from-brand-teal/10 to-teal-600/10">
-          <p class="font-semibold text-brand-teal">Budget: <span class="text-gray-700">${{ (Number(job.budget) * 1.17).toFixed(2) }}</span></p>
-        </div>
-
         <div class="px-4 py-3">
           <h2 class="font-bold text-lg mb-2 text-brand-teal">{{ job.title }}</h2>
           <p class="text-gray-700 text-sm mb-3 whitespace-pre-line">

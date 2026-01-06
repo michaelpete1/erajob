@@ -96,6 +96,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { applicationsService } from '@/services/applicationsService'
+import apiClient from '@/services/apiClient'
 import type { ApplicationOut } from '@/types/api'
 
 const route = useRoute()
@@ -105,6 +106,8 @@ interface ClientProposal extends ApplicationOut {
   agent_name?: string
   agent_email?: string
 }
+
+type AgentInfo = { name?: string; email?: string }
 
 const jobId = ref('')
 const proposals = ref<ClientProposal[]>([])
@@ -135,6 +138,7 @@ const loadProposals = async () => {
     if (response.success && response.data) {
       const fetched = response.data as ClientProposal[]
       proposals.value = enrichProposals(fetched)
+      await hydrateMissingAgents(fetched)
     } else {
       error.value = response.error || 'Failed to load proposals.'
     }
@@ -174,6 +178,44 @@ const loadAgentDirectory = () => {
   }
 }
 
+const normalizeAgentInfo = (data: Record<string, any>): AgentInfo | null => {
+  if (!data || typeof data !== 'object') return null
+  const name = data.full_name || data.name || data.display_name || data.username
+  const email = data.email || data.contact_email || data.user_email
+  if (!name && !email) return null
+  return { name, email }
+}
+
+const fetchAgentById = async (id: string): Promise<AgentInfo | null> => {
+  const role = (localStorage.getItem('userRole') || '').toLowerCase()
+  if (role !== 'client') return null
+
+  try {
+    const resp = await apiClient.get('/v1/agents/client/me', { params: { agent_id: id } })
+    const data = resp?.data?.data
+    if (data && typeof data === 'object') {
+      return normalizeAgentInfo(data)
+    }
+  } catch (err: any) {
+    const status = err?.response?.status
+    if (status === 404 || status === 422 || status === 500) {
+      try {
+        const retryResp = await apiClient.get('/v1/agents/client/me', { params: { id } })
+        const retryData = retryResp?.data?.data
+        if (retryData && typeof retryData === 'object') {
+          return normalizeAgentInfo(retryData)
+        }
+      } catch (retryErr) {
+        console.warn('ClientProposals: fetchAgentById retry failed', retryErr)
+      }
+    } else {
+      console.warn('ClientProposals: fetchAgentById failed', err)
+    }
+  }
+
+  return null
+}
+
 const extractNestedAgentInfo = (proposal: ClientProposal): { name?: string; email?: string } => {
   const raw = proposal as unknown as Record<string, any>
   const candidate = raw.agent || raw.agent_profile || raw.agent_details || raw.agentInfo || raw.agentData
@@ -188,6 +230,39 @@ const extractNestedAgentInfo = (proposal: ClientProposal): { name?: string; emai
     candidate.email
   const email = candidate.email || candidate.contact_email || candidate.user_email
   return { name, email }
+}
+
+const hydrateMissingAgents = async (items: ClientProposal[]) => {
+  const missingIds = Array.from(
+    new Set(
+      items
+        .map(proposal => {
+          if (!proposal.agent_id) return null
+          if (proposal.agent_name && proposal.agent_email) return null
+          if (agentDirectory.value[proposal.agent_id]) return null
+          return proposal.agent_id
+        })
+        .filter((id): id is string => Boolean(id))
+    )
+  )
+
+  if (missingIds.length === 0) return
+
+  const results = await Promise.all(
+    missingIds.map(async id => ({ id, info: await fetchAgentById(id) }))
+  )
+
+  const updated = { ...agentDirectory.value }
+  results.forEach(({ id, info }) => {
+    if (!info) return
+    updated[id] = {
+      name: info.name || updated[id]?.name || id,
+      email: info.email || updated[id]?.email
+    }
+  })
+
+  agentDirectory.value = updated
+  proposals.value = enrichProposals(items)
 }
 
 const enrichProposals = (items: ClientProposal[]): ClientProposal[] => {

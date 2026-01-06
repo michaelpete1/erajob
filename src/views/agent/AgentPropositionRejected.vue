@@ -50,7 +50,6 @@
         <div v-if="gigDetails" class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
           <h3 class="font-semibold text-red-600 mb-2">Job Details</h3>
           <p class="font-medium text-gray-800">{{ gigDetails.title }}</p>
-          <p class="text-sm text-gray-600">Budget: ${{ gigDetails.price }}/hr</p>
           <p class="text-sm text-gray-600">Client: {{ gigDetails.client }}</p>
         </div>
 

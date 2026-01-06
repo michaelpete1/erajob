@@ -72,40 +72,15 @@
           <p class="text-xs text-gray-500 mt-2">Jobs are matched to agents based on their expertise in this category.</p>
         </div>
 
-        <!-- Budget -->
-        <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
-          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Budget ($)</label>
-          <input
-            v-model="job.budget"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="Enter budget..."
-            @blur="normalizeBudget"
-            class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
-          />
-        </div>
-
         <!-- Timeline -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 sm:mb-6">
-          <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
-            <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Start Date</label>
-            <input
-              v-model="formData.startDate"
-              type="date"
-              class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
-              @change="(e: Event) => updateTimeline('start_date', (e.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
-            <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Deadline</label>
-            <input
-              v-model="formData.deadline"
-              type="date"
-              class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
-              @change="(e: Event) => updateTimeline('deadline', (e.target as HTMLInputElement).value)"
-            />
-          </div>
+        <div class="bg-white border border-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
+          <label class="block text-gray-700 text-sm font-medium mb-2 sm:mb-3">Start Date</label>
+          <input
+            v-model="formData.startDate"
+            type="date"
+            class="w-full border border-gray-200 rounded-lg p-3 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200"
+            @change="(e: Event) => updateTimeline((e.target as HTMLInputElement).value)"
+          />
         </div>
 
         <!-- Description -->
@@ -162,7 +137,6 @@ import type { ServiceResponse } from '@/types/api';
 
 interface FormData {
   startDate: string;
-  deadline: string;
 }
 
 
@@ -189,8 +163,7 @@ const categoryOptions: Array<{ value: JobCategories; label: string }> = [
 
 
 const formData = ref<FormData>({
-  startDate: '',
-  deadline: ''
+  startDate: ''
 });
 
 const getOptionLabel = (value: JobCategories) => {
@@ -217,18 +190,10 @@ const disabledReasons = computed(() => {
   const reasons: string[] = []
   if ((job.value.project_title?.trim() || '').length < 5) reasons.push('Title must be at least 5 characters')
   if (!(job.value.primary_area_of_expertise || '').toString().trim()) reasons.push('Select a primary expertise')
-  if (!(job.value.budget > 0)) reasons.push('Budget must be greater than 0')
   if (job.value.description.trim().length < 20) reasons.push('Description must be at least 20 characters')
 
   const startDate = formData.value.startDate ? new Date(formData.value.startDate) : null
-  const deadline = formData.value.deadline ? new Date(formData.value.deadline) : null
   if (!startDate) reasons.push('Start date is required')
-  if (!deadline) reasons.push('Deadline is required')
-  if (startDate && deadline) {
-    const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
-    const deadlineOnly = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate())
-    if (deadlineOnly < startDateOnly) reasons.push('Deadline must be after start date')
-  }
   return reasons
 })
 
@@ -252,13 +217,6 @@ const validateField = (field: string, value: any) => {
         delete validationErrors.value[field];
       }
       break;
-    case 'budget':
-      if (!value || value <= 0) {
-        validationErrors.value[field] = 'Budget must be greater than 0';
-      } else {
-        delete validationErrors.value[field];
-      }
-      break;
     case 'primary_area_of_expertise':
       if (!value) {
         validationErrors.value[field] = 'Please select a category';
@@ -269,22 +227,9 @@ const validateField = (field: string, value: any) => {
   }
 };
 
-const updateTimeline = (field: 'start_date' | 'deadline', value: string) => {
+const updateTimeline = (value: string) => {
   const timestamp = value ? Math.floor(new Date(value).getTime() / 1000) : 0;
-  if (field === 'start_date') {
-    job.value.timeline.start_date = timestamp;
-  } else {
-    job.value.timeline.deadline = timestamp;
-  }
-};
-
-
-const normalizeBudget = () => {
-  if (typeof job.value.budget === 'number' && !Number.isNaN(job.value.budget)) {
-    job.value.budget = Math.max(0, Math.floor(job.value.budget));
-  } else {
-    job.value.budget = 0;
-  }
+  job.value.timeline.start_date = timestamp;
 };
 
 const saveSelectedAgentsToJob = async () => {
@@ -324,7 +269,6 @@ const submitJob = async () => {
   // Validate all fields before submission
   validateField('project_title', job.value.project_title);
   validateField('description', job.value.description);
-  validateField('budget', job.value.budget);
   validateField('primary_area_of_expertise', job.value.primary_area_of_expertise);
   
   if (Object.keys(validationErrors.value).length > 0 || !isFormValid.value) {
@@ -337,19 +281,14 @@ const submitJob = async () => {
   validationErrors.value = {};
 
   try {
-    normalizeBudget();
-
     // Transform to JobPostData format expected by the service
     const jobPayload: any = {
       project_title: job.value.project_title?.trim() || '',
       description: job.value.description.trim(),
       primary_area_of_expertise: job.value.primary_area_of_expertise,
-      budget: job.value.budget,
       timeline: {
-        start_date: job.value.timeline.start_date,
-        deadline: job.value.timeline.deadline
-      },
-      selected_agents: job.value.selected_agents || []
+        start_date: job.value.timeline.start_date
+      }
     };
 
     const response = await api.jobs.createJob(jobPayload);

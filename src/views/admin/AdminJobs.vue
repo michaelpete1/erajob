@@ -8,27 +8,31 @@
         </div>
       </div>
 
-      <div v-if="loading" class="flex justify-center items-center py-12">
+      <div v-if="loading && jobs.length === 0" class="flex justify-center items-center py-12">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-500"></div>
       </div>
 
-      <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-        <p class="text-red-700 font-medium">{{ error }}</p>
-      </div>
-
       <div v-else>
-        <div v-if="jobs.length === 0" class="text-center text-gray-600 py-12">
+        <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p class="text-red-700 font-medium">{{ error }}</p>
+        </div>
+
+        <div v-if="jobs.length === 0 && !error" class="text-center text-gray-600 py-12">
           <p>No jobs found</p>
         </div>
 
         <div v-else class="space-y-4">
+          <div class="flex items-center justify-between text-sm text-gray-600">
+            <span>Showing {{ jobs.length }} job{{ jobs.length === 1 ? '' : 's' }}</span>
+            <span v-if="hasMore" class="text-gray-500">More jobs available</span>
+          </div>
+
           <div v-for="job in jobs" :key="jobKey(job)" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div class="min-w-0">
                 <h2 class="text-lg font-semibold text-gray-900 truncate">{{ jobTitle(job) }}</h2>
                 <p class="text-sm text-gray-600 mt-1 truncate">{{ jobDescription(job) }}</p>
                 <div class="mt-2 text-xs text-gray-500">Category: <span class="font-medium text-gray-700">{{ jobCategory(job) }}</span></div>
-                <div class="mt-1 text-xs text-gray-500">Budget: <span class="font-medium text-gray-700">{{ jobBudget(job) }}</span></div>
               </div>
               <div class="flex items-center gap-2 sm:flex-col sm:items-stretch">
                 <button @click="goToProposal(job)" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-sm">Propose to Client</button>
@@ -49,6 +53,17 @@
                 <button @click="showFindAgents(job)" class="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Find Agents</button>
               </div>
             </div>
+          </div>
+
+          <div v-if="hasMore" class="flex justify-center pt-2">
+            <button
+              @click="loadMore"
+              :disabled="loading || loadingMore"
+              class="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              <span v-if="loadingMore">Loading more…</span>
+              <span v-else>Load more jobs</span>
+            </button>
           </div>
         </div>
       </div>
@@ -72,10 +87,14 @@ import { api } from '@/services/apiService'
 const router = useRouter()
 const jobs = ref<any[]>([])
 const loading = ref(false)
+const loadingMore = ref(false)
 const error = ref<string | null>(null)
 const expandedJobId = ref<string>('')
 const isFindAgentsOpen = ref(false)
 const activeJobForAgents = ref<{ id: string; title: string; category: string; pay: string } | null>(null)
+const nextStart = ref(0)
+const hasMore = ref(true)
+const PAGE_SIZE = 50
 
 const jobId = (job: any): string => String(job?.id || job?.job_id || job?.ID || '')
 const jobKey = (job: any): string => String(jobId(job) || Math.random().toString(36))
@@ -89,20 +108,54 @@ const jobBudget = (job: any): string => {
 const jobAgents = (job: any): any[] => Array.isArray(job?.selected_agents) ? job.selected_agents : (Array.isArray(job?.agents) ? job.agents : [])
 const agentName = (agent: any): string => String(agent?.full_name || agent?.name || agent?.email || agent?.id || 'Agent')
 
-const refresh = async () => {
-  loading.value = true
+const fetchJobs = async (options: { reset?: boolean } = {}) => {
+  const isReset = options.reset ?? false
+
+  if (isReset) {
+    loading.value = true
+    jobs.value = []
+    nextStart.value = 0
+    hasMore.value = true
+  } else {
+    loadingMore.value = true
+  }
+
   error.value = null
+
   try {
-    const resp = await api.jobs.listAdminJobs(0, 25)
-    jobs.value = Array.isArray(resp.data) ? resp.data : (resp.data ? [resp.data as any] : [])
+    const start = isReset ? 0 : nextStart.value
+    const stop = start + PAGE_SIZE
+    const resp = await api.jobs.listAdminJobs(start, stop)
+    const batch = Array.isArray(resp.data) ? resp.data : (resp.data ? [resp.data as any] : [])
+
+    if (isReset) {
+      jobs.value = batch
+    } else {
+      jobs.value = [...jobs.value, ...batch]
+    }
+
+    const received = batch.length
+    nextStart.value = start + received
+    hasMore.value = received >= PAGE_SIZE
   } catch (e: any) {
     error.value = e?.message || 'Failed to load jobs'
   } finally {
-    loading.value = false
+    if (isReset) {
+      loading.value = false
+    } else {
+      loadingMore.value = false
+    }
   }
 }
 
-onMounted(refresh)
+const refresh = () => fetchJobs({ reset: true })
+
+const loadMore = () => {
+  if (loading.value || loadingMore.value || !hasMore.value) return
+  fetchJobs()
+}
+
+onMounted(() => fetchJobs({ reset: true }))
 
 const goToProposal = (job: any) => {
   const id = jobId(job)

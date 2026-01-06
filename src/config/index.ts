@@ -36,7 +36,7 @@ export const API_CONFIG = {
       create: '/v1/jobss/',
       me: '/v1/jobss/me',
       clientCreated: (start: number, stop: number) => `/v1/jobss/client/created/${start}/${stop}`,
-      agentAvailable: (start: number, stop: number) => `/v1/jobss/agent/available/${start}/${stop}`,
+      agentAvailable: (start: number, stop: number) => `/v1/jobss/agent/${start}/${stop}`,
       adminList: (start: number, stop: number) => `/v1/jobss/admin/${start}/${stop}`
     },
     // Users endpoints
