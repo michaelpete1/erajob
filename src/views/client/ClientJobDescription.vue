@@ -541,54 +541,73 @@ const jobStatusClass = computed(() => {
   return 'bg-blue-50 text-blue-700 border-blue-200'
 })
 
+const loadJobDetails = async (jobId: string) => {
+  if (!jobId) {
+    error.value = new Error('No job ID provided in route')
+    return
+  }
+
+  loading.value = true
+  error.value = null
+  proposals.value = []
+  assignedAgents.value = []
+
+  try {
+    const hydrated = hydrateJobFromContext(jobId)
+
+    loadAssignedAgentsFromContext()
+    loadAssignedAgentsFromCaches()
+
+    if (!hydrated) {
+      const result = await jobsService.getJobById(jobId)
+
+      if (result.success && result.data) {
+        const derivedBudget = resolveBudgetValue(result.data as Record<string, any>)
+        job.value = {
+          id: jobId,
+          admin_id: result.data.id || '',
+          project_title: result.data.title || 'Job Title',
+          category: (result.data as any)?.primary_area_of_expertise || result.data.category || 'Other',
+          budget: derivedBudget.toString(),
+          type: 'Remote',
+          postedTime: (result.data as any)?.date_created ? new Date((result.data as any).date_created * 1000).toLocaleDateString() : (result.data as any)?.createdAt ? new Date((result.data as any).createdAt).toLocaleDateString() : 'Recently posted',
+          proposals: '0',
+          description: result.data.description || 'No description available',
+          requirements: [result.data.description?.split('\n')[0] || 'Requirements not specified'],
+          skills_needed: Array.isArray((result.data as any).skills_needed) ? (result.data as any).skills_needed.join(', ') : (result.data as any).skills_needed || '',
+          deadline: result.data.timeline?.endDate ? new Date(result.data.timeline.endDate).getTime() : 0,
+          status: (result.data as any)?.status || 'open'
+        }
+
+        seedAssignedAgentsFromJobResult(result.data)
+      } else {
+        throw new Error(result.error || 'Job not found')
+      }
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err : new Error('Failed to load job details')
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(async () => {
   const jobId = route.params.id as string
-
-  if (jobId) {
-    loading.value = true
-    error.value = null
-
-    try {
-      const hydrated = hydrateJobFromContext(jobId)
-
-      loadAssignedAgentsFromContext()
-      loadAssignedAgentsFromCaches()
-
-      if (!hydrated) {
-        const result = await jobsService.getJobById(jobId)
-
-        if (result.success && result.data) {
-          const derivedBudget = resolveBudgetValue(result.data as Record<string, any>)
-          job.value = {
-            id: jobId,
-            admin_id: result.data.id || '',
-            project_title: result.data.title || 'Job Title',
-            category: (result.data as any)?.primary_area_of_expertise || result.data.category || 'Other',
-            budget: derivedBudget.toString(),
-            type: 'Remote',
-            postedTime: (result.data as any)?.date_created ? new Date((result.data as any).date_created * 1000).toLocaleDateString() : (result.data as any)?.createdAt ? new Date((result.data as any).createdAt).toLocaleDateString() : 'Recently posted',
-            proposals: '0',
-            description: result.data.description || 'No description available',
-            requirements: [result.data.description?.split('\n')[0] || 'Requirements not specified'],
-            skills_needed: Array.isArray((result.data as any).skills_needed) ? (result.data as any).skills_needed.join(', ') : (result.data as any).skills_needed || '',
-            deadline: result.data.timeline?.endDate ? new Date(result.data.timeline.endDate).getTime() : 0,
-            status: (result.data as any)?.status || 'open'
-          }
-
-          seedAssignedAgentsFromJobResult(result.data)
-        } else {
-          throw new Error(result.error || 'Job not found')
-        }
-      }
-    } catch (err) {
-      error.value = err instanceof Error ? err : new Error('Failed to load job details')
-    } finally {
-      loading.value = false
-    }
-  } else {
-    error.value = new Error('No job ID provided in route')
-  }
+  await loadJobDetails(jobId)
 })
+
+watch(
+  () => route.params.id,
+  (newId) => {
+    const jobId = typeof newId === 'string' ? newId : Array.isArray(newId) ? newId[0] ?? '' : ''
+    if (!jobId) {
+      error.value = new Error('No job ID provided in route')
+      return
+    }
+    if (jobId === job.value.id) return
+    loadJobDetails(jobId)
+  }
+)
 
 watch(
   () => job.value.id,
@@ -647,5 +666,6 @@ const getDefaultRequirements = (category: string) => {
 <style scoped>
 /* No custom styles needed - using Tailwind classes */
 </style>
+
 
 

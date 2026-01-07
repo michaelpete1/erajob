@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-gray-100 pb-24">
     <ClientNavbar />
     <header class="bg-white shadow-sm p-4 sticky top-0 z-10 mt-4">
@@ -11,7 +11,7 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-semibold">My Jobs</h2>
           <button
-            @click="$router.push('/client/projects/create')"
+            @click="$router.push('/client/jobs/create')"
             class="bg-brand-teal text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 transition-colors"
           >
             Post a New Job
@@ -188,11 +188,11 @@ onBeforeRouteUpdate(async (to, from, next) => {
 })
 
 const formatDate = (timestamp?: number | null) => {
-  if (!timestamp) return '—'
+  if (!timestamp) return 'â€”'
   const ms = timestamp > 1_000_000_000_000 ? timestamp : timestamp * 1000
   const date = new Date(ms)
   if (Number.isNaN(date.getTime())) {
-    return '—'
+    return 'â€”'
   }
   return date.toLocaleString('en-US', {
     year: 'numeric',
@@ -222,3 +222,4 @@ const openProject = (project: any) => {
   router.push({ name: 'client-proposals', query: { jobId: projectId } })
 }
 </script>
+

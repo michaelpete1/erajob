@@ -674,7 +674,7 @@ const cacheProjectContext = (project: Project) => {
 const goToProject = (project: Project) => {
   if (!project?.id) return
   cacheProjectContext(project)
-  router.push({ name: 'client-job-details', params: { id: String(project.id) } })
+  router.push({ name: 'client-job-overview', params: { id: String(project.id) } })
 }
 
 
